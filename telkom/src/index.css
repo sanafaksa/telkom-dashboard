@@ -1,0 +1,8 @@
+@import "tailwindcss";
+@theme{--font-sans:Inter,system-ui,sans-serif;--color-brand:#E31E24;--color-brand-dark:#6B0A0E;--color-bg:#F6F8FC;--color-ink:#111827;--color-mute:#64748B;--color-line:#E5E7EB;--color-ok:#10B981;--color-warn:#F59E0B;--color-bad:#EF4444;--color-info:#3B82F6}
+body{background:var(--color-bg);color:var(--color-ink);font-size:14px}
+:focus-visible{outline:2px solid var(--color-brand);outline-offset:2px}
+.card{background:#fff;border:1px solid var(--color-line);border-radius:14px;box-shadow:0 1px 2px rgb(16 24 40/.04)}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--color-line);background:#fff;border-radius:999px;padding:6px 14px;font-size:12px;font-weight:600}
+.btn-primary{background:var(--color-brand);border-color:var(--color-brand);color:#fff}
+@keyframes fadeIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
