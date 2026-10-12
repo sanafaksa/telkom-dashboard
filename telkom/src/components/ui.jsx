@@ -2,92 +2,129 @@ import {Filter,Upload,Download,Share2,Lightbulb,Check,X,FileText,FileSpreadsheet
 export const fmt=n=>n.toLocaleString('id-ID');
 export function ShareButton(){const [ok,s]=useState(false);return <button className="btn cursor-pointer" onClick={()=>{navigator.clipboard?.writeText(location.href);s(true);setTimeout(()=>s(false),1500)}}>{ok?<Check size={14}/>:<Share2 size={14}/>}{ok?'Tersalin':'Salin & Bagikan'}</button>}
 
-export function ExportButton({onClick}){
-  const [open,setOpen]=useState(false);
-  const [feedback,setFeedback]=useState(null);
-  const ref=useRef(null);
+export function ExportButton({ onClick, onExportData, filename = 'export-report' }) {
+  const [open, setOpen] = useState(false);
+  const [feedback, setFeedback] = useState(null);
+  const ref = useRef(null);
 
-  useEffect(()=>{
-    if(!open) return;
-    const handler=e=>{if(ref.current && !ref.current.contains(e.target)) setOpen(false)};
-    document.addEventListener('mousedown',handler);
-    return ()=>document.removeEventListener('mousedown',handler);
-  },[open]);
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
 
-  const showFeedback=(msg)=>{setFeedback(msg);setTimeout(()=>setFeedback(null),1500)};
-
-  const copyAsPicture=async()=>{
-    setOpen(false);
-    try{
-      const main=document.querySelector('main');
-      if(!main) return;
-      const canvas=document.createElement('canvas');
-      const {default:h2c}=await import('html2canvas').catch(()=>({default:null}));
-      if(h2c){
-        const c=await h2c(main,{scale:2,useCORS:true,backgroundColor:'#F6F8FC'});
-        c.toBlob(blob=>{
-          if(blob){
-            navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
-            showFeedback('Gambar tersalin!');
-          }
-        },'image/png');
-      } else {
-        // Fallback: screenshot via Selection API
-        const sel=window.getSelection();
-        sel.removeAllRanges();
-        const range=document.createRange();
-        range.selectNodeContents(main);
-        sel.addRange(range);
-        document.execCommand('copy');
-        sel.removeAllRanges();
-        showFeedback('Konten tersalin!');
-      }
-    }catch{showFeedback('Gagal menyalin');}
+  const showFeedback = (msg) => {
+    setFeedback(msg);
+    setTimeout(() => setFeedback(null), 2000);
   };
 
-  const copyAsTable=()=>{
+  const handleExportCSV = () => {
     setOpen(false);
-    if(onClick) onClick();
-    showFeedback('Tabel tersalin!');
+    if (onClick) onClick();
+    showFeedback('Export CSV berhasil');
   };
 
-  const copyLink=()=>{
+  const handleExportXLSX = () => {
     setOpen(false);
-    navigator.clipboard?.writeText(window.location.href);
-    showFeedback('Link tersalin!');
+    if (onClick) onClick();
+    showFeedback('Export XLSX berhasil');
   };
 
-  const items=[
-    {icon:Image,label:'Copy as Picture',desc:'Salin report sebagai gambar',action:copyAsPicture},
-    {icon:Table,label:'Copy as Table',desc:'Salin data tabel (Excel/CSV)',action:copyAsTable},
-    {icon:Link,label:'Copy Report Link',desc:'Salin link halaman ini',action:copyLink},
+  const handleExportPDF = async () => {
+    setOpen(false);
+    try {
+      window.print();
+      showFeedback('Membuka dialog cetak PDF');
+    } catch {
+      showFeedback('Gagal mengekspor PDF');
+    }
+  };
+
+  const handleExportDOCX = () => {
+    setOpen(false);
+    const tableEl = document.querySelector('table');
+    if (tableEl) {
+      const html = `<html><head><meta charset="utf-8"><title>${filename}</title></head><body><h2>${filename}</h2>${tableEl.outerHTML}</body></html>`;
+      const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${filename}.doc`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showFeedback('Export DOCX berhasil');
+    } else {
+      showFeedback('Data tabel tidak ditemukan');
+    }
+  };
+
+  const options = [
+    {
+      label: 'Export DOCX',
+      icon: FileText,
+      iconColor: 'text-blue-500',
+      action: handleExportDOCX
+    },
+    {
+      label: 'Export XLSX',
+      icon: FileSpreadsheet,
+      iconColor: 'text-emerald-600',
+      action: handleExportXLSX
+    },
+    {
+      label: 'Export CSV',
+      icon: Table,
+      iconColor: 'text-teal-600',
+      action: handleExportCSV
+    },
+    {
+      label: 'Export PDF',
+      icon: FileText,
+      iconColor: 'text-rose-500',
+      action: handleExportPDF
+    }
   ];
 
-  return <div className="relative" ref={ref}>
-    <button className="btn btn-primary cursor-pointer" onClick={()=>setOpen(!open)}>
-      <Download size={14}/>Export<ChevronDown size={12} className={`transition-transform ${open?'rotate-180':''}`}/>
-    </button>
+  return (
+    <div className="relative inline-block" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-2 shadow-2xs transition-colors cursor-pointer"
+      >
+        <span>Export</span>
+        <ChevronDown
+          size={13}
+          className={`transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
 
-    {open&&<div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl border border-slate-200 shadow-lg z-50 overflow-hidden animate-[fadeIn_0.15s_ease-out]">
-      <div className="py-1.5">
-        {items.map((it,i)=>(
-          <button key={it.label} onClick={it.action} className={`w-full flex items-start gap-3 px-4 py-3 hover:bg-blue-50/60 transition-colors text-left cursor-pointer ${i===0?'bg-blue-50/40 border border-dashed border-blue-300 mx-1.5 mt-1 mb-1 rounded-lg w-[calc(100%-12px)]':''}`}>
-            <span className={`size-8 rounded-lg grid place-items-center shrink-0 mt-0.5 ${i===0?'bg-blue-100 text-blue-600':'bg-slate-100 text-slate-500'}`}>
-              <it.icon size={16}/>
-            </span>
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-slate-800">{it.label}</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">{it.desc}</p>
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>}
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl border border-slate-200/90 shadow-xl z-50 py-1.5 animate-[fadeIn_0.15s_ease-out]">
+          {options.map((opt) => (
+            <button
+              key={opt.label}
+              type="button"
+              onClick={opt.action}
+              className="w-full flex items-center gap-3 px-3.5 py-2.5 hover:bg-slate-50 transition-colors text-left text-xs font-semibold text-slate-700 cursor-pointer group"
+            >
+              <opt.icon size={16} className={`${opt.iconColor} shrink-0`} />
+              <span>{opt.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
-    {feedback&&<div className="absolute right-0 top-full mt-2 px-3 py-1.5 bg-slate-800 text-white text-xs font-medium rounded-lg shadow-lg z-50 whitespace-nowrap animate-[fadeIn_0.15s_ease-out]">
-      {feedback}
-    </div>}
-  </div>;
+      {feedback && (
+        <div className="absolute right-0 top-full mt-2 px-3 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg shadow-lg z-50 whitespace-nowrap animate-[fadeIn_0.15s_ease-out]">
+          {feedback}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function UploadModal({open,onClose}){

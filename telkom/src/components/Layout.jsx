@@ -25,7 +25,7 @@ const sub = [
   ['segment', 'Segment Performance']
 ];
 
-function SidebarItem({ to, icon: Icon, children, hasSub, isOpen, onToggle, end, isActiveOverride }) {
+function SidebarItem({ to, icon: Icon, children, hasSub, isOpen, onToggle, end, isActiveOverride, showPlus }) {
   return (
     <div>
       <NavLink
@@ -38,10 +38,11 @@ function SidebarItem({ to, icon: Icon, children, hasSub, isOpen, onToggle, end, 
         }}
         className={({ isActive }) => {
           const active = isActiveOverride !== undefined ? isActiveOverride : isActive;
-          return `group flex items-center justify-between rounded-full px-4 py-2.5 text-xs transition-all ${active
-            ? 'bg-white text-[#083E9E] shadow-sm font-bold'
-            : 'text-white/85 hover:bg-white/10 hover:text-white font-medium'
-            }`;
+          return `group flex items-center justify-between rounded-full px-4 py-2.5 text-[13px] transition-all select-none ${
+            active
+              ? 'bg-white text-[#1E50BA] shadow-sm font-semibold'
+              : 'text-white hover:bg-white/10 hover:text-white font-normal'
+          }`;
         }}
       >
         {({ isActive }) => {
@@ -52,46 +53,20 @@ function SidebarItem({ to, icon: Icon, children, hasSub, isOpen, onToggle, end, 
                 {Icon && (
                   <Icon
                     size={17}
+                    strokeWidth={2}
                     className={
                       active
-                        ? 'text-[#083E9E]'
-                        : 'text-white/85 group-hover:text-white'
+                        ? 'text-[#1E50BA]'
+                        : 'text-white group-hover:text-white'
                     }
                   />
                 )}
                 <span>{children}</span>
               </div>
-              {hasSub ? (
-                <span
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onToggle?.();
-                  }}
-                  className="p-0.5 rounded transition-transform cursor-pointer"
-                >
-                  {isOpen ? (
-                    <Minus
-                      size={14}
-                      strokeWidth={2.5}
-                      className={active ? 'text-[#083E9E]' : 'text-white/80'}
-                    />
-                  ) : (
-                    <Plus
-                      size={14}
-                      strokeWidth={2.5}
-                      className={active ? 'text-[#083E9E]' : 'text-white/80'}
-                    />
-                  )}
+              {showPlus && (
+                <span className="text-white text-sm font-light leading-none">
+                  +
                 </span>
-              ) : (
-                to !== '/dashboard' && (
-                  <Plus
-                    size={14}
-                    strokeWidth={2}
-                    className={active ? 'text-[#083E9E]' : 'text-white/60'}
-                  />
-                )
               )}
             </>
           );
@@ -104,31 +79,32 @@ function SidebarItem({ to, icon: Icon, children, hasSub, isOpen, onToggle, end, 
 function Sidebar({ close, onCollapse }) {
   const location = useLocation();
   const isKuadranRoute = location.pathname.startsWith('/kuadran');
-  const [openKuadran, setOpenKuadran] = useState(true);
+  const [openKuadran, setOpenKuadran] = useState(false);
 
   return (
     <nav
       aria-label="Utama"
-      className="h-full flex flex-col p-4 gap-1.5 select-none bg-[#083E9E] text-white shadow-2xl rounded-[24px] overflow-hidden"
-      style={{ borderRadius: '24px' }}
+      className="h-full flex flex-col p-4 pt-5 pb-5 select-none bg-gradient-to-b from-[#1D51BE] via-[#1E52C2] to-[#2257C9] text-white shadow-2xl rounded-[28px] overflow-hidden"
+      style={{ borderRadius: '28px' }}
       onClick={close}
     >
       {/* Brand Header */}
-      <div className="flex items-center justify-between px-2 py-3 mb-2">
+      <div className="flex items-center justify-between px-2 pt-1 pb-4 mb-1">
         <NavLink to="/dashboard" className="flex items-center gap-2">
           <img
             src="/telkom-logo.png"
             alt="Telkom Indonesia - the world in your hand"
-            className="h-9 object-contain max-w-[170px] brightness-0 invert"
+            className="h-9 object-contain max-w-[155px] brightness-0 invert"
           />
         </NavLink>
         {onCollapse && (
           <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
               onCollapse();
             }}
-            className="size-7 rounded-full bg-white text-[#083E9E] shadow-md grid place-items-center hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
+            className="size-7.5 rounded-full bg-white text-[#1E50BA] shadow-md grid place-items-center hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
             aria-label="Tutup sidebar"
             title="Tutup sidebar"
           >
@@ -151,6 +127,7 @@ function Sidebar({ close, onCollapse }) {
           to="/kuadran"
           icon={LayoutGrid}
           hasSub
+          showPlus
           isOpen={openKuadran}
           isActiveOverride={isKuadranRoute}
           onToggle={() => setOpenKuadran(!openKuadran)}
@@ -165,16 +142,17 @@ function Sidebar({ close, onCollapse }) {
                 key={k}
                 to={'/kuadran/' + k}
                 className={({ isActive }) =>
-                  `group flex items-center gap-2 text-xs py-2 px-3.5 rounded-full transition-all ${isActive
-                    ? 'text-[#083E9E] font-bold bg-[#DCE7FC] shadow-xs'
-                    : 'text-white/85 hover:text-white hover:bg-white/10 font-medium'
+                  `group flex items-center gap-2 text-xs py-2 px-3.5 rounded-full transition-all ${
+                    isActive
+                      ? 'text-[#1E50BA] font-bold bg-[#DCE7FC] shadow-xs'
+                      : 'text-white/85 hover:text-white hover:bg-white/10 font-medium'
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
                     {isActive ? (
-                      <ArrowRight size={14} strokeWidth={2.5} className="text-[#083E9E] shrink-0" />
+                      <ArrowRight size={14} strokeWidth={2.5} className="text-[#1E50BA] shrink-0" />
                     ) : (
                       <Folder size={14} className="text-white/85 group-hover:text-white shrink-0" />
                     )}
@@ -186,18 +164,18 @@ function Sidebar({ close, onCollapse }) {
           </div>
         )}
 
-        <SidebarItem to="/support-needed" icon={FileText}>
+        <SidebarItem to="/support-needed" icon={FileText} showPlus>
           Catatan MoM & Support
         </SidebarItem>
       </div>
 
       {/* Sidebar Footer */}
-      <div className="mt-auto pt-4 border-t border-white/20 flex items-center justify-between px-3 text-[11px]">
+      <div className="mt-auto pt-3.5 border-t border-white/20 flex items-center justify-between px-2 text-[11px]">
         <span className="font-bold tracking-wider text-white">
           TELKOM ID
         </span>
         <span className="flex items-center gap-1.5 font-medium text-white/90">
-          <span className="size-2 rounded-full bg-white shadow-xs" />
+          <span className="size-1.5 rounded-full bg-white shadow-xs" />
           Active
         </span>
       </div>
@@ -210,10 +188,11 @@ export default function Layout({ children }) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className={`min-h-screen bg-[#F6F8FC] transition-[padding] duration-300 ease-in-out ${collapsed ? 'lg:pl-0' : 'lg:pl-[276px]'}`}>
+    <div className={`min-h-screen bg-[#F6F8FC] transition-[padding] duration-300 ease-in-out ${collapsed ? 'lg:pl-0' : 'lg:pl-[272px]'}`}>
       <aside
-        className={`fixed top-3 bottom-3 left-3 w-64 z-30 hidden lg:block transition-transform duration-300 ease-in-out ${collapsed ? '-translate-x-[calc(100%+1.5rem)]' : 'translate-x-0'
-          }`}
+        className={`fixed top-3.5 bottom-3.5 left-3.5 w-[252px] z-30 hidden lg:block transition-transform duration-300 ease-in-out ${
+          collapsed ? '-translate-x-[calc(100%+1.5rem)]' : 'translate-x-0'
+        }`}
       >
         <Sidebar onCollapse={() => setCollapsed(true)} />
       </aside>
