@@ -1,5 +1,5 @@
-import {useState} from 'react';
-import {NavLink, useLocation} from 'react-router-dom';
+import { useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import {
   Home,
   BarChart2,
@@ -25,7 +25,7 @@ const sub = [
   ['segment', 'Segment Performance']
 ];
 
-function SidebarItem({to, icon: Icon, children, hasSub, isOpen, onToggle, end, isActiveOverride}) {
+function SidebarItem({ to, icon: Icon, children, hasSub, isOpen, onToggle, end, isActiveOverride }) {
   return (
     <div>
       <NavLink
@@ -36,16 +36,15 @@ function SidebarItem({to, icon: Icon, children, hasSub, isOpen, onToggle, end, i
             onToggle();
           }
         }}
-        className={({isActive}) => {
+        className={({ isActive }) => {
           const active = isActiveOverride !== undefined ? isActiveOverride : isActive;
-          return `group flex items-center justify-between rounded-full px-4 py-2.5 text-xs transition-all ${
-            active
-              ? 'bg-white text-[#083E9E] shadow-sm font-bold'
-              : 'text-white/85 hover:bg-white/10 hover:text-white font-medium'
-          }`;
+          return `group flex items-center justify-between rounded-full px-4 py-2.5 text-xs transition-all ${active
+            ? 'bg-white text-[#083E9E] shadow-sm font-bold'
+            : 'text-white/85 hover:bg-white/10 hover:text-white font-medium'
+            }`;
         }}
       >
-        {({isActive}) => {
+        {({ isActive }) => {
           const active = isActiveOverride !== undefined ? isActiveOverride : isActive;
           return (
             <>
@@ -102,7 +101,7 @@ function SidebarItem({to, icon: Icon, children, hasSub, isOpen, onToggle, end, i
   );
 }
 
-function Sidebar({close, onCollapse}) {
+function Sidebar({ close, onCollapse }) {
   const location = useLocation();
   const isKuadranRoute = location.pathname.startsWith('/kuadran');
   const [openKuadran, setOpenKuadran] = useState(true);
@@ -110,7 +109,8 @@ function Sidebar({close, onCollapse}) {
   return (
     <nav
       aria-label="Utama"
-      className="h-full flex flex-col p-4 gap-1.5 select-none bg-[#083E9E] text-white shadow-xl"
+      className="h-full flex flex-col p-4 gap-1.5 select-none bg-[#083E9E] text-white shadow-2xl rounded-[24px] overflow-hidden"
+      style={{ borderRadius: '24px' }}
       onClick={close}
     >
       {/* Brand Header */}
@@ -164,15 +164,14 @@ function Sidebar({close, onCollapse}) {
               <NavLink
                 key={k}
                 to={'/kuadran/' + k}
-                className={({isActive}) =>
-                  `group flex items-center gap-2 text-xs py-2 px-3.5 rounded-full transition-all ${
-                    isActive
-                      ? 'text-[#083E9E] font-bold bg-[#DCE7FC] shadow-xs'
-                      : 'text-white/85 hover:text-white hover:bg-white/10 font-medium'
+                className={({ isActive }) =>
+                  `group flex items-center gap-2 text-xs py-2 px-3.5 rounded-full transition-all ${isActive
+                    ? 'text-[#083E9E] font-bold bg-[#DCE7FC] shadow-xs'
+                    : 'text-white/85 hover:text-white hover:bg-white/10 font-medium'
                   }`
                 }
               >
-                {({isActive}) => (
+                {({ isActive }) => (
                   <>
                     {isActive ? (
                       <ArrowRight size={14} strokeWidth={2.5} className="text-[#083E9E] shrink-0" />
@@ -206,16 +205,15 @@ function Sidebar({close, onCollapse}) {
   );
 }
 
-export default function Layout({children}) {
+export default function Layout({ children }) {
   const [d, setD] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className={`min-h-screen bg-[#F6F8FC] transition-[padding] duration-300 ease-in-out ${collapsed ? 'lg:pl-0' : 'lg:pl-64'}`}>
+    <div className={`min-h-screen bg-[#F6F8FC] transition-[padding] duration-300 ease-in-out ${collapsed ? 'lg:pl-0' : 'lg:pl-[276px]'}`}>
       <aside
-        className={`fixed inset-y-0 left-0 w-64 z-30 hidden lg:block transition-transform duration-300 ease-in-out ${
-          collapsed ? '-translate-x-full' : 'translate-x-0'
-        }`}
+        className={`fixed top-3 bottom-3 left-3 w-64 z-30 hidden lg:block transition-transform duration-300 ease-in-out ${collapsed ? '-translate-x-[calc(100%+1.5rem)]' : 'translate-x-0'
+          }`}
       >
         <Sidebar onCollapse={() => setCollapsed(true)} />
       </aside>
@@ -223,7 +221,7 @@ export default function Layout({children}) {
       {d && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px]" onClick={() => setD(false)} />
-          <aside className="absolute inset-y-0 left-0 w-64">
+          <aside className="absolute top-3 bottom-3 left-3 w-64 max-w-[calc(100vw-24px)]">
             <Sidebar close={() => setD(false)} />
           </aside>
         </div>
