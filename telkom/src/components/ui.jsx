@@ -1,6 +1,10 @@
 import {Filter,Upload,Download,Share2,Lightbulb,Check,X,FileText,FileSpreadsheet,File,Trash2,Image,Table,Link,ChevronDown} from 'lucide-react';import {useState,useRef,useCallback,useEffect} from 'react';
 export const fmt=n=>n.toLocaleString('id-ID');
-export function ShareButton(){const [ok,s]=useState(false);return <button className="btn cursor-pointer" onClick={()=>{navigator.clipboard?.writeText(location.href);s(true);setTimeout(()=>s(false),1500)}}>{ok?<Check size={14}/>:<Share2 size={14}/>}{ok?'Tersalin':'Salin & Bagikan'}</button>}
+export { default as ShareDropdown } from './ShareDropdown';
+import ShareDropdown from './ShareDropdown';
+export function ShareButton(props) {
+  return <ShareDropdown {...props} />;
+}
 
 export function ExportButton({ onClick, onExportData, filename = 'export-report' }) {
   const [open, setOpen] = useState(false);

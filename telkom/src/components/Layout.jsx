@@ -15,7 +15,8 @@ import {
   Bell,
   Menu,
   PanelLeft,
-  Calendar
+  Calendar,
+  LogOut
 } from 'lucide-react';
 
 const sub = [
@@ -40,7 +41,7 @@ function SidebarItem({ to, icon: Icon, children, hasSub, isOpen, onToggle, end, 
           const active = isActiveOverride !== undefined ? isActiveOverride : isActive;
           return `group flex items-center justify-between rounded-full px-4 py-2.5 text-[13px] transition-all select-none ${
             active
-              ? 'bg-white text-[#1E50BA] shadow-sm font-semibold'
+              ? 'bg-white text-[#06246A] shadow-sm font-semibold'
               : 'text-white hover:bg-white/10 hover:text-white font-normal'
           }`;
         }}
@@ -56,7 +57,7 @@ function SidebarItem({ to, icon: Icon, children, hasSub, isOpen, onToggle, end, 
                     strokeWidth={2}
                     className={
                       active
-                        ? 'text-[#1E50BA]'
+                        ? 'text-[#06246A]'
                         : 'text-white group-hover:text-white'
                     }
                   />
@@ -84,8 +85,11 @@ function Sidebar({ close, onCollapse }) {
   return (
     <nav
       aria-label="Utama"
-      className="h-full flex flex-col p-4 pt-5 pb-5 select-none bg-gradient-to-b from-[#1D51BE] via-[#1E52C2] to-[#2257C9] text-white shadow-2xl rounded-[28px] overflow-hidden"
-      style={{ borderRadius: '28px' }}
+      className="h-full flex flex-col p-4 pt-5 pb-5 select-none bg-gradient-to-b from-[#06246A] to-[#235CE5] text-white shadow-2xl rounded-[28px] overflow-hidden"
+      style={{
+        borderRadius: '28px',
+        background: 'linear-gradient(180deg, #06246A 0%, #235CE5 100%)'
+      }}
       onClick={close}
     >
       {/* Brand Header */}
@@ -104,7 +108,7 @@ function Sidebar({ close, onCollapse }) {
               e.stopPropagation();
               onCollapse();
             }}
-            className="size-7.5 rounded-full bg-white text-[#1E50BA] shadow-md grid place-items-center hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
+            className="size-7.5 rounded-full bg-white text-[#06246A] shadow-md grid place-items-center hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
             aria-label="Tutup sidebar"
             title="Tutup sidebar"
           >
@@ -171,11 +175,16 @@ function Sidebar({ close, onCollapse }) {
 
       {/* Sidebar Footer */}
       <div className="mt-auto pt-3.5 border-t border-white/20 flex items-center justify-between px-2 text-[11px]">
-        <span className="font-bold tracking-wider text-white">
-          TELKOM ID
-        </span>
+        <NavLink
+          to="/login"
+          className="flex items-center gap-1.5 font-medium text-white/80 hover:text-white transition-colors"
+          title="Keluar ke Halaman Login"
+        >
+          <LogOut size={13} />
+          <span>Keluar</span>
+        </NavLink>
         <span className="flex items-center gap-1.5 font-medium text-white/90">
-          <span className="size-1.5 rounded-full bg-white shadow-xs" />
+          <span className="size-1.5 rounded-full bg-emerald-400 shadow-xs" />
           Active
         </span>
       </div>
@@ -224,17 +233,23 @@ export default function Layout({ children }) {
         )}
 
         {/* User profile dropdown pill */}
-        <div className="flex items-center gap-2.5">
-          <span className="size-8 rounded-full bg-[#2563EB] text-white grid place-items-center text-xs font-bold shrink-0">
-            DU
-          </span>
-          <div className="hidden sm:block leading-tight">
-            <div className="flex items-center gap-1 cursor-pointer">
-              <b className="text-xs font-bold text-slate-800">DU — Dashboard Utama</b>
-              <ChevronDown size={13} className="text-slate-400" />
+        <div className="relative group">
+          <NavLink
+            to="/login"
+            className="flex items-center gap-2.5 p-1 rounded-full hover:bg-slate-100/70 transition-colors cursor-pointer"
+            title="Keluar / Ganti Akun"
+          >
+            <span className="size-8 rounded-full bg-[#2563EB] text-white grid place-items-center text-xs font-bold shrink-0 shadow-xs">
+              DU
+            </span>
+            <div className="hidden sm:block leading-tight text-left">
+              <div className="flex items-center gap-1">
+                <b className="text-xs font-bold text-slate-800">DU — Dashboard Utama</b>
+                <ChevronDown size={13} className="text-slate-400 group-hover:text-slate-600 transition-colors" />
+              </div>
+              <p className="text-[11px] text-slate-400">executive.lead@telkom.co.id</p>
             </div>
-            <p className="text-[11px] text-slate-400">executive.lead@telkom.co.id</p>
-          </div>
+          </NavLink>
         </div>
 
         {/* Right Header items */}

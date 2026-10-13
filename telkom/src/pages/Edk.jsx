@@ -1,6 +1,6 @@
 import { useMemo, useState, Fragment } from 'react';
 import { filterOptions, modes, topPelangganBySegmen } from '../data/edkData';
-import { ExportButton, exportCSV } from '../components/ui';
+import { ExportButton, exportCSV, ShareDropdown } from '../components/ui';
 import FilterDropdown from '../components/FilterDropdown';
 import {
   Filter,
@@ -303,7 +303,7 @@ export default function Edk() {
   const activeCount = isTop10View ? top10List.length : mode === 'Nama AM' ? 19 : data.length;
 
   return (
-    <div className="space-y-4">
+    <div id="edk-main-content" className="space-y-4">
       {/* 1. Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -346,6 +346,13 @@ export default function Edk() {
           <ExportButton
             onClick={() => exportCSV(isTop10View ? top10List : data, `EDK_Monitoring_${mode}`)}
             filename={`EDK_Monitoring_${mode}`}
+          />
+
+          {/* Salin & Bagikan Dropdown Button */}
+          <ShareDropdown
+            buttonLabel="Salin & Bagikan"
+            captureSelector="#edk-main-content"
+            tableSelector="table"
           />
         </div>
       </div>

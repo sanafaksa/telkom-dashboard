@@ -1,0 +1,37 @@
+import{c as i,r as s,j as t,C as I}from"./index-ipbq6XSU.js";import{C as w,h as q}from"./ui-CEj1GTVe.js";import{L as M}from"./loader-circle-C1Sow2_t.js";/**
+ * @license lucide-react v0.468.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const P=i("Filter",[["polygon",{points:"22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3",key:"1yg77f"}]]);/**
+ * @license lucide-react v0.468.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const T=i("Grid3x3",[["rect",{width:"18",height:"18",x:"3",y:"3",rx:"2",key:"afitv7"}],["path",{d:"M3 9h18",key:"1pudct"}],["path",{d:"M3 15h18",key:"5xshup"}],["path",{d:"M9 3v18",key:"fh3hqa"}],["path",{d:"M15 3v18",key:"14nvp0"}]]);/**
+ * @license lucide-react v0.468.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const G=i("Image",[["rect",{width:"18",height:"18",x:"3",y:"3",rx:"2",ry:"2",key:"1m3agn"}],["circle",{cx:"9",cy:"9",r:"2",key:"af1f0g"}],["path",{d:"m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21",key:"1xmnt7"}]]);/**
+ * @license lucide-react v0.468.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const R=i("Link2",[["path",{d:"M9 17H7A5 5 0 0 1 7 7h2",key:"8i5ue5"}],["path",{d:"M15 7h2a5 5 0 1 1 0 10h-2",key:"1b9ql8"}],["line",{x1:"8",x2:"16",y1:"12",y2:"12",key:"1jonct"}]]);/**
+ * @license lucide-react v0.468.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const z=i("Share2",[["circle",{cx:"18",cy:"5",r:"3",key:"gq8acd"}],["circle",{cx:"6",cy:"12",r:"3",key:"w7nqdw"}],["circle",{cx:"18",cy:"19",r:"3",key:"1xt0gg"}],["line",{x1:"8.59",x2:"15.42",y1:"13.51",y2:"17.49",key:"47mynk"}],["line",{x1:"15.41",x2:"8.59",y1:"6.51",y2:"10.49",key:"1n3mei"}]]);/**
+ * @license lucide-react v0.468.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const K=i("Upload",[["path",{d:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4",key:"ih7n3h"}],["polyline",{points:"17 8 12 3 7 8",key:"t8dd8p"}],["line",{x1:"12",x2:"12",y1:"3",y2:"15",key:"widbto"}]]);/**
+ * @license lucide-react v0.468.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const $=i("X",[["path",{d:"M18 6 6 18",key:"1bl5f8"}],["path",{d:"m6 6 12 12",key:"d8bk6v"}]]);function X({className:v="",buttonLabel:C="Salin & Bagikan",tableSelector:j="table",captureSelector:S="#edk-main-content"}){const[d,l]=s.useState(!1),[y,b]=s.useState(null),[m,u]=s.useState(!1),[g,f]=s.useState(null),[L,k]=s.useState("right"),p=s.useRef(null);s.useEffect(()=>{if(!d)return;p.current&&(p.current.getBoundingClientRect().left<280?k("left"):k("right"));const e=n=>{p.current&&!p.current.contains(n.target)&&l(!1)},a=n=>{n.key==="Escape"&&l(!1)};return document.addEventListener("mousedown",e),document.addEventListener("keydown",a),()=>{document.removeEventListener("mousedown",e),document.removeEventListener("keydown",a)}},[d]);const r=(e,a=null)=>{b(e),a&&f(a),setTimeout(()=>{b(null),f(null)},2500)},N=[{id:"picture",icon:G,title:"Copy as Picture",subtitle:"Salin report sebagai gambar",action:async()=>{l(!1),u(!0);try{const e=document.querySelector(S)||document.querySelector("main")||document.querySelector(".overflow-x-auto")||document.body;(await q(e,{backgroundColor:"#f8fafc",scale:2,useCORS:!0,logging:!1})).toBlob(async n=>{var x;if(!n){r("Gagal membuat gambar report"),u(!1);return}try{if((x=navigator.clipboard)!=null&&x.write&&window.ClipboardItem)await navigator.clipboard.write([new ClipboardItem({"image/png":n})]),r("Gambar report berhasil disalin ke clipboard!","picture");else throw new Error("ClipboardItem not supported")}catch{const c=URL.createObjectURL(n),o=document.createElement("a");o.href=c,o.download=`report-capture-${Date.now()}.png`,o.click(),URL.revokeObjectURL(c),r("Gambar report diunduh sebagai file PNG!","picture")}finally{u(!1)}},"image/png")}catch(e){console.error(e),u(!1),r("Gagal mengambil gambar report")}}},{id:"table",icon:T,title:"Copy as Table",subtitle:"Salin data tabel (Excel/CSV)",action:async()=>{var e;l(!1);try{const a=document.querySelector(j);if(!a){r("Data tabel tidak ditemukan");return}let n="";if(a.querySelectorAll("tr").forEach(c=>{const o=c.querySelectorAll("th, td"),h=[];o.forEach(E=>{const _=E.innerText.replace(/[\t\n]+/g," ").trim();h.push(_)}),h.length>0&&(n+=h.join("	")+`
+`)}),(e=navigator.clipboard)!=null&&e.write&&window.ClipboardItem){const c=new Blob([a.outerHTML],{type:"text/html"}),o=new Blob([n],{type:"text/plain"});await navigator.clipboard.write([new ClipboardItem({"text/html":c,"text/plain":o})])}else await navigator.clipboard.writeText(n);r("Data tabel berhasil disalin (siap paste di Excel)!","table")}catch(a){console.error(a),r("Gagal menyalin data tabel")}}},{id:"link",icon:R,title:"Copy Report Link",subtitle:"Salin link halaman ini",action:async()=>{l(!1);try{await navigator.clipboard.writeText(window.location.href),r("Link halaman berhasil disalin!","link")}catch(e){console.error(e),r("Gagal menyalin link")}}}];return t.jsxs("div",{className:"relative inline-block",ref:p,children:[t.jsxs("button",{type:"button",onClick:()=>l(e=>!e),disabled:m,className:v||"bg-white hover:bg-slate-50 border border-slate-200/90 text-slate-700 text-xs font-semibold px-3.5 py-2 rounded-lg flex items-center gap-2 shadow-2xs transition-colors cursor-pointer","aria-haspopup":"true","aria-expanded":d,children:[m?t.jsx(M,{size:14,className:"animate-spin text-[#2563EB]"}):g?t.jsx(w,{size:14,className:"text-emerald-600"}):t.jsx(z,{size:14,className:"text-slate-500"}),t.jsx("span",{children:m?"Memproses...":g?"Tersalin":C}),t.jsx(I,{size:14,className:`text-slate-400 transition-transform duration-150 ${d?"rotate-180":""}`})]}),d&&t.jsx("div",{className:`absolute top-full mt-2 w-72 bg-white rounded-2xl border border-slate-100 shadow-[0_12px_36px_-6px_rgba(0,0,0,0.12),0_4px_16px_-2px_rgba(0,0,0,0.06)] z-50 p-2 animate-[fadeIn_0.15s_ease-out] ${L==="left"?"left-0":"right-0"}`,children:t.jsx("div",{className:"space-y-1",children:N.map(e=>{const a=e.icon;return t.jsxs("button",{type:"button",onClick:e.action,className:"w-full flex items-start gap-3.5 p-3 rounded-xl hover:bg-rose-50/60 hover:text-slate-900 transition-colors text-left cursor-pointer group",children:[t.jsx("div",{className:"shrink-0 mt-0.5 text-slate-700 group-hover:text-slate-900 transition-colors",children:t.jsx(a,{size:20,strokeWidth:1.8})}),t.jsxs("div",{className:"flex-1 min-w-0",children:[t.jsx("p",{className:"text-[13px] font-bold text-slate-800 leading-snug group-hover:text-slate-900",children:e.title}),t.jsx("p",{className:"text-[11px] text-slate-400 font-normal leading-snug mt-0.5",children:e.subtitle})]})]},e.id)})})}),y&&t.jsxs("div",{className:"fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-2.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-2xl backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]",children:[t.jsx(w,{size:15,className:"text-emerald-400 shrink-0"}),t.jsx("span",{children:y})]})]})}export{P as F,X as S,K as U,$ as X};

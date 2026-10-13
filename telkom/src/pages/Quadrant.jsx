@@ -14,7 +14,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import * as Q from '../data/quadrantData';
-import {exportCSV} from '../components/ui';
+import {exportCSV, ShareDropdown} from '../components/ui';
 import {QuadrantGrid, GrandTotalCard} from '../components/Quadrant';
 
 export default function Quadrant() {
@@ -320,19 +320,9 @@ export default function Quadrant() {
             <ChevronDown size={12} className="opacity-80" />
           </button>
 
-          <button
-            type="button"
-            onClick={handleCopy}
+          <ShareDropdown
             className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-2xs cursor-pointer"
-          >
-            {copied ? (
-              <Check size={14} className="text-emerald-600" />
-            ) : (
-              <Share2 size={14} className="text-slate-500" />
-            )}
-            <span>{copied ? 'Tersalin' : 'Salin & Bagikan'}</span>
-            <ChevronDown size={14} className="text-slate-400" />
-          </button>
+          />
         </div>
       </header>
 
