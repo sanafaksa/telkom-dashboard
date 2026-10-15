@@ -416,7 +416,7 @@ export default function Layout({ children }) {
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-transparent px-4 md:px-8 h-16 flex items-center gap-3 overflow-hidden">
+      <header className="sticky top-0 z-20 bg-transparent px-4 md:px-8 h-16 flex items-center gap-3">
         {/* Mobile menu button */}
         <button className="lg:hidden text-slate-600 shrink-0" aria-label="Buka menu" onClick={() => setD(true)}>
           <Menu size={20} />
@@ -565,8 +565,7 @@ export default function Layout({ children }) {
                     notifs.map(n => (
                       <li
                         key={n.id}
-                        className={`flex gap-3 px-4 py-3 hover:bg-slate-50 transition-colors ${!n.read ? 'bg-blue-50/40' : ''
-                          }`}
+                        className={`flex gap-3 px-4 py-3 hover:bg-slate-50 transition-colors ${!n.read ? 'bg-blue-50/40' : ''}`}
                       >
                         <span className={`mt-0.5 size-2 rounded-full shrink-0 ${!n.read ? 'bg-blue-500' : 'bg-transparent'}`} />
                         <div className="flex-1 min-w-0">
