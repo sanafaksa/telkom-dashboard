@@ -24,7 +24,8 @@ import {
   Menu,
   PanelLeft,
   Calendar,
-  LogOut
+  LogOut,
+  Sparkles
 } from 'lucide-react';
 
 const sub = [
@@ -47,11 +48,10 @@ function SidebarItem({ to, icon: Icon, children, hasSub, isOpen, onToggle, end, 
         }}
         className={({ isActive }) => {
           const active = isActiveOverride !== undefined ? isActiveOverride : isActive;
-          return `group flex items-center justify-between rounded-full px-4 py-2.5 text-[13px] transition-all select-none ${
-            active
+          return `group flex items-center justify-between rounded-full px-4 py-2.5 text-[13px] transition-all select-none ${active
               ? 'bg-white text-[#06246A] shadow-sm font-semibold'
               : 'text-white hover:bg-white/10 hover:text-white font-normal'
-          }`;
+            }`;
         }}
       >
         {({ isActive }) => {
@@ -106,7 +106,8 @@ function Sidebar({ close, onCollapse }) {
           <img
             src="/telkom-logo.png"
             alt="Telkom Indonesia - the world in your hand"
-            className="h-9 object-contain max-w-[155px] brightness-0 invert"
+            className="h-12 object-contain max-w-[180px]"
+            style={{ filter: 'brightness(0) invert(1)' }}
           />
         </NavLink>
         {onCollapse && (
@@ -154,10 +155,9 @@ function Sidebar({ close, onCollapse }) {
                 key={k}
                 to={'/kuadran/' + k}
                 className={({ isActive }) =>
-                  `group flex items-center gap-2 text-xs py-2 px-3.5 rounded-full transition-all ${
-                    isActive
-                      ? 'text-[#1E50BA] font-bold bg-[#DCE7FC] shadow-xs'
-                      : 'text-white/85 hover:text-white hover:bg-white/10 font-medium'
+                  `group flex items-center gap-2 text-xs py-2 px-3.5 rounded-full transition-all ${isActive
+                    ? 'text-[#1E50BA] font-bold bg-[#DCE7FC] shadow-xs'
+                    : 'text-white/85 hover:text-white hover:bg-white/10 font-medium'
                   }`
                 }
               >
@@ -200,6 +200,103 @@ function Sidebar({ close, onCollapse }) {
   );
 }
 
+/* ── Mini Sidebar (collapsed) ────────────────────────────── */
+const MINI_NAV = [
+  { to: '/dashboard', icon: Home, label: 'Dashboard', end: true },
+  { to: '/edk-monitoring', icon: BarChart2, label: 'EDK Monitoring' },
+  { to: '/kuadran', icon: LayoutGrid, label: 'Kuadran SJT', isKuadran: true },
+  { to: '/support-needed', icon: FileText, label: 'Catatan MoM & Support' },
+];
+
+function CollapsedSidebar({ onExpand }) {
+  const location = useLocation();
+  const isKuadranRoute = location.pathname.startsWith('/kuadran');
+
+  return (
+    <nav
+      aria-label="Navigasi mini"
+      className="h-full flex flex-col items-center py-4 px-2 gap-1 select-none"
+      style={{
+        background: 'white',
+        borderRadius: '28px',
+        boxShadow: '0 4px 24px 0 rgba(6,36,106,0.10)',
+        border: '1px solid rgba(6,36,106,0.07)'
+      }}
+    >
+      {/* Expand button */}
+      <button
+        onClick={onExpand}
+        title="Buka Sidebar"
+        aria-label="Buka sidebar"
+        className="size-10 rounded-2xl grid place-items-center mb-3 cursor-pointer transition-all hover:scale-105 active:scale-95 overflow-hidden bg-white"
+        style={{ boxShadow: '0 2px 8px rgba(6,36,106,0.15)' }}
+      >
+        <img
+          src="/pngwing.com.png"
+          alt="Telkom Indonesia"
+          className="w-8 h-8 object-contain"
+        />
+      </button>
+
+      {/* Nav icons */}
+      <div className="flex flex-col gap-0.5 flex-1 w-full items-center">
+        {MINI_NAV.map(({ to, icon: Icon, label, end, isKuadran }) => {
+          const active = isKuadran ? isKuadranRoute : undefined;
+          return (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              title={label}
+              className={({ isActive }) => {
+                const on = active !== undefined ? active : isActive;
+                return `relative group size-10 rounded-2xl grid place-items-center transition-all ${on
+                    ? 'bg-[#EBF0FD] text-[#235CE5]'
+                    : 'text-slate-400 hover:bg-slate-100 hover:text-[#06246A]'
+                  }`;
+              }}
+            >
+              {({ isActive }) => {
+                const on = active !== undefined ? active : isActive;
+                return (
+                  <>
+                    <Icon size={18} strokeWidth={on ? 2.5 : 1.8} />
+                    {/* Tooltip */}
+                    <span
+                      className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-lg px-2.5 py-1 text-[11px] font-semibold text-white opacity-0 group-hover:opacity-100 transition-opacity z-50"
+                      style={{ background: '#06246A', boxShadow: '0 2px 8px rgba(6,36,106,0.18)' }}
+                    >
+                      {label}
+                    </span>
+                  </>
+                );
+              }}
+            </NavLink>
+          );
+        })}
+      </div>
+
+      {/* Divider */}
+      <div className="w-5 h-px bg-slate-200 my-2" />
+
+      {/* Logout */}
+      <NavLink
+        to="/login"
+        title="Keluar"
+        className="group relative size-10 rounded-2xl grid place-items-center text-slate-400 hover:bg-red-50 hover:text-red-400 transition-all"
+      >
+        <LogOut size={17} strokeWidth={1.8} />
+        <span
+          className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-lg px-2.5 py-1 text-[11px] font-semibold text-white opacity-0 group-hover:opacity-100 transition-opacity z-50"
+          style={{ background: '#06246A', boxShadow: '0 2px 8px rgba(6,36,106,0.18)' }}
+        >
+          Keluar
+        </span>
+      </NavLink>
+    </nav>
+  );
+}
+
 // Search index — data yang bisa dicari
 const SEARCH_INDEX = [
   // Halaman
@@ -235,10 +332,10 @@ const TYPE_ICON = {
 };
 
 const TYPE_COLOR = {
-  Halaman:  'text-[#06246A] bg-[#06246A]/10',
-  Kuadran:  'text-[#235CE5] bg-[#235CE5]/10',
-  Witel:    'text-[#1E50BA] bg-[#DCE7FC]',
-  KPI:      'text-[#2563EB] bg-[#EBF0FD]',
+  Halaman: 'text-[#06246A] bg-[#06246A]/10',
+  Kuadran: 'text-[#235CE5] bg-[#235CE5]/10',
+  Witel: 'text-[#1E50BA] bg-[#DCE7FC]',
+  KPI: 'text-[#2563EB] bg-[#EBF0FD]',
 };
 
 const NOTIFS = [
@@ -268,10 +365,10 @@ export default function Layout({ children }) {
   const searchRef = useRef(null);
   const searchResults = searchQ.trim().length > 0
     ? SEARCH_INDEX.filter(item =>
-        item.label.toLowerCase().includes(searchQ.toLowerCase()) ||
-        item.desc.toLowerCase().includes(searchQ.toLowerCase()) ||
-        item.type.toLowerCase().includes(searchQ.toLowerCase())
-      ).slice(0, 8)
+      item.label.toLowerCase().includes(searchQ.toLowerCase()) ||
+      item.desc.toLowerCase().includes(searchQ.toLowerCase()) ||
+      item.type.toLowerCase().includes(searchQ.toLowerCase())
+    ).slice(0, 8)
     : [];
 
   const unreadCount = notifs.filter(n => !n.read).length;
@@ -291,13 +388,22 @@ export default function Layout({ children }) {
   }, []);
 
   return (
-    <div className={`min-h-screen bg-[#F6F8FC] transition-[padding] duration-300 ease-in-out ${collapsed ? 'lg:pl-0' : 'lg:pl-[272px]'}`}>
+    <div className={`min-h-screen bg-[#F6F8FC] transition-[padding] duration-300 ease-in-out ${collapsed ? 'lg:pl-[84px]' : 'lg:pl-[272px]'
+      }`}>
+      {/* Sidebar — expanded */}
       <aside
-        className={`fixed top-3.5 bottom-3.5 left-3.5 w-[252px] z-30 hidden lg:block transition-transform duration-300 ease-in-out ${
-          collapsed ? '-translate-x-[calc(100%+1.5rem)]' : 'translate-x-0'
-        }`}
+        className={`fixed top-3.5 bottom-3.5 left-3.5 w-[252px] z-30 hidden lg:block transition-transform duration-300 ease-in-out ${collapsed ? '-translate-x-[calc(100%+1.5rem)]' : 'translate-x-0'
+          }`}
       >
         <Sidebar onCollapse={() => setCollapsed(true)} />
+      </aside>
+
+      {/* Mini Sidebar — collapsed */}
+      <aside
+        className={`fixed top-3.5 bottom-3.5 left-3.5 w-[60px] z-30 hidden lg:block transition-all duration-300 ease-in-out ${collapsed ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-[calc(100%+1.5rem)] pointer-events-none'
+          }`}
+      >
+        <CollapsedSidebar onExpand={() => setCollapsed(false)} />
       </aside>
 
       {d && (
@@ -310,24 +416,14 @@ export default function Layout({ children }) {
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-transparent px-4 md:px-8 h-16 flex items-center gap-3">
-        <button className="lg:hidden text-slate-600" aria-label="Buka menu" onClick={() => setD(true)}>
+      <header className="sticky top-0 z-20 bg-transparent px-4 md:px-8 h-16 flex items-center gap-3 overflow-hidden">
+        {/* Mobile menu button */}
+        <button className="lg:hidden text-slate-600 shrink-0" aria-label="Buka menu" onClick={() => setD(true)}>
           <Menu size={20} />
         </button>
 
-        {collapsed && (
-          <button
-            className="hidden lg:grid size-9 rounded-lg border border-slate-200 place-items-center text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer mr-2"
-            onClick={() => setCollapsed(false)}
-            aria-label="Buka sidebar"
-            title="Buka sidebar"
-          >
-            <PanelLeft size={17} />
-          </button>
-        )}
-
         {/* User profile dropdown pill */}
-        <div className="relative group">
+        <div className="relative group shrink-0">
           <NavLink
             to="/login"
             className="flex items-center gap-2.5 p-1 rounded-full hover:bg-slate-100/70 transition-colors cursor-pointer"
@@ -347,12 +443,11 @@ export default function Layout({ children }) {
         </div>
 
         {/* Right Header items */}
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-2 min-w-0">
           {/* Search Bar */}
-          <div className="relative hidden md:block" ref={searchRef}>
-            <label className={`flex items-center gap-2 border rounded-full px-3.5 py-1.5 w-72 lg:w-80 text-xs transition-all ${
-              searchOpen ? 'bg-white border-[#235CE5] shadow-sm shadow-[#235CE5]/10' : 'bg-slate-50/60 border-slate-200'
-            }`}>
+          <div className="relative hidden md:block min-w-0 shrink" ref={searchRef}>
+            <label className={`flex items-center gap-2 border rounded-full px-3.5 py-1.5 w-48 lg:w-64 xl:w-80 text-xs transition-all ${searchOpen ? 'bg-white border-[#235CE5] shadow-sm shadow-[#235CE5]/10' : 'bg-slate-50/60 border-slate-200'
+              }`}>
               <Search size={14} className="text-slate-400 shrink-0" />
               <input
                 aria-label="Cari"
@@ -424,17 +519,16 @@ export default function Layout({ children }) {
           </div>
 
           {/* Notification Bell */}
-          <div className="relative" ref={notifRef}>
+          <div className="relative shrink-0" ref={notifRef}>
             <button
               id="notif-bell-btn"
               aria-label="Notifikasi"
               title="Notifikasi"
               onClick={() => setNotifOpen(v => !v)}
-              className={`relative size-9 rounded-full border grid place-items-center cursor-pointer transition-all ${
-                notifOpen
+              className={`relative size-9 rounded-full border grid place-items-center cursor-pointer transition-all ${notifOpen
                   ? 'bg-blue-50 border-blue-300 text-blue-600'
                   : 'border-slate-200 hover:bg-slate-50 text-slate-600'
-              }`}
+                }`}
             >
               {unreadCount > 0 ? <BellRing size={15} className="animate-[wiggle_1s_ease-in-out_infinite]" /> : <Bell size={15} />}
               {unreadCount > 0 && (
@@ -471,9 +565,8 @@ export default function Layout({ children }) {
                     notifs.map(n => (
                       <li
                         key={n.id}
-                        className={`flex gap-3 px-4 py-3 hover:bg-slate-50 transition-colors ${
-                          !n.read ? 'bg-blue-50/40' : ''
-                        }`}
+                        className={`flex gap-3 px-4 py-3 hover:bg-slate-50 transition-colors ${!n.read ? 'bg-blue-50/40' : ''
+                          }`}
                       >
                         <span className={`mt-0.5 size-2 rounded-full shrink-0 ${!n.read ? 'bg-blue-500' : 'bg-transparent'}`} />
                         <div className="flex-1 min-w-0">
@@ -506,7 +599,7 @@ export default function Layout({ children }) {
           </div>
 
           {/* Dynamic Date */}
-          <span className="hidden sm:inline-flex items-center gap-2 text-xs border border-slate-200 rounded-full px-3.5 py-1.5 text-slate-700 font-medium bg-white">
+          <span className="hidden xl:inline-flex shrink-0 items-center gap-2 text-xs border border-slate-200 rounded-full px-3.5 py-1.5 text-slate-700 font-medium bg-white">
             <Calendar size={13} className="text-slate-400" />
             <span>{formatDate(today)}</span>
             <span className="text-slate-300">|</span>
