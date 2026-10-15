@@ -216,7 +216,7 @@ export default function Layout({ children }) {
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-white border-b border-slate-200/80 px-4 md:px-8 h-16 flex items-center gap-3">
+      <header className="sticky top-0 z-20 bg-transparent px-4 md:px-8 h-16 flex items-center gap-3">
         <button className="lg:hidden text-slate-600" aria-label="Buka menu" onClick={() => setD(true)}>
           <Menu size={20} />
         </button>
