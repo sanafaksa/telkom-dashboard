@@ -1,4 +1,4 @@
-import { useMemo, useState, Fragment } from 'react';
+import { useEffect, useMemo, useState, Fragment } from 'react';
 import { filterOptions, modes, topPelangganBySegmen } from '../data/edkData';
 import { ExportButton, exportCSV, ShareDropdown } from '../components/ui';
 import FilterDropdown from '../components/FilterDropdown';
@@ -154,6 +154,38 @@ export default function Edk() {
   const [showUpload, setShowUpload] = useState(false);
   const [pageSize, setPageSize] = useState(25);
   const [pageIndex, setPageIndex] = useState(0);
+  const [apiSegmen, setApiSegmen] = useState([]);
+  const [apiLoading, setApiLoading] = useState(true);
+  const [apiError, setApiError] = useState('');
+  
+  useEffect(() => {
+    const fetchEdkMonthly = async () => {
+      try {
+        setApiLoading(true);
+        setApiError('');
+
+        const response = await fetch(
+          'http://127.0.0.1:8000/api/edk/monthly'
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            result.message || 'Gagal mengambil data EDK.'
+          );
+        }
+
+        setApiSegmen(result.data || []);
+      } catch (error) {
+        setApiError(error.message || 'Gagal terhubung ke server.');
+      } finally {
+        setApiLoading(false);
+      }
+    };
+
+    fetchEdkMonthly();
+  }, []);
 
   // Filter States
   const [selectedPeriode, setSelectedPeriode] = useState([]);
@@ -227,7 +259,28 @@ export default function Edk() {
 
   // General dataset for Segmen, Periode EDK & Nama AM
   const data = useMemo(() => {
-    let list = modes[mode] || [];
+    let list =
+  mode === 'Segmen'
+    ? apiSegmen.map((r) => ({
+        ...r,
+        l: r.segment,
+        segmen: r.segment,
+        lc: Number(r.lanjut_complete_order) || 0,
+        la: Number(r.lanjut_complete_abonemen_rp) || 0,
+        lp: Number(r.lanjut_in_progress_order) || 0,
+        lpa: Number(r.lanjut_in_progress_abonemen_rp) || 0,
+        tc: Number(r.tidak_lanjut_complete_order) || 0,
+        ta: Number(r.tidak_lanjut_complete_abonemen_rp) || 0,
+        tp: Number(r.tidak_lanjut_in_progress_order) || 0,
+        tpa: Number(r.tidak_lanjut_in_progress_abonemen_rp) || 0,
+        b: Number(r.bukan_witel_solo_jt_order) || 0,
+        ba: Number(r.bukan_witel_solo_jt_abonemen_rp) || 0,
+        k: Number(r.konfirmasi_am_order) || 0,
+        ka: Number(r.konfirmasi_am_abonemen_rp) || 0,
+        k_auto: Number(r.konfirmasi_am_auto_renewal) || 0,
+        k_prog: Number(r.konfirmasi_am_in_progress) || 0,
+      }))
+    : modes[mode] || [];
 
     if (selectedPeriode.length > 0) {
       list = list.filter((r) => selectedPeriode.includes(r.periode) || selectedPeriode.includes(r.l));
@@ -242,38 +295,96 @@ export default function Edk() {
       list = list.filter((r) => selectedFlagging.includes(r.flagging));
     }
 
-    return list.map((r) => {
-      const to = (r.lc || 0) + (r.lp || 0) + (r.tc || 0) + (r.tp || 0) + (r.k || 0) + (r.b || 0);
-      const ta2 = (r.la || 0) + (r.lpa || 0) + (r.ta || 0) + (r.tpa || 0) + (r.ka || 0) + (r.ba || 0);
-      return { ...r, to, ta2 };
-    });
+    
+return list.map((r) => {
+  const to =
+    mode === 'Segmen'
+      ? Number(r.total_order) || 0
+      : (r.lc || 0) +
+        (r.lp || 0) +
+        (r.tc || 0) +
+        (r.tp || 0) +
+        (r.k || 0) +
+        (r.b || 0);
+
+  const ta2 =
+    (r.la || 0) +
+    (r.lpa || 0) +
+    (r.ta || 0) +
+    (r.tpa || 0) +
+    (r.ka || 0) +
+    (r.ba || 0);
+
+  return { ...r, to, ta2 };
+});
+
   }, [mode, selectedPeriode, selectedSegmen, selectedNamaAm, selectedFlagging]);
 
   // Grand Total for Periode EDK & Segmen
-  const grandTotal = useMemo(() => {
-    const list = modes[mode] || [];
-    return list.reduce(
-      (acc, r) => ({
-        lc: acc.lc + (r.lc || 0),
-        la: acc.la + (r.la || 0),
-        lp: acc.lp + (r.lp || 0),
-        lpa: acc.lpa + (r.lpa || 0),
-        tc: acc.tc + (r.tc || 0),
-        ta: acc.ta + (r.ta || 0),
-        tp: acc.tp + (r.tp || 0),
-        tpa: acc.tpa + (r.tpa || 0),
-        k: acc.k + (r.k || 0),
-        ka: acc.ka + (r.ka || 0),
-        k_auto: acc.k_auto + (r.k_auto || 0),
-        k_prog: acc.k_prog + (r.k_prog || 0),
-        b: acc.b + (r.b || 0),
-        ba: acc.ba + (r.ba || 0),
-        to: acc.to + ((r.lc || 0) + (r.lp || 0) + (r.tc || 0) + (r.tp || 0) + (r.k || 0) + (r.b || 0)),
-        ta2: acc.ta2 + ((r.la || 0) + (r.lpa || 0) + (r.ta || 0) + (r.tpa || 0) + (r.ka || 0) + (r.ba || 0))
-      }),
-      { lc: 0, la: 0, lp: 0, lpa: 0, tc: 0, ta: 0, tp: 0, tpa: 0, k: 0, ka: 0, k_auto: 0, k_prog: 0, b: 0, ba: 0, to: 0, ta2: 0 }
-    );
-  }, [mode]);
+  
+const grandTotal = useMemo(() => {
+  const list =
+    mode === 'Segmen'
+      ? apiSegmen.map((r) => ({
+          lc: Number(r.lanjut_complete_order) || 0,
+          la: Number(r.lanjut_complete_abonemen_rp) || 0,
+          lp: Number(r.lanjut_in_progress_order) || 0,
+          lpa: Number(r.lanjut_in_progress_abonemen_rp) || 0,
+          tc: Number(r.tidak_lanjut_complete_order) || 0,
+          ta: Number(r.tidak_lanjut_complete_abonemen_rp) || 0,
+          tp: Number(r.tidak_lanjut_in_progress_order) || 0,
+          tpa: Number(r.tidak_lanjut_in_progress_abonemen_rp) || 0,
+          k: Number(r.konfirmasi_am_order) || 0,
+          ka: Number(r.konfirmasi_am_abonemen_rp) || 0,
+          k_auto: Number(r.konfirmasi_am_auto_renewal) || 0,
+          k_prog: Number(r.konfirmasi_am_in_progress) || 0,
+          b: Number(r.bukan_witel_solo_jt_order) || 0,
+          ba: Number(r.bukan_witel_solo_jt_abonemen_rp) || 0,
+        }))
+      : modes[mode] || [];
+
+  return list.reduce(
+    (acc, r) => ({
+      lc: acc.lc + (r.lc || 0),
+      la: acc.la + (r.la || 0),
+      lp: acc.lp + (r.lp || 0),
+      lpa: acc.lpa + (r.lpa || 0),
+      tc: acc.tc + (r.tc || 0),
+      ta: acc.ta + (r.ta || 0),
+      tp: acc.tp + (r.tp || 0),
+      tpa: acc.tpa + (r.tpa || 0),
+      k: acc.k + (r.k || 0),
+      ka: acc.ka + (r.ka || 0),
+      k_auto: acc.k_auto + (r.k_auto || 0),
+      k_prog: acc.k_prog + (r.k_prog || 0),
+      b: acc.b + (r.b || 0),
+      ba: acc.ba + (r.ba || 0),
+      to:
+        acc.to +
+        (r.lc || 0) +
+        (r.lp || 0) +
+        (r.tc || 0) +
+        (r.tp || 0) +
+        (r.k || 0) +
+        (r.b || 0),
+      ta2:
+        acc.ta2 +
+        (r.la || 0) +
+        (r.lpa || 0) +
+        (r.ta || 0) +
+        (r.tpa || 0) +
+        (r.ka || 0) +
+        (r.ba || 0),
+    }),
+    {
+      lc: 0, la: 0, lp: 0, lpa: 0,
+      tc: 0, ta: 0, tp: 0, tpa: 0,
+      k: 0, ka: 0, k_auto: 0, k_prog: 0,
+      b: 0, ba: 0, to: 0, ta2: 0,
+    }
+  );
+}, [mode, apiSegmen]);
+
 
   // Groups for Nama AM
   const amGroups = useMemo(() => {
