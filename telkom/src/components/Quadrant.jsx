@@ -7,7 +7,10 @@ export function QuadrantCard({d}) {
   return (
     <article className="rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-xs">
       {/* Dark Navy / Royal Blue Card Header */}
-      <div className="flex items-center justify-between gap-3 px-4 py-3 text-white bg-[#0D2E7A]">
+      <div
+        className="flex items-center justify-between gap-3 px-4 py-3 text-white"
+        style={{ background: 'linear-gradient(135deg, #06246A 0%, #1a3fa8 50%, #3B5FE0 100%)' }}
+      >
         <div className="flex items-center gap-2.5 min-w-0">
           <span className="border border-white/50 bg-white/10 rounded-md px-2 py-0.5 text-xs font-bold shrink-0">
             {d.code}
@@ -113,7 +116,8 @@ export function QuadrantGrid({items}) {
 
         {/* Vertical Axis Line */}
         <div
-          className="hidden md:block absolute inset-y-0 left-1/2 -translate-x-1/2 w-5 rounded-full bg-[#0B3A99] pointer-events-none"
+          className="hidden md:block absolute inset-y-0 left-1/2 -translate-x-1/2 w-5 rounded-full pointer-events-none"
+          style={{ background: 'linear-gradient(180deg, #06246A 0%, #3B5FE0 100%)' }}
           aria-hidden
         >
           <ArrowUp size={12} className="text-white mx-auto mt-1.5" />
@@ -125,7 +129,8 @@ export function QuadrantGrid({items}) {
 
         {/* Horizontal Axis Line */}
         <div
-          className="hidden md:flex absolute inset-x-0 top-1/2 -translate-y-1/2 h-5 rounded-full bg-[#0B3A99] text-white text-[10px] font-bold items-center justify-between px-3 pointer-events-none"
+          className="hidden md:flex absolute inset-x-0 top-1/2 -translate-y-1/2 h-5 rounded-full text-white text-[10px] font-bold items-center justify-between px-3 pointer-events-none"
+          style={{ background: 'linear-gradient(90deg, #06246A 0%, #3B5FE0 100%)' }}
           aria-hidden
         >
           <span className="flex items-center gap-1 tracking-wider">
@@ -134,7 +139,10 @@ export function QuadrantGrid({items}) {
           </span>
 
           {/* Center Hub */}
-          <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 size-6 rounded-full bg-[#0B3A99] border-2 border-white grid place-items-center">
+          <span
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 size-6 rounded-full border-2 border-white grid place-items-center"
+            style={{ background: 'linear-gradient(135deg, #06246A 0%, #3B5FE0 100%)' }}
+          >
             <i className="size-1.5 bg-white rounded-full" />
           </span>
 
@@ -152,7 +160,10 @@ export function GrandTotalCard({t}) {
   return (
     <section className="rounded-2xl overflow-hidden mt-6 border border-slate-200 shadow-xs bg-white">
       {/* Solid Blue Header Banner */}
-      <h2 className="text-center font-bold text-white py-3.5 bg-[#2563EB] text-xs sm:text-sm tracking-wider">
+      <h2
+        className="text-center font-bold text-white py-3.5 text-xs sm:text-sm tracking-wider"
+        style={{ background: 'linear-gradient(90deg, #06246A 0%, #3B5FE0 100%)' }}
+      >
         GRAND TOTAL PERFORMANCE
       </h2>
 
