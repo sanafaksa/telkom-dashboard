@@ -176,7 +176,7 @@ function Sidebar({ close, onCollapse }) {
           </div>
         )}
 
-        <SidebarItem to="/support-needed" icon={FileText} showPlus>
+        <SidebarItem to="/support-needed" icon={FileText}>
           Catatan MoM & Support
         </SidebarItem>
       </div>
