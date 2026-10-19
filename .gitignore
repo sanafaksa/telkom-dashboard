@@ -4,10 +4,6 @@ node_modules/
 .pnp.js
 vendor/
 
-vendor/
-
-/telkom-api/
-
 # Build output
 dist/
 build/
