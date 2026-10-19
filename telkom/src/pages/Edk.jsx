@@ -30,6 +30,15 @@ const cellFmt = (v) => {
   return v.toLocaleString('id-ID');
 };
 
+const toTitleCase = (str) => {
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+};
+
 function UploadModal({ open, onClose }) {
   const [files, setFiles] = useState([]);
   const [drag, setDrag] = useState(false);
@@ -172,7 +181,7 @@ export default function Edk() {
     if (newMode === 'Nama CC') {
       setSelectedSegmen(['DGS']);
       setActiveSegmen('DGS');
-      setSortOrder('A-Z');
+      setSortOrder('Sort by');
     } else {
       setSelectedSegmen([]);
       setSortOrder('Sort by');
@@ -193,7 +202,7 @@ export default function Edk() {
     if (mode === 'Nama CC') {
       setSelectedSegmen(['DGS']);
       setActiveSegmen('DGS');
-      setSortOrder('A-Z');
+      setSortOrder('Sort by');
     } else {
       setSelectedSegmen([]);
       setSortOrder('Sort by');
@@ -215,7 +224,10 @@ export default function Edk() {
       return { ...r, to, ta2 };
     });
 
-    if (sortOrder === 'Z-A') {
+    if (sortOrder === 'Nama (A-Z)' || sortOrder === 'A-Z') {
+      return [...enriched].sort((a, b) => a.l.localeCompare(b.l));
+    }
+    if (sortOrder === 'Nama (Z-A)' || sortOrder === 'Z-A') {
       return [...enriched].sort((a, b) => b.l.localeCompare(a.l));
     }
     return enriched;
@@ -516,7 +528,7 @@ export default function Edk() {
 
         {/* Top 10 Pelanggan Banner Card (Hanya untuk Nama CC sesuai Screenshot 2 & 3) */}
         {isTop10View && (
-          <div className="p-5 pb-0">
+          <div className="p-5 pb-5">
             <div className="bg-gradient-to-r from-[#0F4FC2] via-[#1A54C8] to-[#1E52BF] text-white p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
               <div className="flex items-center gap-3.5">
                 <div className="size-12 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0 shadow-inner">
@@ -545,9 +557,9 @@ export default function Edk() {
         )}
 
         {/* Table Container */}
-        <div className="overflow-x-auto p-5 pt-3">
+        <div className={`overflow-x-auto w-full ${isTop10View ? 'border-t border-slate-200/90' : ''}`}>
           <table className="w-full text-xs border-collapse border-spacing-0">
-            <thead className="bg-white shadow-2xs">
+            <thead className="bg-white">
               {/* ======================================================== */}
               {/* MODE A: TOP 10 PELANGGAN (NAMA CC) */}
               {/* ======================================================== */}
@@ -556,48 +568,63 @@ export default function Edk() {
                   <tr>
                     <th
                       rowSpan={3}
-                      className="sticky left-0 z-30 bg-slate-50 px-3 py-2.5 text-center font-bold text-xs text-slate-800 border-r border-b border-slate-300 w-10 align-middle shadow-[2px_0_4px_rgba(0,0,0,0.02)]"
+                      className="sticky left-0 z-30 bg-slate-100 px-3 py-2.5 text-center font-bold text-xs text-slate-800 border-r border-b border-slate-300 w-10 align-middle shadow-[3px_0_6px_-2px_rgba(0,0,0,0.06)]"
                     >
                       #
                     </th>
                     <th
                       rowSpan={3}
-                      className="sticky left-10 z-30 bg-slate-50 px-3.5 py-2.5 text-left font-bold text-xs text-slate-800 border-r border-b border-slate-300 min-w-[260px] align-middle shadow-[2px_0_4px_rgba(0,0,0,0.02)]"
+                      onClick={() => {
+                        setSortOrder((prev) => (prev === 'Nama (A-Z)' ? 'Nama (Z-A)' : 'Nama (A-Z)'));
+                      }}
+                      className="sticky left-10 z-30 bg-slate-100 px-3.5 py-2.5 text-left font-bold text-xs text-slate-800 border-r-2 border-b border-slate-300 min-w-[260px] align-middle shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] cursor-pointer select-none hover:bg-slate-200/80 transition-colors"
+                      title="Klik untuk urutkan A-Z / Z-A"
                     >
                       <div className="flex items-center justify-between">
                         <span>Nama Pelanggan</span>
-                        <ArrowUpDown size={12} className="text-slate-400" />
+                        <div className="flex items-center gap-1">
+                          {sortOrder === 'Nama (A-Z)' && <span className="text-[10px] text-blue-600 font-bold">(A-Z)</span>}
+                          {sortOrder === 'Nama (Z-A)' && <span className="text-[10px] text-blue-600 font-bold">(Z-A)</span>}
+                          <ArrowUpDown
+                            size={12}
+                            className={`transition-colors ${
+                              sortOrder === 'Nama (A-Z)' || sortOrder === 'Nama (Z-A)'
+                                ? 'text-blue-600'
+                                : 'text-slate-400'
+                            }`}
+                          />
+                        </div>
                       </div>
                     </th>
                     <th
                       colSpan={4}
-                      className="bg-[#0284C7] text-white font-bold text-center text-xs py-2 border-r border-white/20"
+                      className="bg-[#1D4ED8] text-white font-bold text-center text-xs py-2.5 border-r border-white/20 whitespace-nowrap"
                     >
-                      LANJUT
+                      Lanjut
                     </th>
                     <th
                       colSpan={4}
-                      className="bg-[#1E3A8A] text-white font-bold text-center text-xs py-2 border-r border-white/20"
+                      className="bg-[#1E293B] text-white font-bold text-center text-xs py-2.5 border-r border-white/20 whitespace-nowrap"
                     >
-                      TIDAK LANJUT
+                      Tidak Lanjut
                     </th>
                     <th
                       colSpan={2}
-                      className="bg-[#1D4ED8] text-white font-bold text-center text-xs py-2 border-r border-white/20"
+                      className="bg-slate-200 text-slate-800 font-bold text-center text-xs py-2.5 border-r border-slate-300 whitespace-nowrap"
                     >
-                      BUKAN WITEL SOLO JT
+                      Bukan Witel Solo JT
                     </th>
                     <th
                       colSpan={2}
-                      className="bg-[#2563EB] text-white font-bold text-center text-xs py-2 border-r border-white/20"
+                      className="bg-[#1D4ED8] text-white font-bold text-center text-xs py-2.5 border-r border-white/20 whitespace-nowrap"
                     >
-                      KONFIRMASI AM
+                      Konfirmasi AM
                     </th>
                     <th
                       colSpan={2}
-                      className="bg-[#0F172A] text-white font-bold text-center text-xs py-2"
+                      className="bg-[#0F172A] text-white font-bold text-center text-xs py-2.5 whitespace-nowrap"
                     >
-                      TOTAL EDK
+                      Total EDK
                     </th>
                   </tr>
 
@@ -654,102 +681,105 @@ export default function Edk() {
                   <tr>
                     <th
                       rowSpan={3}
-                      className="sticky left-0 z-30 bg-white px-3.5 py-2.5 text-left font-bold text-xs text-slate-800 border-r border-b border-slate-300 min-w-[220px] align-middle shadow-[2px_0_4px_rgba(0,0,0,0.03)]"
+                      className="sticky left-0 z-30 bg-slate-100 px-4 py-3 text-left font-bold text-xs text-slate-800 border-r-2 border-b border-slate-300 min-w-[220px] align-middle shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap"
                     >
-                      Nama AM
+                      <div className="flex items-center justify-between">
+                        <span>Nama AM</span>
+                        <span className="text-[10px] text-slate-400 font-medium tracking-wide">Account Manager</span>
+                      </div>
                     </th>
 
                     <th
                       colSpan={4}
-                      className="bg-[#1D4ED8] text-white font-bold text-center text-xs py-2 border-r border-white/20"
+                      className="bg-[#1D4ED8] text-white font-bold text-center text-xs py-2.5 border-r border-white/20 whitespace-nowrap"
                     >
                       Lanjut
                     </th>
 
                     <th
                       colSpan={4}
-                      className="bg-[#1E293B] text-white font-bold text-center text-xs py-2 border-r border-white/20"
+                      className="bg-[#1E293B] text-white font-bold text-center text-xs py-2.5 border-r border-white/20 whitespace-nowrap"
                     >
                       Tidak Lanjut
                     </th>
 
                     <th
                       colSpan={2}
-                      className="bg-slate-100 text-slate-800 font-bold text-center text-xs py-2 border-r border-slate-300"
+                      className="bg-slate-200 text-slate-800 font-bold text-center text-xs py-2.5 border-r border-slate-300 whitespace-nowrap"
                     >
                       Bukan Witel Solo JT
                     </th>
 
                     <th
                       colSpan={4}
-                      className="bg-[#1D4ED8] text-white font-bold text-center text-xs py-2 border-r border-white/20"
+                      className="bg-[#1D4ED8] text-white font-bold text-center text-xs py-2.5 border-r border-white/20 whitespace-nowrap"
                     >
                       Konfirmasi AM
                     </th>
 
                     <th
                       colSpan={2}
-                      className="bg-[#0F172A] text-white font-bold text-center text-xs py-2"
+                      className="bg-[#0F172A] text-white font-bold text-center text-xs py-2.5 whitespace-nowrap"
                     >
                       Total EDK
                     </th>
                   </tr>
 
                   <tr>
-                    <th colSpan={2} className="bg-slate-50 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-slate-200">
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-b border-slate-300 whitespace-nowrap">
                       Complete
                     </th>
-                    <th colSpan={2} className="bg-slate-50 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-slate-300">
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-b border-slate-300 whitespace-nowrap">
                       In Progress
                     </th>
-                    <th colSpan={2} className="bg-slate-50 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-slate-200">
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-b border-slate-300 whitespace-nowrap">
                       Complete
                     </th>
-                    <th colSpan={2} className="bg-slate-50 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-slate-300">
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-b border-slate-300 whitespace-nowrap">
                       In Progress
                     </th>
 
                     {/* Bukan Witel Solo JT sub-headers */}
-                    <th rowSpan={2} className="py-1.5 px-2 text-center border-r border-slate-200 bg-white text-slate-600 font-semibold text-[10px] align-middle">
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap">
                       Order
                     </th>
-                    <th rowSpan={2} className="py-1.5 px-2 text-center border-r border-slate-300 bg-white text-slate-600 font-semibold text-[10px] align-middle">
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap">
                       Abonemen (Rp)
                     </th>
 
                     {/* Konfirmasi AM sub-headers */}
-                    <th rowSpan={2} className="py-1.5 px-2 text-center border-r border-slate-200 bg-white text-slate-600 font-semibold text-[10px] align-middle">
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap">
                       Order
                     </th>
-                    <th rowSpan={2} className="py-1.5 px-2 text-center border-r border-slate-200 bg-white text-slate-600 font-semibold text-[10px] align-middle">
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap">
                       Abonemen (Rp)
                     </th>
-                    <th rowSpan={2} className="py-1.5 px-2 text-center border-r border-slate-200 bg-white text-slate-600 font-bold text-[10px] align-middle">
-                      AUTO RENEWAL
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-700 font-bold text-[10px] align-middle whitespace-nowrap">
+                      Auto Renewal
                     </th>
-                    <th rowSpan={2} className="py-1.5 px-2 text-center border-r border-slate-300 bg-white text-slate-600 font-bold text-[10px] align-middle">
-                      IN PROGRESS
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-700 font-bold text-[10px] align-middle whitespace-nowrap">
+                      In Progress
                     </th>
 
                     {/* Total EDK sub-headers */}
-                    <th rowSpan={2} className="py-1.5 px-2 text-center border-r border-slate-200 bg-white text-slate-600 font-bold text-[10px] align-middle">
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-800 font-bold text-[10px] align-middle whitespace-nowrap">
                       Order
                     </th>
-                    <th rowSpan={2} className="py-1.5 px-2 text-center bg-white text-slate-600 font-bold text-[10px] align-middle">
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-b border-slate-300 bg-slate-50 text-slate-800 font-bold text-[10px] align-middle whitespace-nowrap">
                       Abonemen
                     </th>
                   </tr>
 
-                  <tr className="border-b border-slate-300 bg-white text-slate-600 font-semibold text-[10px]">
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Order</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Abonemen (Rp)</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Order</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-300">Abonemen (Rp)</th>
+                  <tr className="border-b border-slate-300 bg-slate-50/70 text-slate-600 font-semibold text-[10px]">
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
+                    <th className="py-1.5 px-2 text-center border-r border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
 
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Order</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Abonemen (Rp)</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Order</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-300">Abonemen (Rp)</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
                   </tr>
                 </>
               ) : mode === 'Segmen' ? (
@@ -760,102 +790,102 @@ export default function Edk() {
                   <tr>
                     <th
                       rowSpan={3}
-                      className="sticky left-0 z-30 bg-white px-3.5 py-2.5 text-center font-bold text-xs text-slate-800 border-r border-b border-slate-300 min-w-[130px] align-middle shadow-[2px_0_4px_rgba(0,0,0,0.03)]"
+                      className="sticky left-0 z-30 bg-slate-100 px-4 py-3 text-center font-bold text-xs text-slate-800 border-r-2 border-b border-slate-300 min-w-[130px] align-middle shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap"
                     >
                       Segmen
                     </th>
 
                     <th
                       colSpan={4}
-                      className="bg-[#1D4ED8] text-white font-bold text-center text-xs py-2 border-r border-white/20"
+                      className="bg-[#1D4ED8] text-white font-bold text-center text-xs py-2.5 border-r border-white/20 whitespace-nowrap"
                     >
                       Lanjut
                     </th>
 
                     <th
                       colSpan={4}
-                      className="bg-[#1E293B] text-white font-bold text-center text-xs py-2 border-r border-white/20"
+                      className="bg-[#1E293B] text-white font-bold text-center text-xs py-2.5 border-r border-white/20 whitespace-nowrap"
                     >
                       Tidak Lanjut
                     </th>
 
                     <th
                       colSpan={4}
-                      className="bg-[#1D4ED8] text-white font-bold text-center text-xs py-2 border-r border-white/20"
+                      className="bg-[#1D4ED8] text-white font-bold text-center text-xs py-2.5 border-r border-white/20 whitespace-nowrap"
                     >
                       Konfirmasi AM
                     </th>
 
                     <th
                       colSpan={2}
-                      className="bg-slate-100 text-slate-800 font-bold text-center text-xs py-2 border-r border-slate-300"
+                      className="bg-slate-200 text-slate-800 font-bold text-center text-xs py-2.5 border-r border-slate-300 whitespace-nowrap"
                     >
                       Bukan Witel Solo JT
                     </th>
 
                     <th
                       colSpan={2}
-                      className="bg-[#0F172A] text-white font-bold text-center text-xs py-2"
+                      className="bg-[#0F172A] text-white font-bold text-center text-xs py-2.5 whitespace-nowrap"
                     >
                       Total EDK
                     </th>
                   </tr>
 
                   <tr>
-                    <th colSpan={2} className="bg-slate-50 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-slate-200">
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-b border-slate-300 whitespace-nowrap">
                       Complete
                     </th>
-                    <th colSpan={2} className="bg-slate-50 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-slate-300">
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-b border-slate-300 whitespace-nowrap">
                       In Progress
                     </th>
-                    <th colSpan={2} className="bg-slate-50 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-slate-200">
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-b border-slate-300 whitespace-nowrap">
                       Complete
                     </th>
-                    <th colSpan={2} className="bg-slate-50 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-slate-300">
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-b border-slate-300 whitespace-nowrap">
                       In Progress
                     </th>
 
                     {/* Konfirmasi AM sub-headers */}
-                    <th rowSpan={2} className="py-1.5 px-2 text-center border-r border-slate-200 bg-white text-slate-600 font-semibold text-[10px] align-middle">
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap">
                       Order
                     </th>
-                    <th rowSpan={2} className="py-1.5 px-2 text-center border-r border-slate-200 bg-white text-slate-600 font-semibold text-[10px] align-middle">
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap">
                       Abonemen (Rp)
                     </th>
-                    <th rowSpan={2} className="py-1.5 px-2 text-center border-r border-slate-200 bg-white text-slate-600 font-bold text-[10px] align-middle">
-                      AUTO RENEWAL
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-700 font-bold text-[10px] align-middle whitespace-nowrap">
+                      Auto Renewal
                     </th>
-                    <th rowSpan={2} className="py-1.5 px-2 text-center border-r border-slate-300 bg-white text-slate-600 font-bold text-[10px] align-middle">
-                      IN PROGRESS
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-700 font-bold text-[10px] align-middle whitespace-nowrap">
+                      In Progress
                     </th>
 
                     {/* Bukan Witel Solo JT sub-headers */}
-                    <th rowSpan={2} className="py-1.5 px-2 text-center border-r border-slate-200 bg-white text-slate-600 font-semibold text-[10px] align-middle">
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap">
                       Order
                     </th>
-                    <th rowSpan={2} className="py-1.5 px-2 text-center border-r border-slate-300 bg-white text-slate-600 font-semibold text-[10px] align-middle">
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap">
                       Abonemen (Rp)
                     </th>
 
                     {/* Total EDK sub-headers */}
-                    <th rowSpan={2} className="py-1.5 px-2 text-center border-r border-slate-200 bg-white text-slate-600 font-bold text-[10px] align-middle">
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-800 font-bold text-[10px] align-middle whitespace-nowrap">
                       Order
                     </th>
-                    <th rowSpan={2} className="py-1.5 px-2 text-center bg-white text-slate-600 font-bold text-[10px] align-middle">
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-b border-slate-300 bg-slate-50 text-slate-800 font-bold text-[10px] align-middle whitespace-nowrap">
                       Abonemen (Rp)
                     </th>
                   </tr>
 
-                  <tr className="border-b border-slate-300 bg-white text-slate-600 font-semibold text-[10px]">
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Order</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Abonemen (Rp)</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Order</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-300">Abonemen (Rp)</th>
+                  <tr className="border-b border-slate-300 bg-slate-50/70 text-slate-600 font-semibold text-[10px]">
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
 
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Order</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Abonemen (Rp)</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Order</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-300">Abonemen (Rp)</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
                   </tr>
                 </>
               ) : (
@@ -866,87 +896,87 @@ export default function Edk() {
                   <tr>
                     <th
                       rowSpan={3}
-                      className="sticky left-0 z-30 bg-white px-3.5 py-2.5 text-center font-bold text-xs text-slate-800 border-r border-b border-slate-300 min-w-[140px] align-middle shadow-[2px_0_4px_rgba(0,0,0,0.03)]"
+                      className="sticky left-0 z-30 bg-slate-100 px-4 py-3 text-center font-bold text-xs text-slate-800 border-r-2 border-b border-slate-300 min-w-[140px] align-middle shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap"
                     >
                       Periode EDK
                     </th>
 
                     <th
                       colSpan={4}
-                      className="bg-[#1D4ED8] text-white font-bold text-center text-xs py-2 border-r border-white/20"
+                      className="bg-[#1D4ED8] text-white font-bold text-center text-xs py-2.5 border-r border-white/20 whitespace-nowrap"
                     >
                       Lanjut
                     </th>
 
                     <th
                       colSpan={4}
-                      className="bg-[#1E293B] text-white font-bold text-center text-xs py-2 border-r border-white/20"
+                      className="bg-[#1E293B] text-white font-bold text-center text-xs py-2.5 border-r border-white/20 whitespace-nowrap"
                     >
                       Tidak Lanjut
                     </th>
 
                     <th
                       colSpan={4}
-                      className="bg-[#1D4ED8] text-white font-bold text-center text-xs py-2 border-r border-white/20"
+                      className="bg-[#1D4ED8] text-white font-bold text-center text-xs py-2.5 border-r border-white/20 whitespace-nowrap"
                     >
                       Konfirmasi AM
                     </th>
 
                     <th
                       colSpan={2}
-                      className="bg-slate-100 text-slate-800 font-bold text-center text-xs py-2"
+                      className="bg-slate-200 text-slate-800 font-bold text-center text-xs py-2.5 whitespace-nowrap"
                     >
                       Bukan Witel Solo JT
                     </th>
                   </tr>
 
                   <tr>
-                    <th colSpan={2} className="bg-slate-50 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-slate-200">
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-b border-slate-300 whitespace-nowrap">
                       Complete
                     </th>
-                    <th colSpan={2} className="bg-slate-50 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-slate-300">
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-b border-slate-300 whitespace-nowrap">
                       In Progress
                     </th>
-                    <th colSpan={2} className="bg-slate-50 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-slate-200">
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-b border-slate-300 whitespace-nowrap">
                       Complete
                     </th>
-                    <th colSpan={2} className="bg-slate-50 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-slate-300">
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-b border-slate-300 whitespace-nowrap">
                       In Progress
                     </th>
 
                     {/* Konfirmasi AM sub-headers */}
-                    <th rowSpan={2} className="py-1.5 px-2 text-center border-r border-slate-200 bg-white text-slate-600 font-semibold text-[10px] align-middle">
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap">
                       Order
                     </th>
-                    <th rowSpan={2} className="py-1.5 px-2 text-center border-r border-slate-200 bg-white text-slate-600 font-semibold text-[10px] align-middle">
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap">
                       Abonemen (Rp)
                     </th>
-                    <th rowSpan={2} className="py-1.5 px-2 text-center border-r border-slate-200 bg-white text-slate-600 font-bold text-[10px] align-middle">
-                      AUTO RENEWAL
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-700 font-bold text-[10px] align-middle whitespace-nowrap">
+                      Auto Renewal
                     </th>
-                    <th rowSpan={2} className="py-1.5 px-2 text-center border-r border-slate-300 bg-white text-slate-600 font-bold text-[10px] align-middle">
-                      IN PROGRESS
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-700 font-bold text-[10px] align-middle whitespace-nowrap">
+                      In Progress
                     </th>
 
                     {/* Bukan Witel Solo JT sub-headers */}
-                    <th rowSpan={2} className="py-1.5 px-2 text-center border-r border-slate-200 bg-white text-slate-600 font-semibold text-[10px] align-middle">
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap">
                       Order
                     </th>
-                    <th rowSpan={2} className="py-1.5 px-2 text-center bg-white text-slate-600 font-semibold text-[10px] align-middle">
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap">
                       Abonemen (Rp)
                     </th>
                   </tr>
 
-                  <tr className="border-b border-slate-300 bg-white text-slate-600 font-semibold text-[10px]">
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Order</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Abonemen (Rp)</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Order</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-300">Abonemen (Rp)</th>
+                  <tr className="border-b border-slate-300 bg-slate-50/70 text-slate-600 font-semibold text-[10px]">
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
 
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Order</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Abonemen (Rp)</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Order</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-300">Abonemen (Rp)</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
                   </tr>
                 </>
               )}
@@ -963,8 +993,8 @@ export default function Edk() {
                     <td className="px-2.5 py-2 text-center font-bold text-xs text-slate-500 sticky left-0 z-10 bg-white border-r border-slate-300">
                       {idx + 1}
                     </td>
-                    <td className="px-3.5 py-2 text-left font-bold text-xs text-slate-800 sticky left-10 z-10 bg-white border-r border-slate-300 whitespace-nowrap">
-                      {r.l}
+                    <td className="px-3.5 py-2 text-left font-bold text-xs text-slate-800 sticky left-10 z-10 bg-white border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
+                      {toTitleCase(r.l)}
                     </td>
 
                     {/* Lanjut Complete */}
@@ -1032,7 +1062,7 @@ export default function Edk() {
                   <Fragment key={group.name}>
                     {/* Subtotal Group Header Row */}
                     <tr className="h-10 bg-slate-50/70 border-b border-slate-200">
-                      <td className="px-3.5 py-2 text-left sticky left-0 z-10 bg-slate-50 border-r border-slate-300 shadow-[2px_0_4px_rgba(0,0,0,0.02)] whitespace-nowrap">
+                      <td className="px-3.5 py-2 text-left sticky left-0 z-10 bg-slate-50 border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <span className="size-4 rounded bg-[#1D4ED8] text-white flex items-center justify-center font-bold text-[10px] leading-none shrink-0 shadow-2xs">
                             −
@@ -1071,7 +1101,7 @@ export default function Edk() {
                     {/* Member Rows */}
                     {group.items.map((am) => (
                       <tr key={am.l} className="h-10 border-b border-slate-100 hover:bg-blue-50/40 transition-colors bg-white">
-                        <td className="px-3.5 py-2 text-left sticky left-0 z-10 bg-white border-r border-slate-300 shadow-[2px_0_4px_rgba(0,0,0,0.02)] whitespace-nowrap">
+                        <td className="px-3.5 py-2 text-left sticky left-0 z-10 bg-white border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
                           <div className="flex items-center gap-2 pl-3">
                             <span className="size-1.5 rounded-full bg-[#1D4ED8] inline-block shrink-0" />
                             <span className="text-xs font-medium text-slate-800">{am.l}</span>
@@ -1150,7 +1180,7 @@ export default function Edk() {
                 <>
                   {data.map((r) => (
                     <tr key={r.l} className="h-10 border-b border-slate-200/80 hover:bg-blue-50/40 transition-colors bg-white">
-                      <td className="px-3.5 py-2 text-center font-bold text-xs text-slate-800 sticky left-0 z-10 bg-white border-r border-slate-300 shadow-[2px_0_4px_rgba(0,0,0,0.02)] whitespace-nowrap">
+                      <td className="px-4 py-2.5 text-center font-bold text-xs text-slate-800 sticky left-0 z-10 bg-white border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
                         {r.l}
                       </td>
 
@@ -1220,8 +1250,8 @@ export default function Edk() {
 
                   {/* Summary Row for Segmen */}
                   <tr className="h-11 bg-[#EFF6FF] border-t-2 border-slate-300 font-bold text-xs text-[#1D4ED8]">
-                    <td className="px-3.5 py-2 text-left sticky left-0 z-10 bg-[#EFF6FF] border-r border-slate-300 shadow-[2px_0_4px_rgba(0,0,0,0.02)] whitespace-nowrap">
-                      WITEL SOLO JT <span className="text-[10px] text-slate-500 font-semibold">TOTAL</span>
+                    <td className="px-4 py-2.5 text-left sticky left-0 z-10 bg-[#EFF6FF] border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
+                      Witel Solo JT <span className="text-[10px] text-slate-500 font-semibold">Total</span>
                     </td>
 
                     {/* Lanjut Complete: 237 | 790.283.739 */}
@@ -1261,7 +1291,7 @@ export default function Edk() {
                       {cellFmt(grandTotal.k)}
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums border-r border-slate-200">
-                      Rp 1.101.000.000
+                      {formatRupiah(grandTotal.ka)}
                     </td>
                     <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
                       {cellFmt(grandTotal.k_auto)}
@@ -1294,7 +1324,7 @@ export default function Edk() {
                 <>
                   {data.map((r) => (
                     <tr key={r.l} className="h-10 border-b border-slate-200/80 hover:bg-blue-50/40 transition-colors bg-white">
-                      <td className="px-3.5 py-2 text-center font-bold text-xs text-slate-800 sticky left-0 z-10 bg-white border-r border-slate-300 shadow-[2px_0_4px_rgba(0,0,0,0.02)] whitespace-nowrap">
+                      <td className="px-4 py-2.5 text-center font-bold text-xs text-slate-800 sticky left-0 z-10 bg-white border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
                         {r.l}
                       </td>
 
@@ -1356,8 +1386,8 @@ export default function Edk() {
 
                   {/* Summary Row for Periode EDK */}
                   <tr className="h-11 bg-[#EFF6FF] border-t-2 border-slate-300 font-bold text-xs text-[#1D4ED8]">
-                    <td className="px-3.5 py-2 text-left sticky left-0 z-10 bg-[#EFF6FF] border-r border-slate-300 shadow-[2px_0_4px_rgba(0,0,0,0.02)] whitespace-nowrap">
-                      WITEL SOLO JT <span className="text-[10px] text-slate-500 font-semibold">TOTAL</span>
+                    <td className="px-4 py-2.5 text-left sticky left-0 z-10 bg-[#EFF6FF] border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
+                      Witel Solo JT <span className="text-[10px] text-slate-500 font-semibold">Total</span>
                     </td>
 
                     {/* Lanjut Complete: 34 | 45.140.262 */}
