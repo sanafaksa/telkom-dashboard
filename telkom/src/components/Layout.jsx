@@ -372,6 +372,16 @@ export default function Layout({ children }) {
     : [];
 
   const unreadCount = notifs.filter(n => !n.read).length;
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 8);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Tutup notif dropdown saat klik di luar
   useEffect(() => {
@@ -406,6 +416,7 @@ export default function Layout({ children }) {
         <CollapsedSidebar onExpand={() => setCollapsed(false)} />
       </aside>
 
+
       {d && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px]" onClick={() => setD(false)} />
@@ -416,7 +427,11 @@ export default function Layout({ children }) {
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-transparent px-4 md:px-8 h-16 flex items-center gap-3">
+      <header
+        className={`sticky top-0 z-20 px-4 md:px-8 h-16 flex items-center gap-3 transition-all duration-200 bg-[#F6F8FC] ${
+          scrolled ? 'border-b border-slate-200/90 shadow-xs' : ''
+        }`}
+      >
         {/* Mobile menu button */}
         <button className="lg:hidden text-slate-600 shrink-0" aria-label="Buka menu" onClick={() => setD(true)}>
           <Menu size={20} />
@@ -607,7 +622,7 @@ export default function Layout({ children }) {
         </div>
       </header>
 
-      <main className="p-4 md:p-8 max-w-[1440px] mx-auto">{children}</main>
+      <main className="p-4 md:p-8 max-w-[1440px] mx-auto page-enter">{children}</main>
     </div>
   );
 }

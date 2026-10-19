@@ -1039,9 +1039,16 @@ export default function Edk() {
 
                     <th
                       colSpan={2}
-                      className="bg-slate-200 text-slate-800 font-bold text-center text-xs py-2.5 whitespace-nowrap"
+                      className="bg-slate-200 text-slate-800 font-bold text-center text-xs py-2.5 border-r border-slate-300 whitespace-nowrap"
                     >
                       Bukan Witel Solo JT
+                    </th>
+
+                    <th
+                      colSpan={2}
+                      className="bg-[#0F172A] text-white font-bold text-center text-xs py-2.5 whitespace-nowrap"
+                    >
+                      Total EDK
                     </th>
                   </tr>
 
@@ -1077,8 +1084,16 @@ export default function Edk() {
                     <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap">
                       Order
                     </th>
-                    <th rowSpan={2} className="py-2 px-2.5 text-center border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap">
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap">
                       Abonemen (Rp)
+                    </th>
+
+                    {/* Total EDK sub-headers */}
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-800 font-bold text-[10px] align-middle whitespace-nowrap">
+                      Total Order
+                    </th>
+                    <th rowSpan={2} className="py-2 px-2.5 text-center border-b border-slate-300 bg-slate-50 text-slate-800 font-bold text-[10px] align-middle whitespace-nowrap">
+                      Total Abonemen (Rp)
                     </th>
                   </tr>
 
@@ -1489,7 +1504,7 @@ export default function Edk() {
                 /* ======================================================== */
                 data.length === 0 ? (
                   <tr>
-                    <td colSpan={16} className="py-12 text-center text-slate-500 text-xs bg-white">
+                    <td colSpan={17} className="py-12 text-center text-slate-500 text-xs bg-white">
                       Tidak ada data periode EDK yang sesuai dengan filter yang dipilih.
                       <div className="mt-2">
                         <button
@@ -1560,8 +1575,16 @@ export default function Edk() {
                         <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
                           {cellFmt(r.b)}
                         </td>
-                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700">
+                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
                           {formatRupiah(r.ba)}
+                        </td>
+
+                        {/* Total EDK */}
+                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                          {cellFmt(r.to)}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700">
+                          {formatRupiah(r.ta2)}
                         </td>
                       </tr>
                     ))}
@@ -1569,7 +1592,7 @@ export default function Edk() {
                     {/* Summary Row for Periode EDK */}
                     <tr className="h-11 bg-[#EFF6FF] border-t-2 border-slate-300 font-bold text-xs text-[#1D4ED8]">
                       <td className="px-4 py-2.5 text-left sticky left-0 z-10 bg-[#EFF6FF] border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
-                        Witel Solo JT <span className="text-[10px] text-slate-500 font-semibold">Total</span>
+                        WITEL SOLO JT <span className="text-[10px] text-slate-500 font-semibold uppercase">TOTAL</span>
                       </td>
 
                       {/* Lanjut Complete */}
@@ -1622,8 +1645,16 @@ export default function Edk() {
                       <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
                         {cellFmt(grandTotal.b)}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums">
+                      <td className="px-3 py-2 text-right tabular-nums border-r border-slate-300">
                         {formatRupiah(grandTotal.ba)}
+                      </td>
+
+                      {/* Total EDK */}
+                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
+                        {cellFmt(grandTotal.to)}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {formatRupiah(grandTotal.ta2)}
                       </td>
                     </tr>
                   </>
