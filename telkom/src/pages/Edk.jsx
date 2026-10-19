@@ -215,6 +215,18 @@ export default function Edk() {
   // Top 10 View is active ONLY for Nama CC
   const isTop10View = mode === 'Nama CC';
 
+  // Check if any filter is currently active
+  const hasActiveFilters = useMemo(() => {
+    const isDefaultSegmen = isTop10View && selectedSegmen.length === 1 && selectedSegmen[0] === 'DGS';
+    return (
+      selectedPeriode.length > 0 ||
+      (!isDefaultSegmen && selectedSegmen.length > 0) ||
+      selectedNamaAm.length > 0 ||
+      selectedFlagging.length > 0 ||
+      (sortOrder !== 'Sort by' && sortOrder !== '')
+    );
+  }, [selectedPeriode, selectedSegmen, selectedNamaAm, selectedFlagging, sortOrder, isTop10View]);
+
   // Top 10 data for active segment (Nama CC)
   const top10List = useMemo(() => {
     let list = topPelangganBySegmen[activeSegmen] || topPelangganBySegmen['DGS'] || [];
@@ -224,14 +236,27 @@ export default function Edk() {
       return { ...r, to, ta2 };
     });
 
-    if (sortOrder === 'Nama (A-Z)' || sortOrder === 'A-Z') {
+    if (selectedPeriode.length > 0) {
+      enriched = enriched.filter((r) => selectedPeriode.includes(r.periode));
+    }
+    if (selectedFlagging.length > 0) {
+      enriched = enriched.filter((r) => selectedFlagging.includes(r.flagging));
+    }
+
+    if (sortOrder === 'Nama (A-Z)' || sortOrder === 'A-Z' || sortOrder === 'Sort: Nama (A-Z)') {
       return [...enriched].sort((a, b) => a.l.localeCompare(b.l));
     }
-    if (sortOrder === 'Nama (Z-A)' || sortOrder === 'Z-A') {
+    if (sortOrder === 'Nama (Z-A)' || sortOrder === 'Z-A' || sortOrder === 'Sort: Nama (Z-A)') {
       return [...enriched].sort((a, b) => b.l.localeCompare(a.l));
     }
+    if (sortOrder === 'Order Terbanyak' || sortOrder === 'Sort: Order Terbanyak') {
+      return [...enriched].sort((a, b) => (b.to || 0) - (a.to || 0));
+    }
+    if (sortOrder === 'Abonemen Tertinggi' || sortOrder === 'Sort: Abonemen Tertinggi') {
+      return [...enriched].sort((a, b) => (b.ta2 || 0) - (a.ta2 || 0));
+    }
     return enriched;
-  }, [activeSegmen, sortOrder]);
+  }, [activeSegmen, sortOrder, selectedPeriode, selectedFlagging]);
 
   const top10TotalAbonemen = useMemo(() => {
     return top10List.reduce((acc, r) => acc + (r.ta2 || 0), 0);
@@ -245,7 +270,12 @@ export default function Edk() {
       list = list.filter((r) => selectedPeriode.includes(r.periode) || selectedPeriode.includes(r.l));
     }
     if (selectedSegmen.length > 0) {
-      list = list.filter((r) => selectedSegmen.includes(r.segmen) || selectedSegmen.includes(r.subgroup) || selectedSegmen.includes(r.l));
+      list = list.filter((r) => {
+        if (selectedSegmen.includes(r.segmen)) return true;
+        if (selectedSegmen.includes(r.l)) return true;
+        if (r.subgroup && selectedSegmen.some((s) => r.subgroup.includes(s))) return true;
+        return false;
+      });
     }
     if (selectedNamaAm.length > 0) {
       list = list.filter((r) => selectedNamaAm.includes(r.namaAm) || selectedNamaAm.includes(r.l));
@@ -254,17 +284,28 @@ export default function Edk() {
       list = list.filter((r) => selectedFlagging.includes(r.flagging));
     }
 
-    return list.map((r) => {
+    let mapped = list.map((r) => {
       const to = (r.lc || 0) + (r.lp || 0) + (r.tc || 0) + (r.tp || 0) + (r.k || 0) + (r.b || 0);
       const ta2 = (r.la || 0) + (r.lpa || 0) + (r.ta || 0) + (r.tpa || 0) + (r.ka || 0) + (r.ba || 0);
       return { ...r, to, ta2 };
     });
-  }, [mode, selectedPeriode, selectedSegmen, selectedNamaAm, selectedFlagging]);
 
-  // Grand Total for Periode EDK & Segmen
+    if (sortOrder === 'Nama (A-Z)' || sortOrder === 'A-Z' || sortOrder === 'Sort: Nama (A-Z)') {
+      mapped.sort((a, b) => a.l.localeCompare(b.l));
+    } else if (sortOrder === 'Nama (Z-A)' || sortOrder === 'Z-A' || sortOrder === 'Sort: Nama (Z-A)') {
+      mapped.sort((a, b) => b.l.localeCompare(a.l));
+    } else if (sortOrder === 'Order Terbanyak' || sortOrder === 'Sort: Order Terbanyak') {
+      mapped.sort((a, b) => (b.to || 0) - (a.to || 0));
+    } else if (sortOrder === 'Abonemen Tertinggi' || sortOrder === 'Sort: Abonemen Tertinggi') {
+      mapped.sort((a, b) => (b.ta2 || 0) - (a.ta2 || 0));
+    }
+
+    return mapped;
+  }, [mode, selectedPeriode, selectedSegmen, selectedNamaAm, selectedFlagging, sortOrder]);
+
+  // Grand Total computed dynamically from filtered data
   const grandTotal = useMemo(() => {
-    const list = modes[mode] || [];
-    return list.reduce(
+    return data.reduce(
       (acc, r) => ({
         lc: acc.lc + (r.lc || 0),
         la: acc.la + (r.la || 0),
@@ -285,9 +326,9 @@ export default function Edk() {
       }),
       { lc: 0, la: 0, lp: 0, lpa: 0, tc: 0, ta: 0, tp: 0, tpa: 0, k: 0, ka: 0, k_auto: 0, k_prog: 0, b: 0, ba: 0, to: 0, ta2: 0 }
     );
-  }, [mode]);
+  }, [data]);
 
-  // Groups for Nama AM
+  // Groups for Nama AM (with dynamic subtotal recalculation when filters active)
   const amGroups = useMemo(() => {
     if (mode !== 'Nama AM') return [];
     const list = data;
@@ -299,7 +340,6 @@ export default function Edk() {
       if (!map.has(groupKey)) {
         const groupObj = {
           name: groupKey,
-          subtotal: AM_GROUP_SUBTOTALS[groupKey] || item.subtotalData || { order: 0, abon: 0, auto: 0, inprog: 0 },
           items: []
         };
         map.set(groupKey, groupObj);
@@ -308,11 +348,63 @@ export default function Edk() {
       map.get(groupKey).items.push(item);
     });
 
+    groups.forEach((g) => {
+      if (!hasActiveFilters && AM_GROUP_SUBTOTALS[g.name]) {
+        g.subtotal = AM_GROUP_SUBTOTALS[g.name];
+      } else {
+        const order = g.items.reduce((acc, it) => acc + (it.to || 0), 0);
+        const abon = g.items.reduce((acc, it) => acc + (it.ta2 || 0), 0);
+        const auto = g.items.reduce((acc, it) => acc + (it.k_auto || 0), 0);
+        const inprog = g.items.reduce((acc, it) => acc + (it.k_prog || 0), 0);
+        g.subtotal = { order, abon, auto, inprog };
+      }
+    });
+
     return groups;
-  }, [mode, data]);
+  }, [mode, data, hasActiveFilters]);
 
   // Active count for pagination
-  const activeCount = isTop10View ? top10List.length : mode === 'Nama AM' ? 19 : data.length;
+  const activeCount = isTop10View ? top10List.length : data.length;
+
+  // Dynamic KPI Metrics reacting to filters
+  const kpiMetrics = useMemo(() => {
+    if (!hasActiveFilters && mode === 'Nama AM') {
+      return {
+        totalOrder: 426,
+        totalAbonemen: 328221859,
+        inProgress: 211,
+        inProgressPercent: '49.5%',
+        complete: 215,
+        completePercent: '50.5%'
+      };
+    }
+
+    const currentList = isTop10View ? top10List : data;
+    const totalOrder = currentList.reduce((acc, r) => acc + (r.to || 0), 0);
+    const totalAbonemen = currentList.reduce((acc, r) => acc + (r.ta2 || 0), 0);
+    const inProgress = currentList.reduce(
+      (acc, r) => acc + ((r.lp || 0) + (r.tp || 0) + (r.k_prog || 0)),
+      0
+    );
+    const complete = currentList.reduce(
+      (acc, r) => acc + ((r.lc || 0) + (r.tc || 0) + (r.k_auto || 0)),
+      0
+    );
+
+    const inProgressPercent =
+      totalOrder > 0 ? `${((inProgress / totalOrder) * 100).toFixed(1)}%` : '0%';
+    const completePercent =
+      totalOrder > 0 ? `${((complete / totalOrder) * 100).toFixed(1)}%` : '0%';
+
+    return {
+      totalOrder,
+      totalAbonemen,
+      inProgress,
+      inProgressPercent,
+      complete,
+      completePercent
+    };
+  }, [hasActiveFilters, mode, isTop10View, top10List, data]);
 
   return (
     <div id="edk-main-content" className="space-y-4">
@@ -369,7 +461,7 @@ export default function Edk() {
         </div>
       </div>
 
-      {/* 2. KPI Cards (Presisi Sesuai Semua Screenshot) */}
+      {/* 2. KPI Cards (Dinamis Bereaksi Terhadap Filter) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {/* Total Order */}
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs">
@@ -377,7 +469,7 @@ export default function Edk() {
             TOTAL ORDER
           </p>
           <p className="text-[28px] font-extrabold text-slate-900 tracking-tight mt-1">
-            426
+            {cellFmt(kpiMetrics.totalOrder)}
           </p>
           <p className="text-xs mt-1.5 flex items-center gap-1 text-emerald-600 font-semibold">
             <span>+12%</span>
@@ -391,7 +483,7 @@ export default function Edk() {
             TOTAL ABONEMEN
           </p>
           <p className="text-[28px] font-extrabold text-slate-900 tracking-tight mt-1">
-            Rp 328.221.859
+            Rp {formatRupiah(kpiMetrics.totalAbonemen)}
           </p>
           <p className="text-xs mt-1.5 flex items-center gap-1 text-emerald-600 font-semibold">
             <span>+8%</span>
@@ -405,10 +497,10 @@ export default function Edk() {
             IN PROGRESS
           </p>
           <p className="text-[28px] font-extrabold text-slate-900 tracking-tight mt-1">
-            211
+            {cellFmt(kpiMetrics.inProgress)}
           </p>
           <p className="text-xs mt-1.5 text-slate-500">
-            <span className="font-bold text-slate-800">49.5%</span>{' '}
+            <span className="font-bold text-slate-800">{kpiMetrics.inProgressPercent}</span>{' '}
             <span className="text-slate-400 font-normal">dari total order</span>
           </p>
         </div>
@@ -419,10 +511,10 @@ export default function Edk() {
             COMPLETE
           </p>
           <p className="text-[28px] font-extrabold text-slate-900 tracking-tight mt-1">
-            215
+            {cellFmt(kpiMetrics.complete)}
           </p>
           <p className="text-xs mt-1.5 text-slate-500">
-            <span className="font-bold text-slate-800">50.5%</span>{' '}
+            <span className="font-bold text-slate-800">{kpiMetrics.completePercent}</span>{' '}
             <span className="text-slate-400 font-normal">dari total order</span>
           </p>
         </div>
@@ -465,7 +557,7 @@ export default function Edk() {
           {mode !== 'Nama AM' && (
             <FilterDropdown
               label="Nama Pelanggan"
-              options={['Sort by', 'Nama (A-Z)', 'Nama (Z-A)']}
+              options={['Sort by', 'Nama (A-Z)', 'Nama (Z-A)', 'Order Terbanyak', 'Abonemen Tertinggi']}
               selected={[sortOrder]}
               onChange={(val) => setSortOrder(val[0] || 'Sort by')}
               isSort
@@ -475,10 +567,17 @@ export default function Edk() {
           <button
             type="button"
             onClick={resetFilters}
-            className="bg-white hover:bg-slate-50 border border-slate-200/90 text-slate-600 font-semibold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer h-[32px]"
+            className={`font-semibold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer h-[32px] ${
+              hasActiveFilters
+                ? 'bg-blue-50 text-[#1D4ED8] border border-blue-200 hover:bg-blue-100 shadow-2xs font-bold'
+                : 'bg-white hover:bg-slate-50 border border-slate-200/90 text-slate-600 shadow-2xs'
+            }`}
           >
-            <RotateCcw size={13} className="text-slate-500" />
+            <RotateCcw size={13} className={hasActiveFilters ? 'text-[#1D4ED8]' : 'text-slate-500'} />
             <span>Reset Filter</span>
+            {hasActiveFilters && (
+              <span className="size-1.5 rounded-full bg-[#1D4ED8]" />
+            )}
           </button>
         </div>
 
@@ -681,10 +780,26 @@ export default function Edk() {
                   <tr>
                     <th
                       rowSpan={3}
-                      className="sticky left-0 z-30 bg-slate-100 px-4 py-3 text-left font-bold text-xs text-slate-800 border-r-2 border-b border-slate-300 min-w-[220px] align-middle shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap"
+                      onClick={() => {
+                        setSortOrder((prev) => (prev === 'Nama (A-Z)' ? 'Nama (Z-A)' : 'Nama (A-Z)'));
+                      }}
+                      className="sticky left-0 z-30 bg-slate-100 px-4 py-3 text-left font-bold text-xs text-slate-800 border-r-2 border-b border-slate-300 min-w-[220px] align-middle shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap cursor-pointer select-none hover:bg-slate-200/80 transition-colors"
+                      title="Klik untuk urutkan A-Z / Z-A"
                     >
                       <div className="flex items-center justify-between">
-                        <span>Nama AM</span>
+                        <div className="flex items-center gap-1.5">
+                          <span>Nama AM</span>
+                          {sortOrder === 'Nama (A-Z)' && <span className="text-[10px] text-blue-600 font-bold">(A-Z)</span>}
+                          {sortOrder === 'Nama (Z-A)' && <span className="text-[10px] text-blue-600 font-bold">(Z-A)</span>}
+                          <ArrowUpDown
+                            size={12}
+                            className={`transition-colors ${
+                              sortOrder === 'Nama (A-Z)' || sortOrder === 'Nama (Z-A)'
+                                ? 'text-blue-600'
+                                : 'text-slate-400'
+                            }`}
+                          />
+                        </div>
                         <span className="text-[10px] text-slate-400 font-medium tracking-wide">Account Manager</span>
                       </div>
                     </th>
@@ -988,200 +1103,29 @@ export default function Edk() {
               {/* BODY A: TOP 10 PELANGGAN (NAMA CC) */}
               {/* ======================================================== */}
               {isTop10View ? (
-                top10List.map((r, idx) => (
-                  <tr key={r.l + idx} className="h-10 border-b border-slate-200/80 hover:bg-blue-50/40 transition-colors bg-white">
-                    <td className="px-2.5 py-2 text-center font-bold text-xs text-slate-500 sticky left-0 z-10 bg-white border-r border-slate-300">
-                      {idx + 1}
-                    </td>
-                    <td className="px-3.5 py-2 text-left font-bold text-xs text-slate-800 sticky left-10 z-10 bg-white border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
-                      {toTitleCase(r.l)}
-                    </td>
-
-                    {/* Lanjut Complete */}
-                    <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                      {cellFmt(r.lc)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                      {formatRupiah(r.la)}
-                    </td>
-
-                    {/* Lanjut In Progress */}
-                    <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                      {cellFmt(r.lp)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
-                      {formatRupiah(r.lpa)}
-                    </td>
-
-                    {/* Tidak Lanjut Complete */}
-                    <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                      {cellFmt(r.tc)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                      {formatRupiah(r.ta)}
-                    </td>
-
-                    {/* Tidak Lanjut In Progress */}
-                    <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                      {cellFmt(r.tp)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
-                      {formatRupiah(r.tpa)}
-                    </td>
-
-                    {/* Bukan Witel Solo JT */}
-                    <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                      {cellFmt(r.b)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
-                      {formatRupiah(r.ba)}
-                    </td>
-
-                    {/* Konfirmasi AM */}
-                    <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                      {cellFmt(r.k)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
-                      {formatRupiah(r.ka)}
-                    </td>
-
-                    {/* Total EDK */}
-                    <td className="px-3 py-2 text-center tabular-nums text-xs font-bold text-slate-900 border-r border-slate-200">
-                      {cellFmt(r.to)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums text-xs font-bold text-slate-900">
-                      {formatRupiah(r.ta2)}
+                top10List.length === 0 ? (
+                  <tr>
+                    <td colSpan={16} className="py-12 text-center text-slate-500 text-xs bg-white">
+                      Tidak ada data pelanggan yang sesuai dengan filter yang dipilih.
+                      <div className="mt-2">
+                        <button
+                          type="button"
+                          onClick={resetFilters}
+                          className="text-[#1D4ED8] hover:underline font-bold cursor-pointer"
+                        >
+                          Reset Filter
+                        </button>
+                      </div>
                     </td>
                   </tr>
-                ))
-              ) : mode === 'Nama AM' ? (
-                /* ======================================================== */
-                /* BODY B: NAMA AM GROUPED (PERSIS SESUAI SCREENSHOT TERBARU) */
-                /* ======================================================== */
-                amGroups.map((group) => (
-                  <Fragment key={group.name}>
-                    {/* Subtotal Group Header Row */}
-                    <tr className="h-10 bg-slate-50/70 border-b border-slate-200">
-                      <td className="px-3.5 py-2 text-left sticky left-0 z-10 bg-slate-50 border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <span className="size-4 rounded bg-[#1D4ED8] text-white flex items-center justify-center font-bold text-[10px] leading-none shrink-0 shadow-2xs">
-                            −
-                          </span>
-                          <span className="font-bold text-xs text-[#1D4ED8]">{group.name}</span>
-                          <span className="text-[11px] text-slate-500 font-normal">({group.items.length} Account Manager)</span>
-                        </div>
+                ) : (
+                  top10List.map((r, idx) => (
+                    <tr key={r.l + idx} className="h-10 border-b border-slate-200/80 hover:bg-blue-50/40 transition-colors bg-white">
+                      <td className="px-2.5 py-2 text-center font-bold text-xs text-slate-500 sticky left-0 z-10 bg-white border-r border-slate-300">
+                        {idx + 1}
                       </td>
-
-                      {/* Middle blank cells (under Lanjut & Tidak Lanjut: 8 kolom) */}
-                      <td colSpan={8} className="border-r border-slate-300" />
-
-                      {/* Subtotal Label under Bukan Witel Solo JT (2 kolom) */}
-                      <td colSpan={2} className="px-3 py-2 text-right font-bold text-xs text-[#1D4ED8] border-r border-slate-300 whitespace-nowrap">
-                        Subtotal {group.name}
-                      </td>
-
-                      {/* Konfirmasi AM Subtotals (4 kolom) */}
-                      <td className="px-3 py-2 text-center tabular-nums text-xs font-bold text-[#1D4ED8] border-r border-slate-200">
-                        {group.subtotal.order || '-'}
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-xs font-bold text-[#1D4ED8] border-r border-slate-200">
-                        {group.subtotal.abon ? formatRupiah(group.subtotal.abon) : '-'}
-                      </td>
-                      <td className="px-3 py-2 text-center tabular-nums text-xs font-bold text-[#1D4ED8] border-r border-slate-200">
-                        {group.subtotal.auto !== undefined ? group.subtotal.auto : '-'}
-                      </td>
-                      <td className="px-3 py-2 text-center tabular-nums text-xs font-bold text-[#1D4ED8] border-r border-slate-300">
-                        {group.subtotal.inprog !== undefined ? group.subtotal.inprog : '-'}
-                      </td>
-
-                      {/* Total EDK empty for subtotal header (2 kolom) */}
-                      <td colSpan={2} />
-                    </tr>
-
-                    {/* Member Rows */}
-                    {group.items.map((am) => (
-                      <tr key={am.l} className="h-10 border-b border-slate-100 hover:bg-blue-50/40 transition-colors bg-white">
-                        <td className="px-3.5 py-2 text-left sticky left-0 z-10 bg-white border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
-                          <div className="flex items-center gap-2 pl-3">
-                            <span className="size-1.5 rounded-full bg-[#1D4ED8] inline-block shrink-0" />
-                            <span className="text-xs font-medium text-slate-800">{am.l}</span>
-                          </div>
-                        </td>
-
-                        {/* Lanjut Complete */}
-                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                          {cellFmt(am.lc)}
-                        </td>
-                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                          {formatRupiah(am.la)}
-                        </td>
-
-                        {/* Lanjut In Progress */}
-                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                          {cellFmt(am.lp)}
-                        </td>
-                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
-                          {formatRupiah(am.lpa)}
-                        </td>
-
-                        {/* Tidak Lanjut Complete */}
-                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                          {cellFmt(am.tc)}
-                        </td>
-                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                          {formatRupiah(am.ta)}
-                        </td>
-
-                        {/* Tidak Lanjut In Progress */}
-                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                          {cellFmt(am.tp)}
-                        </td>
-                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
-                          {formatRupiah(am.tpa)}
-                        </td>
-
-                        {/* Bukan Witel Solo JT */}
-                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                          {cellFmt(am.b)}
-                        </td>
-                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
-                          {formatRupiah(am.ba)}
-                        </td>
-
-                        {/* Konfirmasi AM */}
-                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                          {cellFmt(am.k)}
-                        </td>
-                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                          {formatRupiah(am.ka)}
-                        </td>
-                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                          {cellFmt(am.k_auto)}
-                        </td>
-                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
-                          {cellFmt(am.k_prog)}
-                        </td>
-
-                        {/* Total EDK (Persis Sesuai Screenshot) */}
-                        <td className="px-3 py-2 text-center tabular-nums text-xs font-bold text-slate-900 border-r border-slate-200">
-                          {cellFmt(am.to)}
-                        </td>
-                        <td className="px-3 py-2 text-right tabular-nums text-xs font-bold text-slate-900">
-                          {formatRupiah(am.ta2)}
-                        </td>
-                      </tr>
-                    ))}
-                  </Fragment>
-                ))
-              ) : mode === 'Segmen' ? (
-                /* ======================================================== */
-                /* BODY C: SEGMEN REKAPITULASI */
-                /* ======================================================== */
-                <>
-                  {data.map((r) => (
-                    <tr key={r.l} className="h-10 border-b border-slate-200/80 hover:bg-blue-50/40 transition-colors bg-white">
-                      <td className="px-4 py-2.5 text-center font-bold text-xs text-slate-800 sticky left-0 z-10 bg-white border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
-                        {r.l}
+                      <td className="px-3.5 py-2 text-left font-bold text-xs text-slate-800 sticky left-10 z-10 bg-white border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
+                        {toTitleCase(r.l)}
                       </td>
 
                       {/* Lanjut Complete */}
@@ -1216,26 +1160,20 @@ export default function Edk() {
                         {formatRupiah(r.tpa)}
                       </td>
 
-                      {/* Konfirmasi AM */}
-                      <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                        {cellFmt(r.k)}
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                        {formatRupiah(r.ka)}
-                      </td>
-                      <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                        {cellFmt(r.k_auto)}
-                      </td>
-                      <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
-                        {cellFmt(r.k_prog)}
-                      </td>
-
                       {/* Bukan Witel Solo JT */}
                       <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
                         {cellFmt(r.b)}
                       </td>
                       <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
                         {formatRupiah(r.ba)}
+                      </td>
+
+                      {/* Konfirmasi AM */}
+                      <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                        {cellFmt(r.k)}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
+                        {formatRupiah(r.ka)}
                       </td>
 
                       {/* Total EDK */}
@@ -1246,205 +1184,450 @@ export default function Edk() {
                         {formatRupiah(r.ta2)}
                       </td>
                     </tr>
-                  ))}
-
-                  {/* Summary Row for Segmen */}
-                  <tr className="h-11 bg-[#EFF6FF] border-t-2 border-slate-300 font-bold text-xs text-[#1D4ED8]">
-                    <td className="px-4 py-2.5 text-left sticky left-0 z-10 bg-[#EFF6FF] border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
-                      Witel Solo JT <span className="text-[10px] text-slate-500 font-semibold">Total</span>
-                    </td>
-
-                    {/* Lanjut Complete: 237 | 790.283.739 */}
-                    <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
-                      {cellFmt(grandTotal.lc)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums border-r border-slate-200">
-                      {formatRupiah(grandTotal.la)}
-                    </td>
-
-                    {/* Lanjut In Progress: 143 | 293.822.739 */}
-                    <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
-                      {cellFmt(grandTotal.lp)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums border-r border-slate-300">
-                      {formatRupiah(grandTotal.lpa)}
-                    </td>
-
-                    {/* Tidak Lanjut Complete: 120 | 451.131.473 */}
-                    <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
-                      {cellFmt(grandTotal.tc)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums border-r border-slate-200">
-                      {formatRupiah(grandTotal.ta)}
-                    </td>
-
-                    {/* Tidak Lanjut In Progress: 68 | 157.166.816 */}
-                    <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
-                      {cellFmt(grandTotal.tp)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums border-r border-slate-300">
-                      {formatRupiah(grandTotal.tpa)}
-                    </td>
-
-                    {/* Konfirmasi AM: 302 | 1.101.000.000 | 68 | 58 */}
-                    <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
-                      {cellFmt(grandTotal.k)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums border-r border-slate-200">
-                      {formatRupiah(grandTotal.ka)}
-                    </td>
-                    <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
-                      {cellFmt(grandTotal.k_auto)}
-                    </td>
-                    <td className="px-3 py-2 text-center tabular-nums border-r border-slate-300">
-                      {cellFmt(grandTotal.k_prog)}
-                    </td>
-
-                    {/* Bukan Witel Solo JT: 101 | 232.657.000 */}
-                    <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
-                      {cellFmt(grandTotal.b)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums border-r border-slate-300">
-                      {formatRupiah(grandTotal.ba)}
-                    </td>
-
-                    {/* Total EDK */}
-                    <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
-                      {cellFmt(grandTotal.to)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums">
-                      {formatRupiah(grandTotal.ta2)}
+                  ))
+                )
+              ) : mode === 'Nama AM' ? (
+                /* ======================================================== */
+                /* BODY B: NAMA AM GROUPED (PERSIS SESUAI SCREENSHOT TERBARU) */
+                /* ======================================================== */
+                amGroups.length === 0 ? (
+                  <tr>
+                    <td colSpan={17} className="py-12 text-center text-slate-500 text-xs bg-white">
+                      Tidak ada Account Manager yang sesuai dengan filter yang dipilih.
+                      <div className="mt-2">
+                        <button
+                          type="button"
+                          onClick={resetFilters}
+                          className="text-[#1D4ED8] hover:underline font-bold cursor-pointer"
+                        >
+                          Reset Filter
+                        </button>
+                      </div>
                     </td>
                   </tr>
-                </>
+                ) : (
+                  amGroups.map((group) => (
+                    <Fragment key={group.name}>
+                      {/* Subtotal Group Header Row */}
+                      <tr className="h-10 bg-slate-50/70 border-b border-slate-200">
+                        <td className="px-3.5 py-2 text-left sticky left-0 z-10 bg-slate-50 border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <span className="size-4 rounded bg-[#1D4ED8] text-white flex items-center justify-center font-bold text-[10px] leading-none shrink-0 shadow-2xs">
+                              −
+                            </span>
+                            <span className="font-bold text-xs text-[#1D4ED8]">{group.name}</span>
+                            <span className="text-[11px] text-slate-500 font-normal">({group.items.length} Account Manager)</span>
+                          </div>
+                        </td>
+
+                        {/* Middle blank cells (under Lanjut & Tidak Lanjut: 8 kolom) */}
+                        <td colSpan={8} className="border-r border-slate-300" />
+
+                        {/* Subtotal Label under Bukan Witel Solo JT (2 kolom) */}
+                        <td colSpan={2} className="px-3 py-2 text-right font-bold text-xs text-[#1D4ED8] border-r border-slate-300 whitespace-nowrap">
+                          Subtotal {group.name}
+                        </td>
+
+                        {/* Konfirmasi AM Subtotals (4 kolom) */}
+                        <td className="px-3 py-2 text-center tabular-nums text-xs font-bold text-[#1D4ED8] border-r border-slate-200">
+                          {group.subtotal.order || '-'}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-xs font-bold text-[#1D4ED8] border-r border-slate-200">
+                          {group.subtotal.abon ? formatRupiah(group.subtotal.abon) : '-'}
+                        </td>
+                        <td className="px-3 py-2 text-center tabular-nums text-xs font-bold text-[#1D4ED8] border-r border-slate-200">
+                          {group.subtotal.auto !== undefined ? group.subtotal.auto : '-'}
+                        </td>
+                        <td className="px-3 py-2 text-center tabular-nums text-xs font-bold text-[#1D4ED8] border-r border-slate-300">
+                          {group.subtotal.inprog !== undefined ? group.subtotal.inprog : '-'}
+                        </td>
+
+                        {/* Total EDK empty for subtotal header (2 kolom) */}
+                        <td colSpan={2} />
+                      </tr>
+
+                      {/* Member Rows */}
+                      {group.items.map((am) => (
+                        <tr key={am.l} className="h-10 border-b border-slate-100 hover:bg-blue-50/40 transition-colors bg-white">
+                          <td className="px-3.5 py-2 text-left sticky left-0 z-10 bg-white border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
+                            <div className="flex items-center gap-2 pl-3">
+                              <span className="size-1.5 rounded-full bg-[#1D4ED8] inline-block shrink-0" />
+                              <span className="text-xs font-medium text-slate-800">{am.l}</span>
+                            </div>
+                          </td>
+
+                          {/* Lanjut Complete */}
+                          <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                            {cellFmt(am.lc)}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                            {formatRupiah(am.la)}
+                          </td>
+
+                          {/* Lanjut In Progress */}
+                          <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                            {cellFmt(am.lp)}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
+                            {formatRupiah(am.lpa)}
+                          </td>
+
+                          {/* Tidak Lanjut Complete */}
+                          <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                            {cellFmt(am.tc)}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                            {formatRupiah(am.ta)}
+                          </td>
+
+                          {/* Tidak Lanjut In Progress */}
+                          <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                            {cellFmt(am.tp)}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
+                            {formatRupiah(am.tpa)}
+                          </td>
+
+                          {/* Bukan Witel Solo JT */}
+                          <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                            {cellFmt(am.b)}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
+                            {formatRupiah(am.ba)}
+                          </td>
+
+                          {/* Konfirmasi AM */}
+                          <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                            {cellFmt(am.k)}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                            {formatRupiah(am.ka)}
+                          </td>
+                          <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                            {cellFmt(am.k_auto)}
+                          </td>
+                          <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
+                            {cellFmt(am.k_prog)}
+                          </td>
+
+                          {/* Total EDK (Persis Sesuai Screenshot) */}
+                          <td className="px-3 py-2 text-center tabular-nums text-xs font-bold text-slate-900 border-r border-slate-200">
+                            {cellFmt(am.to)}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums text-xs font-bold text-slate-900">
+                            {formatRupiah(am.ta2)}
+                          </td>
+                        </tr>
+                      ))}
+                    </Fragment>
+                  ))
+                )
+              ) : mode === 'Segmen' ? (
+                /* ======================================================== */
+                /* BODY C: SEGMEN REKAPITULASI */
+                /* ======================================================== */
+                data.length === 0 ? (
+                  <tr>
+                    <td colSpan={16} className="py-12 text-center text-slate-500 text-xs bg-white">
+                      Tidak ada data segmen yang sesuai dengan filter yang dipilih.
+                      <div className="mt-2">
+                        <button
+                          type="button"
+                          onClick={resetFilters}
+                          className="text-[#1D4ED8] hover:underline font-bold cursor-pointer"
+                        >
+                          Reset Filter
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  <>
+                    {data.map((r) => (
+                      <tr key={r.l} className="h-10 border-b border-slate-200/80 hover:bg-blue-50/40 transition-colors bg-white">
+                        <td className="px-4 py-2.5 text-center font-bold text-xs text-slate-800 sticky left-0 z-10 bg-white border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
+                          {r.l}
+                        </td>
+
+                        {/* Lanjut Complete */}
+                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                          {cellFmt(r.lc)}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                          {formatRupiah(r.la)}
+                        </td>
+
+                        {/* Lanjut In Progress */}
+                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                          {cellFmt(r.lp)}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
+                          {formatRupiah(r.lpa)}
+                        </td>
+
+                        {/* Tidak Lanjut Complete */}
+                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                          {cellFmt(r.tc)}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                          {formatRupiah(r.ta)}
+                        </td>
+
+                        {/* Tidak Lanjut In Progress */}
+                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                          {cellFmt(r.tp)}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
+                          {formatRupiah(r.tpa)}
+                        </td>
+
+                        {/* Konfirmasi AM */}
+                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                          {cellFmt(r.k)}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                          {formatRupiah(r.ka)}
+                        </td>
+                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                          {cellFmt(r.k_auto)}
+                        </td>
+                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
+                          {cellFmt(r.k_prog)}
+                        </td>
+
+                        {/* Bukan Witel Solo JT */}
+                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                          {cellFmt(r.b)}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
+                          {formatRupiah(r.ba)}
+                        </td>
+
+                        {/* Total EDK */}
+                        <td className="px-3 py-2 text-center tabular-nums text-xs font-bold text-slate-900 border-r border-slate-200">
+                          {cellFmt(r.to)}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-xs font-bold text-slate-900">
+                          {formatRupiah(r.ta2)}
+                        </td>
+                      </tr>
+                    ))}
+
+                    {/* Summary Row for Segmen */}
+                    <tr className="h-11 bg-[#EFF6FF] border-t-2 border-slate-300 font-bold text-xs text-[#1D4ED8]">
+                      <td className="px-4 py-2.5 text-left sticky left-0 z-10 bg-[#EFF6FF] border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
+                        Witel Solo JT <span className="text-[10px] text-slate-500 font-semibold">Total</span>
+                      </td>
+
+                      {/* Lanjut Complete */}
+                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
+                        {cellFmt(grandTotal.lc)}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums border-r border-slate-200">
+                        {formatRupiah(grandTotal.la)}
+                      </td>
+
+                      {/* Lanjut In Progress */}
+                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
+                        {cellFmt(grandTotal.lp)}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums border-r border-slate-300">
+                        {formatRupiah(grandTotal.lpa)}
+                      </td>
+
+                      {/* Tidak Lanjut Complete */}
+                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
+                        {cellFmt(grandTotal.tc)}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums border-r border-slate-200">
+                        {formatRupiah(grandTotal.ta)}
+                      </td>
+
+                      {/* Tidak Lanjut In Progress */}
+                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
+                        {cellFmt(grandTotal.tp)}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums border-r border-slate-300">
+                        {formatRupiah(grandTotal.tpa)}
+                      </td>
+
+                      {/* Konfirmasi AM */}
+                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
+                        {cellFmt(grandTotal.k)}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums border-r border-slate-200">
+                        {formatRupiah(grandTotal.ka)}
+                      </td>
+                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
+                        {cellFmt(grandTotal.k_auto)}
+                      </td>
+                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-300">
+                        {cellFmt(grandTotal.k_prog)}
+                      </td>
+
+                      {/* Bukan Witel Solo JT */}
+                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
+                        {cellFmt(grandTotal.b)}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums border-r border-slate-300">
+                        {formatRupiah(grandTotal.ba)}
+                      </td>
+
+                      {/* Total EDK */}
+                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
+                        {cellFmt(grandTotal.to)}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {formatRupiah(grandTotal.ta2)}
+                      </td>
+                    </tr>
+                  </>
+                )
               ) : (
                 /* ======================================================== */
                 /* BODY D: PERIODE EDK (SCREENSHOT 1) */
                 /* ======================================================== */
-                <>
-                  {data.map((r) => (
-                    <tr key={r.l} className="h-10 border-b border-slate-200/80 hover:bg-blue-50/40 transition-colors bg-white">
-                      <td className="px-4 py-2.5 text-center font-bold text-xs text-slate-800 sticky left-0 z-10 bg-white border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
-                        {r.l}
+                data.length === 0 ? (
+                  <tr>
+                    <td colSpan={16} className="py-12 text-center text-slate-500 text-xs bg-white">
+                      Tidak ada data periode EDK yang sesuai dengan filter yang dipilih.
+                      <div className="mt-2">
+                        <button
+                          type="button"
+                          onClick={resetFilters}
+                          className="text-[#1D4ED8] hover:underline font-bold cursor-pointer"
+                        >
+                          Reset Filter
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  <>
+                    {data.map((r) => (
+                      <tr key={r.l} className="h-10 border-b border-slate-200/80 hover:bg-blue-50/40 transition-colors bg-white">
+                        <td className="px-4 py-2.5 text-center font-bold text-xs text-slate-800 sticky left-0 z-10 bg-white border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
+                          {r.l}
+                        </td>
+
+                        {/* Lanjut Complete */}
+                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                          {cellFmt(r.lc)}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                          {formatRupiah(r.la)}
+                        </td>
+
+                        {/* Lanjut In Progress */}
+                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                          {cellFmt(r.lp)}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
+                          {formatRupiah(r.lpa)}
+                        </td>
+
+                        {/* Tidak Lanjut Complete */}
+                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                          {cellFmt(r.tc)}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                          {formatRupiah(r.ta)}
+                        </td>
+
+                        {/* Tidak Lanjut In Progress */}
+                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                          {cellFmt(r.tp)}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
+                          {formatRupiah(r.tpa)}
+                        </td>
+
+                        {/* Konfirmasi AM */}
+                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                          {cellFmt(r.k)}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                          {formatRupiah(r.ka)}
+                        </td>
+                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                          {cellFmt(r.k_auto)}
+                        </td>
+                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
+                          {cellFmt(r.k_prog)}
+                        </td>
+
+                        {/* Bukan Witel Solo JT */}
+                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                          {cellFmt(r.b)}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700">
+                          {formatRupiah(r.ba)}
+                        </td>
+                      </tr>
+                    ))}
+
+                    {/* Summary Row for Periode EDK */}
+                    <tr className="h-11 bg-[#EFF6FF] border-t-2 border-slate-300 font-bold text-xs text-[#1D4ED8]">
+                      <td className="px-4 py-2.5 text-left sticky left-0 z-10 bg-[#EFF6FF] border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
+                        Witel Solo JT <span className="text-[10px] text-slate-500 font-semibold">Total</span>
                       </td>
 
                       {/* Lanjut Complete */}
-                      <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                        {cellFmt(r.lc)}
+                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
+                        {cellFmt(grandTotal.lc)}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                        {formatRupiah(r.la)}
+                      <td className="px-3 py-2 text-right tabular-nums border-r border-slate-200">
+                        {formatRupiah(grandTotal.la)}
                       </td>
 
                       {/* Lanjut In Progress */}
-                      <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                        {cellFmt(r.lp)}
+                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
+                        {cellFmt(grandTotal.lp)}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
-                        {formatRupiah(r.lpa)}
+                      <td className="px-3 py-2 text-right tabular-nums border-r border-slate-300">
+                        {formatRupiah(grandTotal.lpa)}
                       </td>
 
                       {/* Tidak Lanjut Complete */}
-                      <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                        {cellFmt(r.tc)}
+                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
+                        {cellFmt(grandTotal.tc)}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                        {formatRupiah(r.ta)}
+                      <td className="px-3 py-2 text-right tabular-nums border-r border-slate-200">
+                        {formatRupiah(grandTotal.ta)}
                       </td>
 
                       {/* Tidak Lanjut In Progress */}
-                      <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                        {cellFmt(r.tp)}
+                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
+                        {cellFmt(grandTotal.tp)}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
-                        {formatRupiah(r.tpa)}
+                      <td className="px-3 py-2 text-right tabular-nums border-r border-slate-300">
+                        {formatRupiah(grandTotal.tpa)}
                       </td>
 
                       {/* Konfirmasi AM */}
-                      <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                        {cellFmt(r.k)}
+                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
+                        {cellFmt(grandTotal.k)}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                        {formatRupiah(r.ka)}
+                      <td className="px-3 py-2 text-right tabular-nums border-r border-slate-200">
+                        {formatRupiah(grandTotal.ka)}
                       </td>
-                      <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                        {cellFmt(r.k_auto)}
+                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
+                        {cellFmt(grandTotal.k_auto)}
                       </td>
-                      <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
-                        {cellFmt(r.k_prog)}
+                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-300">
+                        {cellFmt(grandTotal.k_prog)}
                       </td>
 
                       {/* Bukan Witel Solo JT */}
-                      <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                        {cellFmt(r.b)}
+                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
+                        {cellFmt(grandTotal.b)}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700">
-                        {formatRupiah(r.ba)}
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {formatRupiah(grandTotal.ba)}
                       </td>
                     </tr>
-                  ))}
-
-                  {/* Summary Row for Periode EDK */}
-                  <tr className="h-11 bg-[#EFF6FF] border-t-2 border-slate-300 font-bold text-xs text-[#1D4ED8]">
-                    <td className="px-4 py-2.5 text-left sticky left-0 z-10 bg-[#EFF6FF] border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
-                      Witel Solo JT <span className="text-[10px] text-slate-500 font-semibold">Total</span>
-                    </td>
-
-                    {/* Lanjut Complete: 34 | 45.140.262 */}
-                    <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
-                      {cellFmt(grandTotal.lc)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums border-r border-slate-200">
-                      {formatRupiah(grandTotal.la)}
-                    </td>
-
-                    {/* Lanjut In Progress: 127 | 152.203.093 */}
-                    <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
-                      {cellFmt(grandTotal.lp)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums border-r border-slate-300">
-                      {formatRupiah(grandTotal.lpa)}
-                    </td>
-
-                    {/* Tidak Lanjut Complete: 110 | -31.364.937 */}
-                    <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
-                      {cellFmt(grandTotal.tc)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums border-r border-slate-200">
-                      {formatRupiah(grandTotal.ta)}
-                    </td>
-
-                    {/* Tidak Lanjut In Progress: 43 | 61.240.660 */}
-                    <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
-                      {cellFmt(grandTotal.tp)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums border-r border-slate-300">
-                      {formatRupiah(grandTotal.tpa)}
-                    </td>
-
-                    {/* Konfirmasi AM: 50 | 155.754.668 | 0 | 48 */}
-                    <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
-                      {cellFmt(grandTotal.k)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums border-r border-slate-200">
-                      {formatRupiah(grandTotal.ka)}
-                    </td>
-                    <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
-                      {cellFmt(grandTotal.k_auto)}
-                    </td>
-                    <td className="px-3 py-2 text-center tabular-nums border-r border-slate-300">
-                      {cellFmt(grandTotal.k_prog)}
-                    </td>
-
-                    {/* Bukan Witel Solo JT: 0 | 0 */}
-                    <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
-                      {cellFmt(grandTotal.b)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums">
-                      {formatRupiah(grandTotal.ba)}
-                    </td>
-                  </tr>
-                </>
+                  </>
+                )
               )}
             </tbody>
           </table>
