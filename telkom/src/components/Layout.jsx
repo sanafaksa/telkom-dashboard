@@ -49,8 +49,8 @@ function SidebarItem({ to, icon: Icon, children, hasSub, isOpen, onToggle, end, 
         className={({ isActive }) => {
           const active = isActiveOverride !== undefined ? isActiveOverride : isActive;
           return `group flex items-center justify-between rounded-full px-4 py-2.5 text-[13px] transition-all select-none ${active
-              ? 'bg-white text-[#06246A] shadow-sm font-semibold'
-              : 'text-white hover:bg-white/10 hover:text-white font-normal'
+            ? 'bg-white text-[#06246A] shadow-sm font-semibold'
+            : 'text-white hover:bg-white/10 hover:text-white font-normal'
             }`;
         }}
       >
@@ -176,7 +176,7 @@ function Sidebar({ close, onCollapse }) {
           </div>
         )}
 
-        <SidebarItem to="/support-needed" icon={FileText} showPlus>
+        <SidebarItem to="/support-needed" icon={FileText}>
           Catatan MoM & Support
         </SidebarItem>
       </div>
@@ -251,8 +251,8 @@ function CollapsedSidebar({ onExpand }) {
               className={({ isActive }) => {
                 const on = active !== undefined ? active : isActive;
                 return `relative group size-10 rounded-2xl grid place-items-center transition-all ${on
-                    ? 'bg-[#EBF0FD] text-[#235CE5]'
-                    : 'text-slate-400 hover:bg-slate-100 hover:text-[#06246A]'
+                  ? 'bg-[#EBF0FD] text-[#235CE5]'
+                  : 'text-slate-400 hover:bg-slate-100 hover:text-[#06246A]'
                   }`;
               }}
             >
@@ -526,8 +526,8 @@ export default function Layout({ children }) {
               title="Notifikasi"
               onClick={() => setNotifOpen(v => !v)}
               className={`relative size-9 rounded-full border grid place-items-center cursor-pointer transition-all ${notifOpen
-                  ? 'bg-blue-50 border-blue-300 text-blue-600'
-                  : 'border-slate-200 hover:bg-slate-50 text-slate-600'
+                ? 'bg-blue-50 border-blue-300 text-blue-600'
+                : 'border-slate-200 hover:bg-slate-50 text-slate-600'
                 }`}
             >
               {unreadCount > 0 ? <BellRing size={15} className="animate-[wiggle_1s_ease-in-out_infinite]" /> : <Bell size={15} />}
