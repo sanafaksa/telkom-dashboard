@@ -616,25 +616,22 @@ export default function Layout({ children }) {
             )}
           </div>
 
-          {/* Dark Mode Toggle */}
-          <button
-            id="theme-toggle-btn"
-            type="button"
-            onClick={toggleTheme}
-            aria-label={isDark ? 'Beralih ke Mode Terang' : 'Beralih ke Mode Gelap'}
-            title={isDark ? 'Mode Terang (Klik untuk ganti)' : 'Mode Gelap (Klik untuk ganti)'}
-            className={`relative size-9 rounded-full border grid place-items-center cursor-pointer transition-all duration-200 shrink-0 shadow-2xs hover:scale-105 active:scale-95 ${
-              isDark
-                ? 'bg-slate-800 border-slate-700 text-amber-400 hover:bg-slate-700'
-                : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-600'
-            }`}
-          >
-            {isDark ? (
-              <Sun size={15} className="text-amber-400 animate-[fadeIn_0.2s_ease-out]" />
-            ) : (
-              <Moon size={15} className="text-slate-600 animate-[fadeIn_0.2s_ease-out]" />
-            )}
-          </button>
+          {/* Dark Mode Toggle (Coming Soon) */}
+          <div className="relative">
+            <button
+              id="theme-toggle-btn"
+              type="button"
+              onClick={toggleTheme}
+              aria-label="Mode Gelap (Coming Soon)"
+              title="Mode Gelap (Coming Soon)"
+              className="relative size-9 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 grid place-items-center cursor-pointer transition-all duration-200 shrink-0 shadow-2xs hover:scale-105 active:scale-95"
+            >
+              <Moon size={15} className="text-slate-600" />
+              <span className="absolute -top-1 -right-1 text-[7.5px] font-extrabold tracking-wider bg-amber-500 text-white px-1 py-[1px] rounded-full uppercase shadow-2xs leading-none">
+                SOON
+              </span>
+            </button>
+          </div>
 
           {/* Dynamic Date */}
           <span className="hidden xl:inline-flex shrink-0 items-center gap-2 text-xs border border-slate-200 dark:border-slate-700/80 rounded-full px-3.5 py-1.5 text-slate-700 dark:text-slate-200 font-medium bg-white dark:bg-slate-800">

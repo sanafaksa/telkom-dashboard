@@ -7,7 +7,8 @@ export default function FilterDropdown({
   selected = [],
   onChange,
   multiColumn = false,
-  isSort = false
+  isSort = false,
+  className = ''
 }) {
   const [open, setOpen] = useState(false);
   // Draft selections while popup is open
@@ -78,15 +79,15 @@ export default function FilterDropdown({
   };
 
   return (
-    <div className="relative" ref={ref}>
-      <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+    <div className={`relative ${className}`} ref={ref}>
+      <label className="block text-[11px] font-semibold text-slate-500 mb-1 truncate">
         {label}
       </label>
 
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="bg-white border border-slate-200/90 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 flex items-center justify-between gap-2 min-w-[120px] max-w-[160px] shadow-2xs transition-colors cursor-pointer h-[32px]"
+        className="w-full bg-white border border-slate-200/90 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 flex items-center justify-between gap-2 min-w-[120px] shadow-2xs transition-colors cursor-pointer h-[32px]"
       >
         <span className="truncate">{getDisplayText()}</span>
         <ChevronDown

@@ -151,10 +151,10 @@ function UploadModal({ open, onClose }) {
 }
 
 const AM_GROUP_SUBTOTALS = {
-  'Segmen DGS': { order: 172, abon: 65138000, auto: 0, inprog: 0 },
-  'Segmen DPS': { order: 183, abon: 84220000, auto: 0, inprog: 39 },
-  'Segmen DSS': { order: 145, abon: 76884000, auto: 20, inprog: 9 },
-  'Segmen RBS': { order: 120, abon: 54200000, auto: 0, inprog: 12 }
+  'Segmen DGS': { auto_order: 8, auto_abon: 5065520, inprog_order: 92, inprog_abon: 419951755 },
+  'Segmen DPS': { auto_order: 2, auto_abon: 24000000, inprog_order: 35, inprog_abon: 107131000 },
+  'Segmen DSS': { auto_order: 0, auto_abon: 0, inprog_order: 47, inprog_abon: 997567284 },
+  'Segmen RBS': { auto_order: 42, auto_abon: 91275064, inprog_order: 97, inprog_abon: 177754711 }
 };
 
 export default function Edk() {
@@ -318,13 +318,15 @@ export default function Edk() {
         k: acc.k + (r.k || 0),
         ka: acc.ka + (r.ka || 0),
         k_auto: acc.k_auto + (r.k_auto || 0),
+        k_auto_a: acc.k_auto_a + (r.k_auto_a || 0),
         k_prog: acc.k_prog + (r.k_prog || 0),
+        k_prog_a: acc.k_prog_a + (r.k_prog_a || 0),
         b: acc.b + (r.b || 0),
         ba: acc.ba + (r.ba || 0),
         to: acc.to + ((r.lc || 0) + (r.lp || 0) + (r.tc || 0) + (r.tp || 0) + (r.k || 0) + (r.b || 0)),
         ta2: acc.ta2 + ((r.la || 0) + (r.lpa || 0) + (r.ta || 0) + (r.tpa || 0) + (r.ka || 0) + (r.ba || 0))
       }),
-      { lc: 0, la: 0, lp: 0, lpa: 0, tc: 0, ta: 0, tp: 0, tpa: 0, k: 0, ka: 0, k_auto: 0, k_prog: 0, b: 0, ba: 0, to: 0, ta2: 0 }
+      { lc: 0, la: 0, lp: 0, lpa: 0, tc: 0, ta: 0, tp: 0, tpa: 0, k: 0, ka: 0, k_auto: 0, k_auto_a: 0, k_prog: 0, k_prog_a: 0, b: 0, ba: 0, to: 0, ta2: 0 }
     );
   }, [data]);
 
@@ -352,11 +354,11 @@ export default function Edk() {
       if (!hasActiveFilters && AM_GROUP_SUBTOTALS[g.name]) {
         g.subtotal = AM_GROUP_SUBTOTALS[g.name];
       } else {
-        const order = g.items.reduce((acc, it) => acc + (it.to || 0), 0);
-        const abon = g.items.reduce((acc, it) => acc + (it.ta2 || 0), 0);
-        const auto = g.items.reduce((acc, it) => acc + (it.k_auto || 0), 0);
-        const inprog = g.items.reduce((acc, it) => acc + (it.k_prog || 0), 0);
-        g.subtotal = { order, abon, auto, inprog };
+        const auto_order = g.items.reduce((acc, it) => acc + (it.k_auto || 0), 0);
+        const auto_abon = g.items.reduce((acc, it) => acc + (it.k_auto_a || 0), 0);
+        const inprog_order = g.items.reduce((acc, it) => acc + (it.k_prog || 0), 0);
+        const inprog_abon = g.items.reduce((acc, it) => acc + (it.k_prog_a || 0), 0);
+        g.subtotal = { auto_order, auto_abon, inprog_order, inprog_abon };
       }
     });
 
@@ -505,15 +507,15 @@ export default function Edk() {
       </div>
 
       {/* 3. Filter Toolbar */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs flex flex-wrap items-end justify-between gap-3">
-        {/* Left: Filter Controls */}
-        <div className="flex flex-wrap items-end gap-2.5">
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs">
+        <div className="flex flex-wrap items-end gap-3 w-full">
           <FilterDropdown
             label="Periode EDK"
             options={filterOptions.periode}
             selected={selectedPeriode}
             onChange={setSelectedPeriode}
             multiColumn
+            className="flex-1 min-w-[130px]"
           />
 
           <FilterDropdown
@@ -521,6 +523,7 @@ export default function Edk() {
             options={filterOptions.segmen}
             selected={selectedSegmen}
             onChange={handleSegmenFilterChange}
+            className="flex-1 min-w-[110px]"
           />
 
           <FilterDropdown
@@ -528,6 +531,7 @@ export default function Edk() {
             options={filterOptions.namaAm}
             selected={selectedNamaAm}
             onChange={setSelectedNamaAm}
+            className="flex-1 min-w-[130px]"
           />
 
           <FilterDropdown
@@ -535,6 +539,7 @@ export default function Edk() {
             options={filterOptions.flagging}
             selected={selectedFlagging}
             onChange={setSelectedFlagging}
+            className="flex-1 min-w-[150px]"
           />
 
           {/* Tampilkan Sort / Nama Pelanggan hanya pada mode selain Nama AM */}
@@ -545,52 +550,32 @@ export default function Edk() {
               selected={[sortOrder]}
               onChange={(val) => setSortOrder(val[0] || 'Sort by')}
               isSort
+              className="flex-1 min-w-[130px]"
             />
           )}
 
           <button
             type="button"
             onClick={resetFilters}
-            className={`font-semibold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer h-[32px] ${
+            className={`font-semibold text-xs px-3.5 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer h-[32px] shrink-0 ${
               hasActiveFilters
                 ? 'bg-blue-50 text-[#1D4ED8] border border-blue-200 hover:bg-blue-100 shadow-2xs font-bold'
                 : 'bg-white hover:bg-slate-50 border border-slate-200/90 text-slate-600 shadow-2xs'
             }`}
           >
             <RotateCcw size={13} className={hasActiveFilters ? 'text-[#1D4ED8]' : 'text-slate-500'} />
-            <span>Reset Filter</span>
+            <span className="whitespace-nowrap">Reset Filter</span>
             {hasActiveFilters && (
               <span className="size-1.5 rounded-full bg-[#1D4ED8]" />
             )}
           </button>
-        </div>
-
-        {/* Right: Mode Switcher Pills */}
-        <div className="flex items-center bg-slate-100/90 p-1 rounded-xl border border-slate-200/70 shrink-0">
-          {['Nama AM', 'Nama CC'].map((m) => {
-            const isActive = mode === m;
-            return (
-              <button
-                key={m}
-                type="button"
-                onClick={() => handleModeChange(m)}
-                className={`px-3.5 py-1.5 text-xs font-bold transition-all rounded-lg cursor-pointer ${
-                  isActive
-                    ? 'bg-[#1D4ED8] text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900 font-medium'
-                }`}
-              >
-                {m}
-              </button>
-            );
-          })}
         </div>
       </div>
 
       {/* 4. Table Card */}
       <section className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
         {/* Table Header Status Bar */}
-        <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between text-xs">
+        <div className="px-5 py-3.5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2">
             <span className="size-2 rounded-full bg-[#2563EB]" />
             <span className="text-slate-500 font-medium">Last Update :</span>
@@ -603,7 +588,7 @@ export default function Edk() {
               </span>
             )}
             <div className="flex items-center bg-slate-100/90 p-0.5 rounded-lg border border-slate-200/80 shrink-0">
-              {['Segmen', 'Periode EDK'].map((m) => {
+              {['Segmen', 'Periode EDK', 'Nama AM', 'Nama CC'].map((m) => {
                 const isActive = mode === m;
                 return (
                   <button
@@ -656,7 +641,7 @@ export default function Edk() {
 
         {/* Table Container */}
         <div className={`overflow-x-auto w-full ${isTop10View ? 'border-t border-slate-200/90' : ''}`}>
-          <table className="w-full text-xs border-collapse border-spacing-0">
+          <table className="w-full min-w-[1550px] text-xs border-collapse border-spacing-0">
             <thead className="bg-white">
               {/* ======================================================== */}
               {/* MODE A: TOP 10 PELANGGAN (NAMA CC) */}
@@ -666,7 +651,7 @@ export default function Edk() {
                   <tr>
                     <th
                       rowSpan={3}
-                      className="sticky left-0 z-30 bg-slate-100 px-3 py-2.5 text-center font-bold text-xs text-slate-800 border-r border-b border-slate-300 w-10 align-middle shadow-[3px_0_6px_-2px_rgba(0,0,0,0.06)]"
+                      className="sticky left-0 z-30 bg-slate-100 text-center font-bold text-xs text-slate-800 border-r border-b border-slate-300 w-12 min-w-[48px] max-w-[48px] align-middle shadow-[1px_0_0_0_#cbd5e1]"
                     >
                       #
                     </th>
@@ -675,7 +660,7 @@ export default function Edk() {
                       onClick={() => {
                         setSortOrder((prev) => (prev === 'Nama (A-Z)' ? 'Nama (Z-A)' : 'Nama (A-Z)'));
                       }}
-                      className="sticky left-10 z-30 bg-slate-100 px-3.5 py-2.5 text-left font-bold text-xs text-slate-800 border-r-2 border-b border-slate-300 min-w-[260px] align-middle shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] cursor-pointer select-none hover:bg-slate-200/80 transition-colors"
+                      className="sticky left-[48px] z-30 bg-slate-100 px-3.5 py-2.5 text-left font-bold text-xs text-slate-800 border-r-2 border-b border-slate-300 min-w-[260px] align-middle shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] cursor-pointer select-none hover:bg-slate-200/80 transition-colors"
                       title="Klik untuk urutkan A-Z / Z-A"
                     >
                       <div className="flex items-center justify-between">
@@ -707,16 +692,16 @@ export default function Edk() {
                       Tidak Lanjut
                     </th>
                     <th
+                      colSpan={4}
+                      className="bg-[#1D4ED8] text-white font-bold text-center text-xs py-2.5 border-r border-white/20 whitespace-nowrap"
+                    >
+                      Konfirmasi AM
+                    </th>
+                    <th
                       colSpan={2}
                       className="bg-slate-200 text-slate-800 font-bold text-center text-xs py-2.5 border-r border-slate-300 whitespace-nowrap"
                     >
                       Bukan Witel Solo JT
-                    </th>
-                    <th
-                      colSpan={2}
-                      className="bg-[#1D4ED8] text-white font-bold text-center text-xs py-2.5 border-r border-white/20 whitespace-nowrap"
-                    >
-                      Konfirmasi AM
                     </th>
                     <th
                       colSpan={2}
@@ -727,48 +712,60 @@ export default function Edk() {
                   </tr>
 
                   <tr>
-                    <th colSpan={2} className="bg-slate-50 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-slate-200">
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-2 border-r border-b border-slate-300 whitespace-nowrap">
                       Complete
                     </th>
-                    <th colSpan={2} className="bg-slate-50 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-slate-300">
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-2 border-r border-b border-slate-300 whitespace-nowrap">
                       In Progress
                     </th>
-                    <th colSpan={2} className="bg-slate-50 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-slate-200">
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-2 border-r border-b border-slate-300 whitespace-nowrap">
                       Complete
                     </th>
-                    <th colSpan={2} className="bg-slate-50 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-slate-300">
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-2 border-r border-b border-slate-300 whitespace-nowrap">
                       In Progress
                     </th>
-                    <th colSpan={2} className="bg-slate-50 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-slate-300">
-                      Semua Status
+
+                    {/* Konfirmasi AM sub-headers Level 2 */}
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-2 border-r border-b border-slate-300 whitespace-nowrap">
+                      Auto Renewal
                     </th>
-                    <th colSpan={2} className="bg-slate-50 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-slate-300">
-                      Semua Status
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-2 border-r border-b border-slate-300 whitespace-nowrap">
+                      In Progress
                     </th>
-                    <th colSpan={2} className="bg-slate-50 text-slate-700 font-bold text-center text-[11px] py-1.5">
-                      Semua Status
+
+                    {/* Bukan Witel Solo JT sub-headers */}
+                    <th rowSpan={2} className="py-2 px-3 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap min-w-[70px]">
+                      Order
+                    </th>
+                    <th rowSpan={2} className="py-2 px-3 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap min-w-[115px]">
+                      Abonemen (Rp)
+                    </th>
+
+                    {/* Total EDK sub-headers */}
+                    <th rowSpan={2} className="py-2 px-3 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-800 font-bold text-[10px] align-middle whitespace-nowrap min-w-[70px]">
+                      Order
+                    </th>
+                    <th rowSpan={2} className="py-2 px-3 text-center border-b border-slate-300 bg-slate-50 text-slate-800 font-bold text-[10px] align-middle whitespace-nowrap min-w-[120px]">
+                      Abonemen (Rp)
                     </th>
                   </tr>
 
-                  <tr className="border-b border-slate-300 bg-white text-slate-600 font-semibold text-[10px]">
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Order</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Abonemen</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Order</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-300">Abonemen</th>
+                  <tr className="border-b border-slate-300 bg-slate-50/70 text-slate-600 font-semibold text-[10px]">
+                    <th className="py-1.5 px-2.5 text-center border-r border-b border-slate-300 whitespace-nowrap min-w-[65px]">Order</th>
+                    <th className="py-1.5 px-2.5 text-center border-r border-b border-slate-300 whitespace-nowrap min-w-[115px]">Abonemen (Rp)</th>
+                    <th className="py-1.5 px-2.5 text-center border-r border-b border-slate-300 whitespace-nowrap min-w-[65px]">Order</th>
+                    <th className="py-1.5 px-2.5 text-center border-r border-slate-300 whitespace-nowrap min-w-[115px]">Abonemen (Rp)</th>
 
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Order</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Abonemen</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Order</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-300">Abonemen</th>
+                    <th className="py-1.5 px-2.5 text-center border-r border-b border-slate-300 whitespace-nowrap min-w-[65px]">Order</th>
+                    <th className="py-1.5 px-2.5 text-center border-r border-b border-slate-300 whitespace-nowrap min-w-[115px]">Abonemen (Rp)</th>
+                    <th className="py-1.5 px-2.5 text-center border-r border-b border-slate-300 whitespace-nowrap min-w-[65px]">Order</th>
+                    <th className="py-1.5 px-2.5 text-center border-r border-b border-slate-300 whitespace-nowrap min-w-[115px]">Abonemen (Rp)</th>
 
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Order</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-300">Abonemen</th>
-
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200">Order</th>
-                    <th className="py-1.5 px-2 text-center border-r border-slate-300">Abonemen</th>
-
-                    <th className="py-1.5 px-2 text-center border-r border-slate-200 font-bold">Order</th>
-                    <th className="py-1.5 px-2 text-center font-bold">Abonemen</th>
+                    {/* Konfirmasi AM sub-headers Level 3 */}
+                    <th className="py-1.5 px-2.5 text-center border-r border-b border-slate-300 whitespace-nowrap min-w-[65px]">Order</th>
+                    <th className="py-1.5 px-2.5 text-center border-r border-b border-slate-300 whitespace-nowrap min-w-[115px]">Abonemen (Rp)</th>
+                    <th className="py-1.5 px-2.5 text-center border-r border-b border-slate-300 whitespace-nowrap min-w-[65px]">Order</th>
+                    <th className="py-1.5 px-2.5 text-center border-r border-b border-slate-300 whitespace-nowrap min-w-[115px]">Abonemen (Rp)</th>
                   </tr>
                 </>
               ) : mode === 'Nama AM' ? (
@@ -818,17 +815,17 @@ export default function Edk() {
                     </th>
 
                     <th
-                      colSpan={2}
-                      className="bg-slate-200 text-slate-800 font-bold text-center text-xs py-2.5 border-r border-slate-300 whitespace-nowrap"
-                    >
-                      Bukan Witel Solo JT
-                    </th>
-
-                    <th
                       colSpan={4}
                       className="bg-[#1D4ED8] text-white font-bold text-center text-xs py-2.5 border-r border-white/20 whitespace-nowrap"
                     >
                       Konfirmasi AM
+                    </th>
+
+                    <th
+                      colSpan={2}
+                      className="bg-slate-200 text-slate-800 font-bold text-center text-xs py-2.5 border-r border-slate-300 whitespace-nowrap"
+                    >
+                      Bukan Witel Solo JT
                     </th>
 
                     <th
@@ -853,26 +850,20 @@ export default function Edk() {
                       In Progress
                     </th>
 
+                    {/* Konfirmasi AM sub-headers Level 2 */}
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-b border-slate-300 whitespace-nowrap">
+                      Auto Renewal
+                    </th>
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-b border-slate-300 whitespace-nowrap">
+                      In Progress
+                    </th>
+
                     {/* Bukan Witel Solo JT sub-headers */}
                     <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap">
                       Order
                     </th>
                     <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap">
                       Abonemen (Rp)
-                    </th>
-
-                    {/* Konfirmasi AM sub-headers */}
-                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap">
-                      Order
-                    </th>
-                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap">
-                      Abonemen (Rp)
-                    </th>
-                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-700 font-bold text-[10px] align-middle whitespace-nowrap">
-                      Auto Renewal
-                    </th>
-                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-700 font-bold text-[10px] align-middle whitespace-nowrap">
-                      In Progress
                     </th>
 
                     {/* Total EDK sub-headers */}
@@ -890,6 +881,12 @@ export default function Edk() {
                     <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
                     <th className="py-1.5 px-2 text-center border-r border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
 
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
+
+                    {/* Konfirmasi AM sub-headers Level 3 */}
                     <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
                     <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
                     <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
@@ -959,17 +956,11 @@ export default function Edk() {
                       In Progress
                     </th>
 
-                    {/* Konfirmasi AM sub-headers */}
-                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap">
-                      Order
-                    </th>
-                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap">
-                      Abonemen (Rp)
-                    </th>
-                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-700 font-bold text-[10px] align-middle whitespace-nowrap">
+                    {/* Konfirmasi AM sub-headers Level 2 */}
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-b border-slate-300 whitespace-nowrap">
                       Auto Renewal
                     </th>
-                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-700 font-bold text-[10px] align-middle whitespace-nowrap">
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-b border-slate-300 whitespace-nowrap">
                       In Progress
                     </th>
 
@@ -996,6 +987,12 @@ export default function Edk() {
                     <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
                     <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
 
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
+
+                    {/* Konfirmasi AM sub-headers Level 3 */}
                     <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
                     <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
                     <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
@@ -1065,17 +1062,11 @@ export default function Edk() {
                       In Progress
                     </th>
 
-                    {/* Konfirmasi AM sub-headers */}
-                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap">
-                      Order
-                    </th>
-                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-600 font-semibold text-[10px] align-middle whitespace-nowrap">
-                      Abonemen (Rp)
-                    </th>
-                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-700 font-bold text-[10px] align-middle whitespace-nowrap">
+                    {/* Konfirmasi AM sub-headers Level 2 */}
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-b border-slate-300 whitespace-nowrap">
                       Auto Renewal
                     </th>
-                    <th rowSpan={2} className="py-2 px-2.5 text-center border-r border-b border-slate-300 bg-slate-50 text-slate-700 font-bold text-[10px] align-middle whitespace-nowrap">
+                    <th colSpan={2} className="bg-slate-100 text-slate-700 font-bold text-center text-[11px] py-1.5 border-r border-b border-slate-300 whitespace-nowrap">
                       In Progress
                     </th>
 
@@ -1106,6 +1097,12 @@ export default function Edk() {
                     <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
                     <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
                     <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
+
+                    {/* Konfirmasi AM sub-headers Level 3 */}
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Order</th>
+                    <th className="py-1.5 px-2 text-center border-r border-b border-slate-300 whitespace-nowrap">Abonemen (Rp)</th>
                   </tr>
                 </>
               )}
@@ -1119,7 +1116,7 @@ export default function Edk() {
               {isTop10View ? (
                 top10List.length === 0 ? (
                   <tr>
-                    <td colSpan={16} className="py-12 text-center text-slate-500 text-xs bg-white">
+                    <td colSpan={18} className="py-12 text-center text-slate-500 text-xs bg-white">
                       Tidak ada data pelanggan yang sesuai dengan filter yang dipilih.
                       <div className="mt-2">
                         <button
@@ -1134,67 +1131,75 @@ export default function Edk() {
                   </tr>
                 ) : (
                   top10List.map((r, idx) => (
-                    <tr key={r.l + idx} className="h-10 border-b border-slate-200/80 hover:bg-blue-50/40 transition-colors bg-white">
-                      <td className="px-2.5 py-2 text-center font-bold text-xs text-slate-500 sticky left-0 z-10 bg-white border-r border-slate-300">
+                    <tr key={r.l + idx} className="h-11 border-b border-slate-200/80 hover:bg-blue-50/40 transition-colors bg-white">
+                      <td className="px-2.5 py-2.5 text-center font-bold text-xs text-slate-500 sticky left-0 z-10 bg-white border-r border-slate-300 w-12 min-w-[48px] max-w-[48px] shadow-[1px_0_0_0_#cbd5e1]">
                         {idx + 1}
                       </td>
-                      <td className="px-3.5 py-2 text-left font-bold text-xs text-slate-800 sticky left-10 z-10 bg-white border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
+                      <td className="px-3.5 py-2.5 text-left font-bold text-xs text-slate-800 sticky left-[48px] z-10 bg-white border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap min-w-[260px]">
                         {toTitleCase(r.l)}
                       </td>
 
                       {/* Lanjut Complete */}
-                      <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                      <td className="px-3 py-2.5 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
                         {cellFmt(r.lc)}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                      <td className="px-3 py-2.5 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
                         {formatRupiah(r.la)}
                       </td>
 
                       {/* Lanjut In Progress */}
-                      <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                      <td className="px-3 py-2.5 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
                         {cellFmt(r.lp)}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
+                      <td className="px-3 py-2.5 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
                         {formatRupiah(r.lpa)}
                       </td>
 
                       {/* Tidak Lanjut Complete */}
-                      <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                      <td className="px-3 py-2.5 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
                         {cellFmt(r.tc)}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                      <td className="px-3 py-2.5 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
                         {formatRupiah(r.ta)}
                       </td>
 
                       {/* Tidak Lanjut In Progress */}
-                      <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                      <td className="px-3 py-2.5 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
                         {cellFmt(r.tp)}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
+                      <td className="px-3 py-2.5 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
                         {formatRupiah(r.tpa)}
                       </td>
 
+                      {/* Konfirmasi AM Auto Renewal */}
+                      <td className="px-3 py-2.5 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                        {cellFmt(r.k_auto)}
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                        {formatRupiah(r.k_auto_a)}
+                      </td>
+
+                      {/* Konfirmasi AM In Progress */}
+                      <td className="px-3 py-2.5 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                        {cellFmt(r.k_prog)}
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
+                        {formatRupiah(r.k_prog_a)}
+                      </td>
+
                       {/* Bukan Witel Solo JT */}
-                      <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                      <td className="px-3 py-2.5 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
                         {cellFmt(r.b)}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
+                      <td className="px-3 py-2.5 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
                         {formatRupiah(r.ba)}
                       </td>
 
-                      {/* Konfirmasi AM */}
-                      <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                        {cellFmt(r.k)}
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
-                        {formatRupiah(r.ka)}
-                      </td>
-
                       {/* Total EDK */}
-                      <td className="px-3 py-2 text-center tabular-nums text-xs font-bold text-slate-900 border-r border-slate-200">
+                      <td className="px-3 py-2.5 text-center tabular-nums text-xs font-bold text-slate-900 border-r border-slate-200">
                         {cellFmt(r.to)}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-xs font-bold text-slate-900">
+                      <td className="px-3 py-2.5 text-right tabular-nums text-xs font-bold text-slate-900">
                         {formatRupiah(r.ta2)}
                       </td>
                     </tr>
@@ -1234,27 +1239,27 @@ export default function Edk() {
                           </div>
                         </td>
 
-                        {/* Middle blank cells (under Lanjut & Tidak Lanjut: 8 kolom) */}
-                        <td colSpan={8} className="border-r border-slate-300" />
-
-                        {/* Subtotal Label under Bukan Witel Solo JT (2 kolom) */}
-                        <td colSpan={2} className="px-3 py-2 text-right font-bold text-xs text-[#1D4ED8] border-r border-slate-300 whitespace-nowrap">
+                        {/* Middle blank cells under Lanjut & Tidak Lanjut: 8 kolom */}
+                        <td colSpan={8} className="px-3 py-2 text-right font-bold text-xs text-[#1D4ED8] border-r border-slate-300 whitespace-nowrap">
                           Subtotal {group.name}
                         </td>
 
                         {/* Konfirmasi AM Subtotals (4 kolom) */}
                         <td className="px-3 py-2 text-center tabular-nums text-xs font-bold text-[#1D4ED8] border-r border-slate-200">
-                          {group.subtotal.order || '-'}
+                          {group.subtotal.auto_order || '-'}
                         </td>
                         <td className="px-3 py-2 text-right tabular-nums text-xs font-bold text-[#1D4ED8] border-r border-slate-200">
-                          {group.subtotal.abon ? formatRupiah(group.subtotal.abon) : '-'}
+                          {group.subtotal.auto_abon ? formatRupiah(group.subtotal.auto_abon) : '-'}
                         </td>
                         <td className="px-3 py-2 text-center tabular-nums text-xs font-bold text-[#1D4ED8] border-r border-slate-200">
-                          {group.subtotal.auto !== undefined ? group.subtotal.auto : '-'}
+                          {group.subtotal.inprog_order || '-'}
                         </td>
-                        <td className="px-3 py-2 text-center tabular-nums text-xs font-bold text-[#1D4ED8] border-r border-slate-300">
-                          {group.subtotal.inprog !== undefined ? group.subtotal.inprog : '-'}
+                        <td className="px-3 py-2 text-right tabular-nums text-xs font-bold text-[#1D4ED8] border-r border-slate-300">
+                          {group.subtotal.inprog_abon ? formatRupiah(group.subtotal.inprog_abon) : '-'}
                         </td>
+
+                        {/* Bukan Witel Solo JT empty for subtotal header (2 kolom) */}
+                        <td colSpan={2} className="border-r border-slate-300" />
 
                         {/* Total EDK empty for subtotal header (2 kolom) */}
                         <td colSpan={2} />
@@ -1302,26 +1307,28 @@ export default function Edk() {
                             {formatRupiah(am.tpa)}
                           </td>
 
+                          {/* Konfirmasi AM Auto Renewal */}
+                          <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                            {cellFmt(am.k_auto)}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                            {formatRupiah(am.k_auto_a)}
+                          </td>
+
+                          {/* Konfirmasi AM In Progress */}
+                          <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                            {cellFmt(am.k_prog)}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
+                            {formatRupiah(am.k_prog_a)}
+                          </td>
+
                           {/* Bukan Witel Solo JT */}
                           <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
                             {cellFmt(am.b)}
                           </td>
                           <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
                             {formatRupiah(am.ba)}
-                          </td>
-
-                          {/* Konfirmasi AM */}
-                          <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                            {cellFmt(am.k)}
-                          </td>
-                          <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                            {formatRupiah(am.ka)}
-                          </td>
-                          <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                            {cellFmt(am.k_auto)}
-                          </td>
-                          <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
-                            {cellFmt(am.k_prog)}
                           </td>
 
                           {/* Total EDK (Persis Sesuai Screenshot) */}
@@ -1342,7 +1349,7 @@ export default function Edk() {
                 /* ======================================================== */
                 data.length === 0 ? (
                   <tr>
-                    <td colSpan={16} className="py-12 text-center text-slate-500 text-xs bg-white">
+                    <td colSpan={17} className="py-12 text-center text-slate-500 text-xs bg-white">
                       Tidak ada data segmen yang sesuai dengan filter yang dipilih.
                       <div className="mt-2">
                         <button
@@ -1395,18 +1402,20 @@ export default function Edk() {
                           {formatRupiah(r.tpa)}
                         </td>
 
-                        {/* Konfirmasi AM */}
-                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                          {cellFmt(r.k)}
-                        </td>
-                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                          {formatRupiah(r.ka)}
-                        </td>
+                        {/* Konfirmasi AM Auto Renewal */}
                         <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
                           {cellFmt(r.k_auto)}
                         </td>
-                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
+                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                          {formatRupiah(r.k_auto_a)}
+                        </td>
+
+                        {/* Konfirmasi AM In Progress */}
+                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
                           {cellFmt(r.k_prog)}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
+                          {formatRupiah(r.k_prog_a)}
                         </td>
 
                         {/* Bukan Witel Solo JT */}
@@ -1465,18 +1474,20 @@ export default function Edk() {
                         {formatRupiah(grandTotal.tpa)}
                       </td>
 
-                      {/* Konfirmasi AM */}
-                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
-                        {cellFmt(grandTotal.k)}
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums border-r border-slate-200">
-                        {formatRupiah(grandTotal.ka)}
-                      </td>
+                      {/* Konfirmasi AM Auto Renewal */}
                       <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
                         {cellFmt(grandTotal.k_auto)}
                       </td>
-                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-300">
+                      <td className="px-3 py-2 text-right tabular-nums border-r border-slate-200">
+                        {formatRupiah(grandTotal.k_auto_a)}
+                      </td>
+
+                      {/* Konfirmasi AM In Progress */}
+                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
                         {cellFmt(grandTotal.k_prog)}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums border-r border-slate-300">
+                        {formatRupiah(grandTotal.k_prog_a)}
                       </td>
 
                       {/* Bukan Witel Solo JT */}
@@ -1556,18 +1567,20 @@ export default function Edk() {
                           {formatRupiah(r.tpa)}
                         </td>
 
-                        {/* Konfirmasi AM */}
-                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                          {cellFmt(r.k)}
-                        </td>
-                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
-                          {formatRupiah(r.ka)}
-                        </td>
+                        {/* Konfirmasi AM Auto Renewal */}
                         <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
                           {cellFmt(r.k_auto)}
                         </td>
-                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
+                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
+                          {formatRupiah(r.k_auto_a)}
+                        </td>
+
+                        {/* Konfirmasi AM In Progress */}
+                        <td className="px-3 py-2 text-center tabular-nums text-xs font-medium text-slate-700 border-r border-slate-200">
                           {cellFmt(r.k_prog)}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-xs font-medium text-slate-700 border-r border-slate-300">
+                          {formatRupiah(r.k_prog_a)}
                         </td>
 
                         {/* Bukan Witel Solo JT */}
@@ -1626,18 +1639,20 @@ export default function Edk() {
                         {formatRupiah(grandTotal.tpa)}
                       </td>
 
-                      {/* Konfirmasi AM */}
-                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
-                        {cellFmt(grandTotal.k)}
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums border-r border-slate-200">
-                        {formatRupiah(grandTotal.ka)}
-                      </td>
+                      {/* Konfirmasi AM Auto Renewal */}
                       <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
                         {cellFmt(grandTotal.k_auto)}
                       </td>
-                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-300">
+                      <td className="px-3 py-2 text-right tabular-nums border-r border-slate-200">
+                        {formatRupiah(grandTotal.k_auto_a)}
+                      </td>
+
+                      {/* Konfirmasi AM In Progress */}
+                      <td className="px-3 py-2 text-center tabular-nums border-r border-slate-200">
                         {cellFmt(grandTotal.k_prog)}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums border-r border-slate-300">
+                        {formatRupiah(grandTotal.k_prog_a)}
                       </td>
 
                       {/* Bukan Witel Solo JT */}
