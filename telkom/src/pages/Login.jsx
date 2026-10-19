@@ -16,10 +16,14 @@ import {
   Sparkles,
   Layers,
   ChevronRight,
-  Fingerprint
+  Fingerprint,
+  Sun,
+  Moon
 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 export default function Login() {
+  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [email, setEmail] = useState('executive.lead@telkom.co.id');
   const [password, setPassword] = useState('password123');
@@ -290,6 +294,23 @@ export default function Login() {
           {/* Ambient Corner Blur */}
           <div className="absolute top-0 right-0 size-72 bg-blue-200/30 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 size-60 bg-indigo-100/50 rounded-full blur-2xl pointer-events-none" />
+
+          {/* Theme Toggle Button */}
+          <div className="absolute top-5 right-5 sm:top-7 sm:right-7 z-20">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={isDark ? 'Beralih ke Mode Terang' : 'Beralih ke Mode Gelap'}
+              title={isDark ? 'Mode Terang (Klik untuk ganti)' : 'Mode Gelap (Klik untuk ganti)'}
+              className={`size-9 rounded-full border grid place-items-center cursor-pointer shadow-2xs hover:scale-105 active:scale-95 transition-all ${
+                isDark
+                  ? 'border-slate-700 bg-slate-800/90 text-amber-400 hover:bg-slate-700'
+                  : 'border-slate-200/80 bg-white/90 text-slate-600 hover:bg-white'
+              }`}
+            >
+              {isDark ? <Sun size={15} /> : <Moon size={15} />}
+            </button>
+          </div>
 
           {/* Mobile Top Brand Header */}
           <div className="lg:hidden relative z-10 flex items-center justify-between pb-4 mb-2 border-b border-slate-200/80">

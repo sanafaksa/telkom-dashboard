@@ -25,8 +25,11 @@ import {
   PanelLeft,
   Calendar,
   LogOut,
-  Sparkles
+  Sparkles,
+  Sun,
+  Moon
 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 const sub = [
   ['moving', 'Kuadran Moving'],
@@ -351,6 +354,7 @@ function formatDate(date) {
 }
 
 export default function Layout({ children }) {
+  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [d, setD] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -612,12 +616,32 @@ export default function Layout({ children }) {
             )}
           </div>
 
+          {/* Dark Mode Toggle */}
+          <button
+            id="theme-toggle-btn"
+            type="button"
+            onClick={toggleTheme}
+            aria-label={isDark ? 'Beralih ke Mode Terang' : 'Beralih ke Mode Gelap'}
+            title={isDark ? 'Mode Terang (Klik untuk ganti)' : 'Mode Gelap (Klik untuk ganti)'}
+            className={`relative size-9 rounded-full border grid place-items-center cursor-pointer transition-all duration-200 shrink-0 shadow-2xs hover:scale-105 active:scale-95 ${
+              isDark
+                ? 'bg-slate-800 border-slate-700 text-amber-400 hover:bg-slate-700'
+                : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-600'
+            }`}
+          >
+            {isDark ? (
+              <Sun size={15} className="text-amber-400 animate-[fadeIn_0.2s_ease-out]" />
+            ) : (
+              <Moon size={15} className="text-slate-600 animate-[fadeIn_0.2s_ease-out]" />
+            )}
+          </button>
+
           {/* Dynamic Date */}
-          <span className="hidden xl:inline-flex shrink-0 items-center gap-2 text-xs border border-slate-200 rounded-full px-3.5 py-1.5 text-slate-700 font-medium bg-white">
+          <span className="hidden xl:inline-flex shrink-0 items-center gap-2 text-xs border border-slate-200 dark:border-slate-700/80 rounded-full px-3.5 py-1.5 text-slate-700 dark:text-slate-200 font-medium bg-white dark:bg-slate-800">
             <Calendar size={13} className="text-slate-400" />
             <span>{formatDate(today)}</span>
-            <span className="text-slate-300">|</span>
-            <b className="font-semibold text-slate-800">{today.toLocaleDateString('id-ID', { weekday: 'long' })}</b>
+            <span className="text-slate-300 dark:text-slate-600">|</span>
+            <b className="font-semibold text-slate-800 dark:text-slate-100">{today.toLocaleDateString('id-ID', { weekday: 'long' })}</b>
           </span>
         </div>
       </header>
