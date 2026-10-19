@@ -582,11 +582,6 @@ export default function Edk() {
             <b className="font-bold text-slate-800">10 Oktober 2026</b>
           </div>
           <div className="flex items-center gap-2.5">
-            {isTop10View && (
-              <span className="hidden sm:inline text-[11px] font-semibold text-slate-400 mr-1">
-                Top 10 Pelanggan <span className="mx-1">›</span> Per Segmen
-              </span>
-            )}
             <div className="flex items-center bg-slate-100/90 p-0.5 rounded-lg border border-slate-200/80 shrink-0">
               {['Segmen', 'Periode EDK', 'Nama AM', 'Nama CC'].map((m) => {
                 const isActive = mode === m;
@@ -1678,7 +1673,7 @@ export default function Edk() {
           </table>
         </div>
 
-        {/* 5. Pagination Bar */}
+        {/* 5. ini pagination  */}
         <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 border-t border-slate-100 text-xs text-slate-500">
           <div>
             Menampilkan{' '}
