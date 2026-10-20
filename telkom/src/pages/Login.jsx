@@ -15,7 +15,6 @@ import {
   KeyRound,
   Sparkles,
   Layers,
-  ChevronRight,
   Fingerprint,
   Sun,
   Moon
@@ -25,10 +24,10 @@ import { useTheme } from '../context/ThemeContext';
 export default function Login() {
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('executive.lead@telkom.co.id');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
+  const [rememberMe, setRememberMe] = useState(false);
   const [authStatus, setAuthStatus] = useState('idle'); // 'idle' | 'verifying' | 'granted' | 'opening_up'
   const [error, setError] = useState('');
   const [forgotModal, setForgotModal] = useState(false);
@@ -72,12 +71,6 @@ export default function Login() {
       return;
     }
     startLoginSequence(email);
-  };
-
-  const handleQuickDemo = () => {
-    setEmail('executive.lead@telkom.co.id');
-    setPassword('password123');
-    startLoginSequence('executive.lead@telkom.co.id', 'Executive Lead (Demo)');
   };
 
   const isTransitioning = authStatus === 'opening_up';
@@ -499,32 +492,6 @@ export default function Login() {
                   )}
                 </button>
               </form>
-
-              {/* Divider */}
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-200" />
-                </div>
-                <div className="relative flex justify-center text-[11px] uppercase">
-                  <span className="bg-white px-3 text-slate-400 font-bold tracking-wider">
-                    Akses Cepat Pengujian
-                  </span>
-                </div>
-              </div>
-
-              {/* 1-Click Quick Demo Button */}
-              <button
-                type="button"
-                onClick={handleQuickDemo}
-                disabled={isVerifying || isGranted}
-                className="group w-full py-2.5 px-4 rounded-xl border border-blue-200/80 bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-blue-50/70 hover:from-blue-100/70 hover:to-indigo-100/60 text-slate-700 text-xs font-semibold flex items-center justify-between transition-all shadow-2xs hover:border-blue-300 cursor-pointer active:scale-[0.99]"
-              >
-                <div className="flex items-center gap-2.5">
-                  <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="font-bold text-[#1447B8]">Masuk Otomatis Sebagai Eksekutif (Demo)</span>
-                </div>
-                <ChevronRight size={15} className="text-[#1447B8] group-hover:translate-x-0.5 transition-transform" />
-              </button>
 
               {/* IT Helpdesk Information */}
               <div className="mt-6 text-center">
