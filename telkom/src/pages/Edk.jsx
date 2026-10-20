@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, Fragment } from 'react';
+import { useEffect, useMemo, useState, Fragment, useRef } from 'react';
 import { filterOptions, modes, topPelangganBySegmen } from '../data/edkData';
 import { ExportButton, exportCSV, ShareDropdown } from '../components/ui';
 import FilterDropdown from '../components/FilterDropdown';
@@ -44,6 +44,12 @@ function UploadModal({ open, onClose }) {
   const [drag, setDrag] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [done, setDone] = useState(false);
+  const fileInputRef = useRef(null);
+  const handleFileSelect = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setFiles(Array.from(e.target.files));
+    }
+  };
 
   if (!open) return null;
 
@@ -56,6 +62,7 @@ function UploadModal({ open, onClose }) {
   };
 
   const handleUpload = () => {
+    if (e) e.preventDefault();
     if (!files.length) return;
     setUploading(true);
     setTimeout(() => {
@@ -87,6 +94,14 @@ function UploadModal({ open, onClose }) {
         </div>
 
         <div className="px-6 py-5">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileSelect} 
+            className="hidden" 
+            accept=".xlsx, .csv, .pdf"
+          />
+
           <div
             className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${
               drag ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-slate-300 bg-slate-50/50'
@@ -124,12 +139,14 @@ function UploadModal({ open, onClose }) {
 
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
           <button
+            type="button"
             onClick={onClose}
             className="px-4 py-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
           >
             Batal
           </button>
           <button
+            type="button"
             onClick={handleUpload}
             disabled={!files.length || uploading}
             className={`px-5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-2 ${
