@@ -49,14 +49,14 @@ export default function Login() {
         })
       );
 
-      // Tahap 2: Animasi Slide Ke Atas langsung berjalan (150ms)
+      // Tahap 2: Animasi Pintu Otomatis Geser Kiri-Kanan (150ms setelah granted)
       setTimeout(() => {
         setAuthStatus('opening_up');
 
-        // Tahap 3: Navigasi ke Dashboard di penghujung slide (650ms)
+        // Tahap 3: Navigasi ke Dashboard di penghujung slide pintu terbuka (750ms)
         setTimeout(() => {
           navigate('/dashboard');
-        }, 650);
+        }, 750);
       }, 150);
     }, 250);
   };
@@ -87,12 +87,24 @@ export default function Login() {
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-[#F6F8FC] font-sans selection:bg-blue-500/25">
       {/* ==================================================================== */}
-      {/* UNDERNEATH PORTAL REVEAL (Tersingkap saat panel login slide ke atas) */}
       {/* ==================================================================== */}
-      <div className="absolute inset-0 z-0 flex flex-col items-center justify-center bg-[#F6F8FC] text-slate-800 p-6 select-none">
+      {/* UNDERNEATH PORTAL REVEAL (Tersingkap saat pintu geser terbuka)      */}
+      {/* ==================================================================== */}
+      <div
+        className={`absolute inset-0 z-0 flex flex-col items-center justify-center bg-[#F6F8FC] text-slate-800 p-6 select-none transition-all duration-700 ease-out ${
+          isTransitioning ? 'scale-100 opacity-100' : 'scale-95 opacity-80'
+        }`}
+      >
+        {/* Subtle Background Tech Grid */}
+        <div className="absolute inset-0 login-grid-light opacity-60 pointer-events-none" />
+
+        {/* Automatic Door Track Guide Rails (Top & Bottom) */}
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-slate-200 via-blue-200 to-slate-200 border-b border-slate-300/50" />
+        <div className="absolute bottom-0 inset-x-0 h-1 bg-gradient-to-r from-slate-200 via-blue-200 to-slate-200 border-t border-slate-300/50" />
+
         <div className="relative flex flex-col items-center text-center max-w-md">
           {/* Subtle Ambient Glow */}
-          <div className="absolute -inset-10 bg-blue-400/15 rounded-full blur-3xl animate-pulse pointer-events-none" />
+          <div className="absolute -inset-10 bg-blue-400/20 rounded-full blur-3xl animate-pulse pointer-events-none" />
 
           {/* Logo Brand */}
           <div className="relative z-10 flex items-center justify-center size-20 rounded-2xl bg-white border border-slate-200/80 shadow-xl mb-5">
@@ -123,26 +135,38 @@ export default function Login() {
       </div>
 
       {/* ==================================================================== */}
-      {/* MAIN LOGIN STAGE (SLIDES UP ON SUCCESSFUL LOGIN)                     */}
+      {/* MAIN LOGIN STAGE (AUTOMATIC SLIDING DOORS - GESER KIRI & KANAN)     */}
       {/* ==================================================================== */}
       <div
-        className={`relative z-10 min-h-screen w-full flex flex-col lg:flex-row transition-all will-change-transform shadow-2xl ${
-          isTransitioning
-            ? '-translate-y-full duration-[650ms] ease-[cubic-bezier(0.7,0,0.2,1)] opacity-95'
-            : 'translate-y-0 duration-400 ease-out opacity-100'
+        className={`relative z-10 min-h-screen w-full flex flex-col lg:flex-row overflow-hidden ${
+          isTransitioning ? 'pointer-events-none' : ''
         }`}
       >
-        {/* Glowing Laser Border at the bottom edge during upward lift */}
-        <div
-          className={`absolute bottom-0 left-0 right-0 h-1.5 bg-gradient-to-r from-transparent via-[#2563EB] to-transparent shadow-[0_0_25px_#2563EB] pointer-events-none transition-opacity duration-200 ${
-            isTransitioning ? 'opacity-100' : 'opacity-0'
-          }`}
-        />
+        {/* Overhead Door Track Guide (Top & Bottom High-Tech Rail) */}
+        <div className="absolute top-0 inset-x-0 z-30 h-1 bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 inset-x-0 z-30 h-1 bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent pointer-events-none" />
 
         {/* ================================================================= */}
-        {/* LEFT PANEL: Enterprise Hero & Live Executive Pulse                */}
+        {/* LEFT DOOR WING: Enterprise Hero (Slides Left)                     */}
         {/* ================================================================= */}
-        <div className="relative hidden lg:flex lg:w-1/2 xl:w-[54%] flex-col justify-between p-10 xl:p-14 overflow-hidden bg-gradient-to-br from-[#061438] via-[#0A266E] to-[#1242B5] text-white">
+        <div
+          className={`relative hidden lg:flex lg:w-1/2 flex-col justify-between p-10 xl:p-14 overflow-hidden bg-gradient-to-br from-[#061438] via-[#0A266E] to-[#1242B5] text-white will-change-transform transition-transform duration-[750ms] ease-[cubic-bezier(0.65,0,0.35,1)] ${
+            isTransitioning ? '-translate-x-full' : 'translate-x-0'
+          }`}
+          style={{
+            boxShadow: isTransitioning
+              ? '20px 0 45px rgba(0, 0, 0, 0.5), 3px 0 15px rgba(6, 182, 212, 0.6)'
+              : 'none',
+          }}
+        >
+          {/* Glowing Vertical Door Seam on the Right Edge (Splits Open) */}
+          <div
+            className={`absolute top-0 right-0 bottom-0 w-[2.5px] bg-gradient-to-b from-transparent via-cyan-400 to-transparent pointer-events-none transition-all duration-300 z-20 ${
+              isTransitioning
+                ? 'opacity-100 shadow-[0_0_20px_#22d3ee,0_0_40px_#2563eb]'
+                : 'opacity-40'
+            }`}
+          />
           {/* Subtle Background Tech Grid */}
           <div className="absolute inset-0 login-grid-pattern opacity-40 pointer-events-none" />
 
@@ -285,9 +309,26 @@ export default function Login() {
         </div>
 
         {/* ================================================================= */}
-        {/* RIGHT PANEL: Sleek Modern Login Container                         */}
+        {/* RIGHT DOOR WING: Sleek Modern Login Container (Slides Right)      */}
         {/* ================================================================= */}
-        <div className="flex-1 flex flex-col justify-between p-6 sm:p-10 lg:p-12 xl:p-14 bg-gradient-to-br from-[#F8FAFC] via-[#F1F5F9] to-[#E2E8F0] relative overflow-y-auto">
+        <div
+          className={`flex-1 lg:w-1/2 flex flex-col justify-between p-6 sm:p-10 lg:p-12 xl:p-14 bg-gradient-to-br from-[#F8FAFC] via-[#F1F5F9] to-[#E2E8F0] relative overflow-y-auto will-change-transform transition-transform duration-[750ms] ease-[cubic-bezier(0.65,0,0.35,1)] ${
+            isTransitioning ? 'translate-x-full' : 'translate-x-0'
+          }`}
+          style={{
+            boxShadow: isTransitioning
+              ? '-20px 0 45px rgba(0, 0, 0, 0.3), -3px 0 15px rgba(6, 182, 212, 0.6)'
+              : 'none',
+          }}
+        >
+          {/* Glowing Vertical Door Seam on the Left Edge (Splits Open) */}
+          <div
+            className={`hidden lg:block absolute top-0 left-0 bottom-0 w-[2.5px] bg-gradient-to-b from-transparent via-cyan-400 to-transparent pointer-events-none transition-all duration-300 z-20 ${
+              isTransitioning
+                ? 'opacity-100 shadow-[0_0_20px_#22d3ee,0_0_40px_#2563eb]'
+                : 'opacity-40'
+            }`}
+          />
           {/* Subtle Grid on Light Side */}
           <div className="absolute inset-0 login-grid-light opacity-50 pointer-events-none" />
 
