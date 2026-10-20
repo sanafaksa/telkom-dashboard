@@ -196,7 +196,7 @@ export default function Login() {
             </div>
             <div className="flex items-center gap-2 text-[11px]">
               <span className="size-1.5 rounded-full bg-emerald-400" />
-              <span className="text-slate-300">v2.4.0 (Enterprise Prod)</span>
+              <span className="text-slate-300">created by (magang teams)</span>
             </div>
           </div>
         </div>
@@ -258,7 +258,7 @@ export default function Login() {
               </span>
             </div>
             <span className="text-[11px] font-bold text-[#1447B8] bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
-              Regional 3
+              SOLARIS 
             </span>
           </div>
 
@@ -431,7 +431,7 @@ export default function Login() {
                   Bantuan Akun &amp; IT Helpdesk
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Telkom Regional 3 (Jateng &amp; D.I. Yogyakarta)
+                  Telkom witel solo (Jatengtimur)
                 </p>
               </div>
             </div>
@@ -443,7 +443,7 @@ export default function Login() {
               <div className="pt-2 border-t border-slate-200/60 space-y-1.5 font-medium text-slate-700">
                 <div className="flex justify-between">
                   <span>Email Helpdesk:</span>
-                  <span className="font-bold text-[#1447B8]">it.support.reg3@telkom.co.id</span>
+                  <span className="font-bold text-[#1447B8]">it.support.@telkom.co.id</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Extension Internal:</span>

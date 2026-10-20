@@ -9,7 +9,7 @@ import {
   Check
 } from 'lucide-react';
 import {flow, witel, uic, activity} from '../data/dashboardData';
-import {exportCSV} from '../components/ui';
+import {exportCSV, ShareDropdown} from '../components/ui';
 
 export default function Dashboard() {
   const [q, setQ] = useState('');
@@ -37,7 +37,8 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <ShareDropdown buttonLabel="Salin & Bagikan" />
           <button
             onClick={() => exportCSV(activity, 'executive_summary_regional_3')}
             className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-lg flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
