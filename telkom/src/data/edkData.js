@@ -1,36 +1,66 @@
 // Helper to construct EDK row
-export const mk = (l, a, extra = {}) => ({
-  l,
-  // Lanjut Complete
-  lc: a[0] !== undefined ? a[0] : 0,
-  la: a[1] !== undefined ? a[1] : 0,
-  // Lanjut In Progress
-  lp: a[2] !== undefined ? a[2] : 0,
-  lpa: a[3] !== undefined ? a[3] : 0,
-  // Tidak Lanjut Complete
-  tc: a[4] !== undefined ? a[4] : 0,
-  ta: a[5] !== undefined ? a[5] : 0,
-  // Tidak Lanjut In Progress
-  tp: a[6] !== undefined ? a[6] : 0,
-  tpa: a[7] !== undefined ? a[7] : 0,
-  // Bukan Witel Solo JT
-  b: a[8] !== undefined ? a[8] : 0,
-  ba: a[9] !== undefined ? a[9] : 0,
-  // Konfirmasi AM (Order & Abonemen)
-  k: a[10] !== undefined ? a[10] : 0,
-  ka: a[11] !== undefined ? a[11] : 0,
-  // Konfirmasi AM sub-status (Auto renewal & In Progress)
-  k_auto: extra.k_auto ?? (a[12] !== undefined ? a[12] : 0),
-  k_prog: extra.k_prog ?? (a[13] !== undefined ? a[13] : 0),
-  // Metadata
-  periode: extra.periode || '202609',
-  segmen: extra.segmen || 'Enterprise',
-  namaAm: extra.namaAm || l,
-  flagging: extra.flagging || 'Updated Today',
-  isTotalRow: extra.isTotalRow || false,
-  subgroup: extra.subgroup || null,
-  groupHeader: extra.groupHeader || null
-});
+export const mk = (l, a, extra = {}) => {
+  const k_auto = extra.k_auto ?? (a[12] !== undefined ? a[12] : 0);
+  const k_prog = extra.k_prog ?? (a[13] !== undefined ? a[13] : 0);
+  const total_k_count = (k_auto || 0) + (k_prog || 0);
+  const raw_ka = a[11] !== undefined ? a[11] : 0;
+
+  let k_auto_a = extra.k_auto_a ?? (extra.k_auto_abon !== undefined ? extra.k_auto_abon : 0);
+  let k_prog_a = extra.k_prog_a ?? (extra.k_prog_abon !== undefined ? extra.k_prog_abon : 0);
+
+  if (extra.k_auto_a === undefined && extra.k_auto_abon === undefined && raw_ka > 0) {
+    if (k_auto > 0 && k_prog === 0) {
+      k_auto_a = raw_ka;
+      k_prog_a = 0;
+    } else if (k_prog > 0 && k_auto === 0) {
+      k_auto_a = 0;
+      k_prog_a = raw_ka;
+    } else if (total_k_count > 0) {
+      k_auto_a = Math.round((raw_ka * k_auto) / total_k_count);
+      k_prog_a = raw_ka - k_auto_a;
+    } else {
+      k_prog_a = raw_ka;
+    }
+  }
+
+  const k = extra.k !== undefined ? extra.k : (total_k_count > 0 && a[10] === undefined ? total_k_count : (a[10] !== undefined ? a[10] : 0));
+  const ka = extra.ka !== undefined ? extra.ka : ((k_auto_a || 0) + (k_prog_a || 0) > 0 && a[11] === undefined ? (k_auto_a || 0) + (k_prog_a || 0) : raw_ka);
+
+  return {
+    l,
+    // Lanjut Complete
+    lc: a[0] !== undefined ? a[0] : 0,
+    la: a[1] !== undefined ? a[1] : 0,
+    // Lanjut In Progress
+    lp: a[2] !== undefined ? a[2] : 0,
+    lpa: a[3] !== undefined ? a[3] : 0,
+    // Tidak Lanjut Complete
+    tc: a[4] !== undefined ? a[4] : 0,
+    ta: a[5] !== undefined ? a[5] : 0,
+    // Tidak Lanjut In Progress
+    tp: a[6] !== undefined ? a[6] : 0,
+    tpa: a[7] !== undefined ? a[7] : 0,
+    // Bukan Witel Solo JT
+    b: a[8] !== undefined ? a[8] : 0,
+    ba: a[9] !== undefined ? a[9] : 0,
+    // Konfirmasi AM (Total Order & Total Abonemen)
+    k,
+    ka,
+    // Konfirmasi AM sub-status (Auto renewal & In Progress)
+    k_auto,
+    k_auto_a,
+    k_prog,
+    k_prog_a,
+    // Metadata
+    periode: extra.periode || '202609',
+    segmen: extra.segmen || 'Enterprise',
+    namaAm: extra.namaAm || l,
+    flagging: extra.flagging || 'Updated Today',
+    isTotalRow: extra.isTotalRow || false,
+    subgroup: extra.subgroup || null,
+    groupHeader: extra.groupHeader || null
+  };
+};
 
 export const filterOptions = {
   periode: [
@@ -80,10 +110,42 @@ export const modes = {
   ],
 
   'Segmen': [
-    mk('DGS', [42, 125431000, 28, 46228000, 18, 52774000, 12, 18631000, 18, 46020000, 75, 359447463, 20, 14], { segmen: 'DGS', periode: '202609', flagging: 'Updated Today' }),
-    mk('DPS', [88, 301520778, 40, 86532000, 47, 118947000, 26, 44598631, 18, 39547631, 90, 387200778, 25, 17], { segmen: 'DPS', periode: '202609', flagging: 'Updated <7 Days' }),
-    mk('DSS', [54, 210885000, 32, 74190000, 29, 194235000, 18, 77535185, 9, 32045185, 35, 143431000, 10, 9], { segmen: 'DSS', periode: '202608', flagging: 'Updated Today' }),
-    mk('RBS', [53, 152446961, 43, 86872739, 26, 85175473, 12, 16402000, 56, 115044184, 102, 210829893, 13, 18], { segmen: 'RBS', periode: '202608', flagging: 'Need Review' })
+    mk('DGS', [42, 125431000, 28, 46228000, 18, 52774000, 12, 18631000, 18, 46020000, 100, 425017275], {
+      segmen: 'DGS',
+      periode: '202609',
+      flagging: 'Updated Today',
+      k_auto: 8,
+      k_auto_a: 5065520,
+      k_prog: 92,
+      k_prog_a: 419951755
+    }),
+    mk('DPS', [88, 301520778, 40, 86532000, 47, 118947000, 26, 44598631, 18, 39547631, 37, 131131000], {
+      segmen: 'DPS',
+      periode: '202609',
+      flagging: 'Updated <7 Days',
+      k_auto: 2,
+      k_auto_a: 24000000,
+      k_prog: 35,
+      k_prog_a: 107131000
+    }),
+    mk('DSS', [54, 210885000, 32, 74190000, 29, 194235000, 18, 77535185, 9, 32045185, 47, 997567284], {
+      segmen: 'DSS',
+      periode: '202608',
+      flagging: 'Updated Today',
+      k_auto: 0,
+      k_auto_a: 0,
+      k_prog: 47,
+      k_prog_a: 997567284
+    }),
+    mk('RBS', [53, 152446961, 43, 86872739, 26, 85175473, 12, 16402000, 56, 115044184, 139, 269029775], {
+      segmen: 'RBS',
+      periode: '202608',
+      flagging: 'Need Review',
+      k_auto: 42,
+      k_auto_a: 91275064,
+      k_prog: 97,
+      k_prog_a: 177754711
+    })
   ],
 
   // Dataset Nama AM Persis dengan Screenshot 4 (Total 19 AM)

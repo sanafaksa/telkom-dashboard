@@ -1,20 +1,253 @@
 @import "tailwindcss";
-@theme{--font-sans:Inter,system-ui,sans-serif;--color-brand:#083E9E;--color-brand-blue:#2563EB;--color-brand-dark:#062E76;--color-bg:#F6F8FC;--color-ink:#111827;--color-mute:#64748B;--color-line:#E5E7EB;--color-ok:#10B981;--color-warn:#F59E0B;--color-bad:#EF4444;--color-info:#3B82F6}
-body{background:var(--color-bg);color:var(--color-ink);font-size:14px;font-family:var(--font-sans)}
-:focus-visible{outline:2px solid var(--color-brand-blue);outline-offset:2px}
-.card{background:#fff;border:1px solid var(--color-line);border-radius:14px;box-shadow:0 1px 2px rgb(16 24 40/.04)}
-.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--color-line);background:#fff;border-radius:999px;padding:6px 14px;font-size:12px;font-weight:600}
-.btn-primary{background:var(--color-brand-blue);border-color:var(--color-brand-blue);color:#fff}
-@keyframes fadeIn{from{opacity:0;transform:scale(.96) translateY(4px)}to{opacity:1;transform:scale(1) translateY(0)}}
-@keyframes fadeSlideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
-@keyframes wiggle{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
-@keyframes pulseGlow{0%,100%{opacity:.35;transform:scale(1)}50%{opacity:.75;transform:scale(1.08)}}
-@keyframes floatSlow{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-@keyframes beamShine{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
-@keyframes slideUpIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
-.page-enter{animation:slideUpIn 0.45s cubic-bezier(0.16,1,0.3,1) forwards}
-.login-grid-pattern{background-image:radial-gradient(rgba(255,255,255,0.12) 1px,transparent 1px);background-size:24px 24px}
-.login-grid-light{background-image:radial-gradient(rgba(37,99,235,0.08) 1px,transparent 1px);background-size:24px 24px}
 
+@custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  --font-sans: Inter, system-ui, sans-serif;
+  --color-brand: #083E9E;
+  --color-brand-blue: #2563EB;
+  --color-brand-dark: #062E76;
+  --color-bg: #F6F8FC;
+  --color-ink: #111827;
+  --color-mute: #64748B;
+  --color-line: #E5E7EB;
+  --color-ok: #10B981;
+  --color-warn: #F59E0B;
+  --color-bad: #EF4444;
+  --color-info: #3B82F6;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-size: 14px;
+  font-family: var(--font-sans);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand-blue);
+  outline-offset: 2px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgb(16 24 40 / 0.04);
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--color-line);
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: var(--color-brand-blue);
+  border-color: var(--color-brand-blue);
+  color: #fff;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(.96) translateY(4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-8deg); }
+  50% { transform: rotate(8deg); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: .35; transform: scale(1); }
+  50% { opacity: .75; transform: scale(1.08); }
+}
+
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes beamShine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes slideUpIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page-enter {
+  animation: slideUpIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.login-grid-pattern {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.login-grid-light {
+  background-image: radial-gradient(rgba(37, 99, 235, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ========================================================================= */
+/* DARK MODE SYSTEM & HIGH CONTRAST TOKENS */
+/* ========================================================================= */
+
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background: #0B1120;
+  color: #F1F5F9;
+}
+
+/* Base Layout Surfaces */
+html.dark .min-h-screen.bg-\[\#F6F8FC\] {
+  background-color: #0B1120 !important;
+}
+
+html.dark header.bg-\[\#F6F8FC\] {
+  background-color: #0B1120 !important;
+  border-color: #1E293B !important;
+}
+
+/* Cards & Panel Backgrounds (Exclude elements inside sidebar) */
+html.dark aside nav {
+  /* Sidebar preserves branded gradient */
+}
+
+html.dark main .bg-white,
+html.dark header .bg-white,
+html.dark .card {
+  background-color: #111C35 !important;
+  border-color: #1E293B !important;
+  color: #F1F5F9;
+}
+
+/* Slate surfaces in Dark Mode */
+html.dark .bg-slate-50,
+html.dark .bg-slate-50\/50,
+html.dark .bg-slate-50\/70,
+html.dark .bg-slate-50\/60,
+html.dark .bg-slate-100,
+html.dark .bg-slate-100\/90,
+html.dark .bg-slate-100\/70 {
+  background-color: #0F172A !important;
+  border-color: #1E293B !important;
+  color: #E2E8F0;
+}
+
+/* Text Hierarchy */
+html.dark .text-slate-900,
+html.dark .text-slate-800 {
+  color: #F8FAFC !important;
+}
+
+html.dark .text-slate-700,
+html.dark .text-slate-600 {
+  color: #CBD5E1 !important;
+}
+
+html.dark .text-slate-500,
+html.dark .text-slate-400 {
+  color: #94A3B8 !important;
+}
+
+/* Borders */
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .border-slate-200\/70,
+html.dark .border-slate-200\/80,
+html.dark .border-slate-200\/90,
+html.dark .border-slate-300 {
+  border-color: #1E293B !important;
+}
+
+/* Tables */
+html.dark thead.bg-white {
+  background-color: #0F172A !important;
+}
+
+html.dark tbody tr.bg-white {
+  background-color: #111C35 !important;
+}
+
+html.dark tbody tr:hover {
+  background-color: #172554 !important;
+}
+
+html.dark td.bg-white {
+  background-color: #111C35 !important;
+  border-color: #1E293B !important;
+}
+
+html.dark th.bg-slate-100,
+html.dark th.bg-slate-50 {
+  background-color: #0F172A !important;
+  border-color: #1E293B !important;
+  color: #E2E8F0 !important;
+}
+
+/* Sticky column shadows */
+html.dark .shadow-\[3px_0_6px_-2px_rgba\(0\,0\,0\,0\.08\)\] {
+  box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Dark mode summary row */
+html.dark .bg-\[\#EFF6FF\] {
+  background-color: #172554 !important;
+  color: #60A5FA !important;
+  border-color: #1E40AF !important;
+}
+
+html.dark td.bg-\[\#EFF6FF\] {
+  background-color: #172554 !important;
+  color: #60A5FA !important;
+}
+
+/* Inputs and Buttons */
+html.dark input,
+html.dark select {
+  color: #F8FAFC !important;
+}
+
+html.dark .btn:not(.btn-primary) {
+  background-color: #1E293B !important;
+  border-color: #334155 !important;
+  color: #F1F5F9 !important;
+}
+
+/* Dropdown menus & Modals */
+html.dark .shadow-xl,
+html.dark .shadow-2xl {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.6) !important;
+}
+
+html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-slate-100:hover {
+  background-color: #1E293B !important;
+}
+
+html.dark .divide-slate-50 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #1E293B !important;
+}
 
