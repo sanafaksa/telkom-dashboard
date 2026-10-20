@@ -8,9 +8,15 @@ import {
   ArrowRight,
   ShieldCheck,
   CheckCircle2,
+  Building2,
+  TrendingUp,
   AlertCircle,
   Loader2,
   KeyRound,
+  Sparkles,
+  Layers,
+  Fingerprint,
+  Sun,
   Moon
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
@@ -108,7 +114,7 @@ export default function Login() {
           </div>
 
           <h2 className="relative z-10 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 mb-2">
-            Selamat Datang di Solaris Portal
+            Selamat Datang di SSGS Portal
           </h2>
           <p className="relative z-10 text-xs sm:text-sm text-slate-500 mb-6">
             Menyiapkan modul analitik eksekutif Regional 3...
@@ -168,24 +174,118 @@ export default function Login() {
           />
           <div className="absolute top-1/2 left-1/3 size-72 rounded-full bg-indigo-500/15 blur-3xl pointer-events-none" />
 
-          {/* Top Brand */}
+          {/* Top Brand & Indicator */}
           <div className="relative z-10">
-            <span className="text-2xl sm:text-3xl font-black tracking-widest text-white select-none">
-              SOLARIS
-            </span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3.5">
+                <div className="p-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 shadow-sm">
+                  <img
+                    src="/telkom-logo.png"
+                    alt="Telkom Indonesia Logo"
+                    className="h-8 object-contain brightness-0 invert"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-extrabold tracking-wider text-white">
+                      TELKOM INDONESIA
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/30 border border-blue-400/40 text-blue-200 uppercase">
+                      Regional 3
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-blue-200/70 font-medium">
+                    Jawa Tengah &amp; D.I. Yogyakarta
+                  </p>
+                </div>
+              </div>
+
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[11px] font-semibold text-blue-100">
+                <span className="size-2 rounded-full bg-emerald-400 animate-ping" />
+                <span>Live Data Sync</span>
+              </div>
+            </div>
+
+            {/* Portal Badge */}
+            <div className="inline-flex items-center gap-2.5 mt-8 px-4 py-1.5 rounded-full bg-gradient-to-r from-white/15 to-white/5 backdrop-blur-md border border-white/20 text-xs font-semibold text-white shadow-lg shadow-black/10">
+              <Sparkles size={14} className="text-cyan-300" />
+              <span>SSGS Executive Monitoring Portal • 2026</span>
+            </div>
           </div>
 
-          {/* Center Content: Headline & Visual Branding */}
+          {/* Center Content: Headline & Visual KPI Cards */}
           <div className="relative z-10 my-auto py-8">
-            <h1 className="text-4xl xl:text-5xl font-black tracking-tight text-white mb-3">
-              SOLARIS
+            <h1 className="text-3xl xl:text-[40px] font-black tracking-tight leading-[1.18] text-white">
+              Pantau Performa &amp; Eksekusi Agenda <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-200 to-white">
+                Secara Terpadu &amp; Real-Time
+              </span>
             </h1>
-            <h2 className="text-2xl xl:text-3xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-200 to-white leading-snug">
-              Solo Leadership And Regional Insight System
-            </h2>
-            <p className="mt-5 text-sm xl:text-base text-blue-100/80 leading-relaxed max-w-lg font-normal">
+
+            <p className="mt-4 text-xs xl:text-sm text-blue-100/80 leading-relaxed max-w-lg">
               Akses instan analitik eksekutif terintegrasi mencakup Hierarki Agenda, EDK Monitoring (NCX &amp; OBL), Analisis Kuadran Portofolio, serta tindak lanjut Support Needed.
             </p>
+
+            {/* Glassmorphic KPI Cards */}
+            <div className="grid grid-cols-2 gap-3.5 mt-8 max-w-lg">
+              {/* Card 1: EDK Abonemen */}
+              <div className="group p-4 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/15 shadow-xl hover:bg-white/[0.14] transition-all duration-300 hover:border-white/30">
+                <div className="flex items-center justify-between text-blue-200 text-xs font-medium mb-1">
+                  <span className="flex items-center gap-1.5 text-blue-100">
+                    <TrendingUp size={14} className="text-emerald-400" />
+                    Total Abonemen EDK
+                  </span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                    +8.2% YoY
+                  </span>
+                </div>
+                <p className="text-2xl font-black text-white tracking-tight mt-1">
+                  Rp 328,2 M
+                </p>
+                <div className="mt-2.5 flex items-center justify-between text-[11px] text-blue-200/75">
+                  <span>Target Q1 Tercapai</span>
+                  <span className="font-bold text-cyan-300">100%</span>
+                </div>
+                <div className="w-full bg-white/15 h-1.5 rounded-full overflow-hidden mt-1.5">
+                  <div className="bg-gradient-to-r from-emerald-400 to-cyan-400 h-full rounded-full w-full" />
+                </div>
+              </div>
+
+              {/* Card 2: Cakupan Witel */}
+              <div className="group p-4 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/15 shadow-xl hover:bg-white/[0.14] transition-all duration-300 hover:border-white/30">
+                <div className="flex items-center justify-between text-blue-200 text-xs font-medium mb-1">
+                  <span className="flex items-center gap-1.5 text-blue-100">
+                    <Building2 size={14} className="text-cyan-300" />
+                    Cakupan Operasional
+                  </span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-400/20 text-blue-200 border border-blue-300/30">
+                    4 Witel
+                  </span>
+                </div>
+                <p className="text-xl font-black text-white tracking-tight mt-1">
+                  Solo, SMG, YOG, PWT
+                </p>
+                <p className="text-[11px] text-blue-200/80 mt-1 font-medium">
+                  Seluruh Segmen Enterprise &amp; Government
+                </p>
+                <div className="mt-2 flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-emerald-400 inline-block" />
+                  <span className="text-[10px] text-emerald-300 font-semibold">100% Online &amp; Termonitor</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Feature Chips */}
+            <div className="flex flex-wrap items-center gap-2 mt-4 max-w-lg">
+              {['NCX & OBL Reconciliation', 'Hierarki Agenda Level 1-4', 'Kuadran Bergerak'].map((tag) => (
+                <span
+                  key={tag}
+                  className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-[11px] text-blue-200/90 font-medium"
+                >
+                  ✓ {tag}
+                </span>
+              ))}
+            </div>
           </div>
 
           {/* Bottom Security Assurance */}
@@ -254,7 +354,7 @@ export default function Login() {
                 className="h-8 object-contain"
               />
               <span className="text-xs font-bold text-slate-800 tracking-wide">
-                Solaris Portal
+                SSGS Portal
               </span>
             </div>
             <span className="text-[11px] font-bold text-[#1447B8] bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
@@ -269,7 +369,7 @@ export default function Login() {
               <div className="mb-7">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50/90 border border-blue-200/60 text-[#1447B8] text-xs font-bold mb-3 shadow-2xs">
                   <KeyRound size={13} className="text-[#1447B8]" />
-                  <span>Portal Akses Solaris Dashboard</span>
+                  <span>Portal Akses Eksekutif</span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                   Selamat Datang
