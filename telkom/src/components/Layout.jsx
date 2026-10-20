@@ -105,13 +105,10 @@ function Sidebar({ close, onCollapse }) {
     >
       {/* Brand Header */}
       <div className="flex items-center justify-between px-2 pt-1 pb-4 mb-1">
-        <NavLink to="/dashboard" className="flex items-center gap-2">
-          <img
-            src="/telkom-logo.png"
-            alt="Telkom Indonesia - the world in your hand"
-            className="h-12 object-contain max-w-[180px]"
-            style={{ filter: 'brightness(0) invert(1)' }}
-          />
+        <NavLink to="/dashboard" className="flex items-center gap-2 group select-none py-1">
+          <span className="text-xl font-black tracking-widest text-white group-hover:text-blue-100 transition-colors">
+            SOLARIS
+          </span>
         </NavLink>
         {onCollapse && (
           <button
