@@ -370,6 +370,8 @@ export default function Edk() {
         ka: Number(r.konfirmasi_am_abonemen_rp) || 0,
         k_auto: Number(r.konfirmasi_am_auto_renewal) || 0,
         k_prog: Number(r.konfirmasi_am_in_progress) || 0,
+        k_auto_a: Number(r.konfirmasi_am_auto_renewal_abonemen_rp) || 0,
+        k_prog_a: Number(r.konfirmasi_am_in_progress_abonemen_rp) || 0,
       }))
     : modes[mode] || [];
 
@@ -434,6 +436,8 @@ const grandTotal = useMemo(() => {
           ka: Number(r.konfirmasi_am_abonemen_rp) || 0,
           k_auto: Number(r.konfirmasi_am_auto_renewal) || 0,
           k_prog: Number(r.konfirmasi_am_in_progress) || 0,
+          k_auto_a: Number(r.konfirmasi_am_auto_renewal_abonemen_rp) || 0,
+          k_prog_a: Number(r.konfirmasi_am_in_progress_abonemen_rp) || 0,
           b: Number(r.bukan_witel_solo_jt_order) || 0,
           ba: Number(r.bukan_witel_solo_jt_abonemen_rp) || 0,
         }))
@@ -453,6 +457,8 @@ const grandTotal = useMemo(() => {
       ka: acc.ka + (r.ka || 0),
       k_auto: acc.k_auto + (r.k_auto || 0),
       k_prog: acc.k_prog + (r.k_prog || 0),
+      k_auto_a: (acc.k_auto_a || 0) + (r.k_auto_a || 0),
+      k_prog_a: (acc.k_prog_a || 0) + (r.k_prog_a || 0),
       b: acc.b + (r.b || 0),
       ba: acc.ba + (r.ba || 0),
       to:
