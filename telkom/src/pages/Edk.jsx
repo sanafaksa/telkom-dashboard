@@ -2,6 +2,7 @@ import { useMemo, useState, Fragment } from 'react';
 import { filterOptions, modes, topPelangganBySegmen } from '../data/edkData';
 import { ExportButton, exportCSV, ShareDropdown } from '../components/ui';
 import FilterDropdown from '../components/FilterDropdown';
+import { createPortal } from "react-dom"
 import {
   Filter,
   Upload,
@@ -69,7 +70,7 @@ function UploadModal({ open, onClose }) {
     }, 1800);
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-[fadeIn_0.2s_ease-out]">
@@ -146,7 +147,8 @@ function UploadModal({ open, onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -1737,7 +1739,11 @@ export default function Edk() {
       </section>
 
       {/* Upload Report Modal */}
-      <UploadModal open={showUpload} onClose={() => setShowUpload(false)} />
+      <UploadModal 
+  open={showUpload} 
+  onClose={() => setShowUpload(false)} 
+  onSuccess={(dataBaru) => setTableData(dataBaru)} 
+/>
     </div>
   );
 }
