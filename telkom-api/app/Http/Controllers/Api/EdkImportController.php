@@ -89,6 +89,8 @@ $numericHeaders = array_diff($requiredHeaders, ['SEGMENT']);
 $seenSegments = [];
 $validationErrors = [];
 
+$calculatedTotals = [];
+
 foreach (array_slice($rows, 1) as $index => $row) {
     $rowNumber = $index + 2;
 
@@ -146,11 +148,7 @@ foreach (array_slice($rows, 1) as $index => $row) {
         (int)($record['KONFIRMASI_AM_IN_PROGRESS'] ?? 0) +
         (int)($record['BUKAN_WITEL_SOLO_JT_ORDER'] ?? 0);
 
-    $excelTotalOrder = (int)($record['TOTAL_ORDER'] ?? 0);
-
-    if ($calculatedTotalOrder !== $excelTotalOrder) {
-        $validationErrors[] = "Baris {$rowNumber} ({$segment}): TOTAL_ORDER di Excel ({$excelTotalOrder}) tidak valid. Seharusnya berjumlah {$calculatedTotalOrder}.";
-    }
+        $calculatedTotals[$segment] = $calculatedTotalOrder;
 }
 
 if (!empty($validationErrors)) {
@@ -164,15 +162,22 @@ if (!empty($validationErrors)) {
             $data = [];
 
             foreach (array_slice($rows, 1, 10) as $row) {
-                $data[] = array_combine(
-                    $headers,
-                    array_pad(
-                        array_slice($row, 0, count($headers)),
-                        count($headers),
-                        null
-                    )
-                );
-            }
+    $item = array_combine(
+        $headers,
+        array_pad(
+            array_slice($row, 0, count($headers)),
+            count($headers),
+            null
+        )
+    );
+
+    $seg = strtoupper(trim((string) ($item['SEGMENT'] ?? '')));
+    if (isset($calculatedTotals[$seg])) {
+        $item['TOTAL_ORDER'] = $calculatedTotals[$seg];
+    }
+
+    $data[] = $item;
+}
 
             return response()->json([
                 'message' => 'Preview Excel berhasil.',
@@ -196,7 +201,7 @@ public function store(Request $request)
     $validator = Validator::make($request->all(), [
         'file' => ['required', 'file', 'mimes:xlsx,xls', 'max:20480'],
         'period' => [
-            'required',
+            'nullable',
             'regex:/^\d{6}$/',
             function ($attribute, $value, $fail) {
                 $month = (int) substr($value, 4, 2);
@@ -314,6 +319,16 @@ public function store(Request $request)
                 }
             }
 
+                        $record['TOTAL_ORDER'] =
+                (int) $record['LANJUT_COMPLETE_ORDER'] +
+                (int) $record['LANJUT_IN_PROGRESS_ORDER'] +
+                (int) $record['TIDAK_LANJUT_COMPLETE_ORDER'] +
+                (int) $record['TIDAK_LANJUT_IN_PROGRESS_ORDER'] +
+                (int) $record['KONFIRMASI_AM_ORDER'] +
+                (int) $record['KONFIRMASI_AM_AUTO_RENEWAL'] +
+                (int) $record['KONFIRMASI_AM_IN_PROGRESS'] +
+                (int) $record['BUKAN_WITEL_SOLO_JT_ORDER'];
+
             $records[$segment] = $record;
         }
 
@@ -337,7 +352,7 @@ public function store(Request $request)
         }
 
         $file = $request->file('file');
-        $period = $request->input('period');
+        $period = $request->input('period') ?? now()->format('Ym');
 
         $upload = DB::transaction(function () use (
             $records,

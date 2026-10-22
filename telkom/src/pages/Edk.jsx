@@ -80,6 +80,17 @@ function UploadModal({ open, onClose, onSuccess }) {
       if (response.ok) {
         const result = await response.json();
 
+                const storeResponse = await fetch('http://localhost:8000/api/edk/import/store', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!storeResponse.ok) {
+          const storeError = await storeResponse.json();
+          alert(storeError.message || 'Gagal menyimpan data EDK');
+          return;
+        }
+
         if (onSuccess) onSuccess(result.preview);
 
         setDone(true);
@@ -206,6 +217,7 @@ export default function Edk() {
   const [pageSize, setPageSize] = useState(25);
   const [pageIndex, setPageIndex] = useState(0);
   const [apiSegmen, setApiSegmen] = useState([]);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [apiLoading, setApiLoading] = useState(true);
   const [apiError, setApiError] = useState('');
   
@@ -236,7 +248,7 @@ export default function Edk() {
     };
 
     fetchEdkMonthly();
-  }, []);
+  }, [refreshKey]);
 
   // Filter States
   const [selectedPeriode, setSelectedPeriode] = useState([]);
@@ -1880,7 +1892,7 @@ const grandTotal = useMemo(() => {
       <UploadModal 
         open={showUpload} 
         onClose={() => setShowUpload(false)} 
-        onSuccess={(dataBaru) => setTableData(dataBaru)} 
+        onSuccess={() => setRefreshKey((k) => k + 1)}
       />
     </div>
   );
