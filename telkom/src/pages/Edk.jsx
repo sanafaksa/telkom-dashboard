@@ -395,34 +395,26 @@ export default function Edk() {
 
     
 return list.map((r) => {
-  const to =
-    mode === 'Segmen'
-      ? Number(r.total_order) || 0
-      : (r.lc || 0) +
-        (r.lp || 0) +
-        (r.tc || 0) +
-        (r.tp || 0) +
-        (r.k || 0) +
-        (r.b || 0);
+  const sumOrder =
+    (r.lc || 0) + (r.lp || 0) + (r.tc || 0) + (r.tp || 0) + (r.k || 0) + (r.b || 0);
+
+  const apiTotal = Number(r.total_order) || 0;
+  const to = mode === 'Segmen' && apiTotal > 0 ? apiTotal : sumOrder;
 
   const ta2 =
-    (r.la || 0) +
-    (r.lpa || 0) +
-    (r.ta || 0) +
-    (r.tpa || 0) +
-    (r.ka || 0) +
-    (r.ba || 0);
+    (r.la || 0) + (r.lpa || 0) + (r.ta || 0) + (r.tpa || 0) + (r.ka || 0) + (r.ba || 0);
 
   return { ...r, to, ta2 };
 });
 
-  }, [mode, selectedPeriode, selectedSegmen, selectedNamaAm, selectedFlagging]);
+  }, [mode, apiSegmen, selectedPeriode, selectedSegmen, selectedNamaAm, selectedFlagging]);
 
   // Grand Total for Periode EDK & Segmen
   
 const grandTotal = useMemo(() => {
-  const list =
-    mode === 'Segmen'
+    const useApi = mode === 'Segmen' && apiSegmen.length > 0;
+
+    const list = useApi
       ? apiSegmen.map((r) => ({
           lc: Number(r.lanjut_complete_order) || 0,
           la: Number(r.lanjut_complete_abonemen_rp) || 0,
@@ -479,11 +471,12 @@ const grandTotal = useMemo(() => {
         (r.ba || 0),
     }),
     {
-      lc: 0, la: 0, lp: 0, lpa: 0,
-      tc: 0, ta: 0, tp: 0, tpa: 0,
-      k: 0, ka: 0, k_auto: 0, k_prog: 0,
-      b: 0, ba: 0, to: 0, ta2: 0,
-    }
+  lc: 0, la: 0, lp: 0, lpa: 0,
+  tc: 0, ta: 0, tp: 0, tpa: 0,
+  k: 0, ka: 0, k_auto: 0, k_prog: 0,
+  k_auto_a: 0, k_prog_a: 0,
+  b: 0, ba: 0, to: 0, ta2: 0,
+}
   );
 }, [mode, apiSegmen]);
 
