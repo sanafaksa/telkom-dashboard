@@ -63,10 +63,10 @@ $requiredHeaders = [
     'TIDAK_LANJUT_COMPLETE_ABONEMEN_RP',
     'TIDAK_LANJUT_IN_PROGRESS_ORDER',
     'TIDAK_LANJUT_IN_PROGRESS_ABONEMEN_RP',
-    'KONFIRMASI_AM_ORDER',
-    'KONFIRMASI_AM_ABONEMEN_RP',
-    'KONFIRMASI_AM_AUTO_RENEWAL',
-    'KONFIRMASI_AM_IN_PROGRESS',
+    'KONFIRMASI_AM_AUTO_RENEWAL_ORDER',
+    'KONFIRMASI_AM_AUTO_RENEWAL_ABONEMEN_RP',
+    'KONFIRMASI_AM_IN_PROGRESS_ORDER',
+    'KONFIRMASI_AM_IN_PROGRESS_ABONEMEN_RP',
     'BUKAN_WITEL_SOLO_JT_ORDER',
     'BUKAN_WITEL_SOLO_JT_ABONEMEN_RP',
     'TOTAL_ORDER',
@@ -138,14 +138,13 @@ foreach (array_slice($rows, 1) as $index => $row) {
         }
     }
 
-    $calculatedTotalOrder =
+        $calculatedTotalOrder =
         (int)($record['LANJUT_COMPLETE_ORDER'] ?? 0) +
         (int)($record['LANJUT_IN_PROGRESS_ORDER'] ?? 0) +
         (int)($record['TIDAK_LANJUT_COMPLETE_ORDER'] ?? 0) +
         (int)($record['TIDAK_LANJUT_IN_PROGRESS_ORDER'] ?? 0) +
-        (int)($record['KONFIRMASI_AM_ORDER'] ?? 0) +
-        (int)($record['KONFIRMASI_AM_AUTO_RENEWAL'] ?? 0) +
-        (int)($record['KONFIRMASI_AM_IN_PROGRESS'] ?? 0) +
+        (int)($record['KONFIRMASI_AM_AUTO_RENEWAL_ORDER'] ?? 0) +
+        (int)($record['KONFIRMASI_AM_IN_PROGRESS_ORDER'] ?? 0) +
         (int)($record['BUKAN_WITEL_SOLO_JT_ORDER'] ?? 0);
 
         $calculatedTotals[$segment] = $calculatedTotalOrder;
@@ -249,10 +248,10 @@ public function store(Request $request)
             'TIDAK_LANJUT_COMPLETE_ABONEMEN_RP',
             'TIDAK_LANJUT_IN_PROGRESS_ORDER',
             'TIDAK_LANJUT_IN_PROGRESS_ABONEMEN_RP',
-            'KONFIRMASI_AM_ORDER',
-            'KONFIRMASI_AM_ABONEMEN_RP',
-            'KONFIRMASI_AM_AUTO_RENEWAL',
-            'KONFIRMASI_AM_IN_PROGRESS',
+            'KONFIRMASI_AM_AUTO_RENEWAL_ORDER',
+            'KONFIRMASI_AM_AUTO_RENEWAL_ABONEMEN_RP',
+            'KONFIRMASI_AM_IN_PROGRESS_ORDER',
+            'KONFIRMASI_AM_IN_PROGRESS_ABONEMEN_RP',
             'BUKAN_WITEL_SOLO_JT_ORDER',
             'BUKAN_WITEL_SOLO_JT_ABONEMEN_RP',
             'TOTAL_ORDER',
@@ -319,14 +318,13 @@ public function store(Request $request)
                 }
             }
 
-                        $record['TOTAL_ORDER'] =
+            $record['TOTAL_ORDER'] =
                 (int) $record['LANJUT_COMPLETE_ORDER'] +
                 (int) $record['LANJUT_IN_PROGRESS_ORDER'] +
                 (int) $record['TIDAK_LANJUT_COMPLETE_ORDER'] +
                 (int) $record['TIDAK_LANJUT_IN_PROGRESS_ORDER'] +
-                (int) $record['KONFIRMASI_AM_ORDER'] +
-                (int) $record['KONFIRMASI_AM_AUTO_RENEWAL'] +
-                (int) $record['KONFIRMASI_AM_IN_PROGRESS'] +
+                (int) $record['KONFIRMASI_AM_AUTO_RENEWAL_ORDER'] +
+                (int) $record['KONFIRMASI_AM_IN_PROGRESS_ORDER'] +
                 (int) $record['BUKAN_WITEL_SOLO_JT_ORDER'];
 
             $records[$segment] = $record;
@@ -391,10 +389,10 @@ public function store(Request $request)
                 'TIDAK_LANJUT_COMPLETE_ABONEMEN_RP' => 'tidak_lanjut_complete_abonemen_rp',
                 'TIDAK_LANJUT_IN_PROGRESS_ORDER' => 'tidak_lanjut_in_progress_order',
                 'TIDAK_LANJUT_IN_PROGRESS_ABONEMEN_RP' => 'tidak_lanjut_in_progress_abonemen_rp',
-                'KONFIRMASI_AM_ORDER' => 'konfirmasi_am_order',
-                'KONFIRMASI_AM_ABONEMEN_RP' => 'konfirmasi_am_abonemen_rp',
-                'KONFIRMASI_AM_AUTO_RENEWAL' => 'konfirmasi_am_auto_renewal',
-                'KONFIRMASI_AM_IN_PROGRESS' => 'konfirmasi_am_in_progress',
+                                'KONFIRMASI_AM_AUTO_RENEWAL_ORDER' => 'konfirmasi_am_auto_renewal',
+                'KONFIRMASI_AM_AUTO_RENEWAL_ABONEMEN_RP' => 'konfirmasi_am_auto_renewal_abonemen_rp',
+                'KONFIRMASI_AM_IN_PROGRESS_ORDER' => 'konfirmasi_am_in_progress',
+                'KONFIRMASI_AM_IN_PROGRESS_ABONEMEN_RP' => 'konfirmasi_am_in_progress_abonemen_rp',
                 'BUKAN_WITEL_SOLO_JT_ORDER' => 'bukan_witel_solo_jt_order',
                 'BUKAN_WITEL_SOLO_JT_ABONEMEN_RP' => 'bukan_witel_solo_jt_abonemen_rp',
                 'TOTAL_ORDER' => 'total_order',
@@ -410,6 +408,14 @@ public function store(Request $request)
                         ? strtoupper(trim((string) $record[$excelColumn]))
                         : $record[$excelColumn];
                 }
+
+                                $summary['konfirmasi_am_order'] =
+                    (int) $record['KONFIRMASI_AM_AUTO_RENEWAL_ORDER'] +
+                    (int) $record['KONFIRMASI_AM_IN_PROGRESS_ORDER'];
+
+                $summary['konfirmasi_am_abonemen_rp'] =
+                    (int) $record['KONFIRMASI_AM_AUTO_RENEWAL_ABONEMEN_RP'] +
+                    (int) $record['KONFIRMASI_AM_IN_PROGRESS_ABONEMEN_RP'];
 
                 EdkMonthlySummary::create($summary);
             }

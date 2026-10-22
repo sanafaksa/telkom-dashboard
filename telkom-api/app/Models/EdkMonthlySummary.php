@@ -22,6 +22,8 @@ class EdkMonthlySummary extends Model
         'konfirmasi_am_abonemen_rp',
         'konfirmasi_am_auto_renewal',
         'konfirmasi_am_in_progress',
+        'konfirmasi_am_auto_renewal_abonemen_rp',
+        'konfirmasi_am_in_progress_abonemen_rp',
         'bukan_witel_solo_jt_order',
         'bukan_witel_solo_jt_abonemen_rp',
         'total_order',
