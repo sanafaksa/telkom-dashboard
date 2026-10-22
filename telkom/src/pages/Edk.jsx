@@ -351,7 +351,7 @@ export default function Edk() {
   // General dataset for Segmen, Periode EDK & Nama AM
   const data = useMemo(() => {
     let list =
-  mode === 'Segmen'
+  mode === 'Segmen' && apiSegmen.length > 0
     ? apiSegmen.map((r) => ({
         ...r,
         l: r.segment,
