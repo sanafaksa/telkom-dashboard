@@ -135,6 +135,22 @@ foreach (array_slice($rows, 1) as $index => $row) {
                 "Baris {$rowNumber}: {$header} harus berupa angka nonnegatif.";
         }
     }
+
+    $calculatedTotalOrder =
+        (int)($record['LANJUT_COMPLETE_ORDER'] ?? 0) +
+        (int)($record['LANJUT_IN_PROGRESS_ORDER'] ?? 0) +
+        (int)($record['TIDAK_LANJUT_COMPLETE_ORDER'] ?? 0) +
+        (int)($record['TIDAK_LANJUT_IN_PROGRESS_ORDER'] ?? 0) +
+        (int)($record['KONFIRMASI_AM_ORDER'] ?? 0) +
+        (int)($record['KONFIRMASI_AM_AUTO_RENEWAL'] ?? 0) +
+        (int)($record['KONFIRMASI_AM_IN_PROGRESS'] ?? 0) +
+        (int)($record['BUKAN_WITEL_SOLO_JT_ORDER'] ?? 0);
+
+    $excelTotalOrder = (int)($record['TOTAL_ORDER'] ?? 0);
+
+    if ($calculatedTotalOrder !== $excelTotalOrder) {
+        $validationErrors[] = "Baris {$rowNumber} ({$segment}): TOTAL_ORDER di Excel ({$excelTotalOrder}) tidak valid. Seharusnya berjumlah {$calculatedTotalOrder}.";
+    }
 }
 
 if (!empty($validationErrors)) {

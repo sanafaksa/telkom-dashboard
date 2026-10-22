@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, Fragment, useRef } from 'react';
 import { filterOptions, modes, topPelangganBySegmen } from '../data/edkData';
 import { ExportButton, exportCSV, ShareDropdown } from '../components/ui';
 import FilterDropdown from '../components/FilterDropdown';
+import { createPortal } from "react-dom";
 import {
   Filter,
   Upload,
@@ -39,17 +40,13 @@ const toTitleCase = (str) => {
     .join(' ');
 };
 
-function UploadModal({ open, onClose }) {
+function UploadModal({ open, onClose, onSuccess }) {
   const [files, setFiles] = useState([]);
   const [drag, setDrag] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [done, setDone] = useState(false);
+
   const fileInputRef = useRef(null);
-  const handleFileSelect = (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setFiles(Array.from(e.target.files));
-    }
-  };
 
   if (!open) return null;
 
@@ -61,22 +58,48 @@ function UploadModal({ open, onClose }) {
     }
   };
 
-  const handleUpload = () => {
-    if (e) e.preventDefault();
-    if (!files.length) return;
-    setUploading(true);
-    setTimeout(() => {
-      setUploading(false);
-      setDone(true);
-      setTimeout(() => {
-        setDone(false);
-        setFiles([]);
-        onClose();
-      }, 1500);
-    }, 1800);
+  const handleFileSelect = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setFiles(Array.from(e.target.files));
+    }
   };
 
-  return (
+  const handleUpload = async () => {
+    if (!files.length) return;
+    setUploading(true);
+
+    const formData = new FormData();
+    formData.append('file', files[0]);
+
+    try {
+      const response = await fetch('http://localhost:8000/api/edk/import/preview', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+
+        if (onSuccess) onSuccess(result.preview);
+
+        setDone(true);
+        setTimeout(() => {
+          setDone(false);
+          setFiles([]);
+          onClose();
+        }, 1500);
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || "Gagal mengunggah file");
+      }
+    } catch (error) {
+      console.error("Error server:", error);
+    } finally {
+      setUploading(false); 
+    }
+  };
+
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-[fadeIn_0.2s_ease-out]">
@@ -112,6 +135,7 @@ function UploadModal({ open, onClose }) {
             }}
             onDragLeave={() => setDrag(false)}
             onDrop={handleDrop}
+            onClick={() => fileInputRef.current.click()}
           >
             <div className="mx-auto size-12 rounded-xl bg-blue-50 text-blue-600 grid place-items-center mb-3">
               <Upload size={22} />
@@ -163,7 +187,8 @@ function UploadModal({ open, onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -1852,7 +1877,11 @@ const grandTotal = useMemo(() => {
       </section>
 
       {/* Upload Report Modal */}
-      <UploadModal open={showUpload} onClose={() => setShowUpload(false)} />
+      <UploadModal 
+        open={showUpload} 
+        onClose={() => setShowUpload(false)} 
+        onSuccess={(dataBaru) => setTableData(dataBaru)} 
+      />
     </div>
   );
 }
