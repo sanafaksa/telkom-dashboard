@@ -211,7 +211,7 @@ const AM_GROUP_SUBTOTALS = {
 };
 
 export default function Edk() {
-  const [mode, setMode] = useState('Nama AM');
+  const [mode, setMode] = useState('Segmen');
   const [activeSegmen, setActiveSegmen] = useState('DGS');
   const [showUpload, setShowUpload] = useState(false);
   const [pageSize, setPageSize] = useState(25);

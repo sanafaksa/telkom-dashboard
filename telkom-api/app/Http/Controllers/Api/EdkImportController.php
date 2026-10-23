@@ -10,6 +10,7 @@ use App\Imports\PreviewEdkImport;
 use App\Models\EdkMonthlyUpload;
 use App\Models\EdkMonthlySummary;
 use Illuminate\Support\Facades\DB;
+use App\Services\EdkOrderImporter;
 
 class EdkImportController extends Controller
 {
@@ -52,6 +53,26 @@ class EdkImportController extends Controller
                 $rows[0]
             );
 
+            if (EdkOrderImporter::isOrderFile($headers)) {
+    $result = $this->parseOrderFile($rows, $headers, $request->input('period'));
+
+    if ($result['response']) {
+        return $result['response'];
+    }
+
+    return response()->json([
+        'message' => 'Preview Excel berhasil.',
+        'sheet_count' => 1,
+        'total_rows' => $result['imported'],
+        'headers' => array_keys(reset($result['records'])),
+        'preview' => array_values($result['records']),
+        'period' => $result['period'],
+        'imported_rows' => $result['imported'],
+        'skipped_other_period' => $result['skipped_period'],
+        'warnings' => $result['warnings'],
+        'status_counts' => $result['status_counts'],
+    ]);
+}
 
 $requiredHeaders = [
     'SEGMENT',
@@ -352,76 +373,7 @@ public function store(Request $request)
         $file = $request->file('file');
         $period = $request->input('period') ?? now()->format('Ym');
 
-        $upload = DB::transaction(function () use (
-            $records,
-            $file,
-            $period
-        ) {
-            // Nomor versi berikutnya untuk periode yang sama.
-            $lastVersion = EdkMonthlyUpload::where('period', $period)
-                ->lockForUpdate()
-                ->max('version');
-
-            $nextVersion = ($lastVersion ?? 0) + 1;
-
-            // Versi lama tetap tersimpan sebagai riwayat.
-            // Nonaktifkan hanya di dalam transaksi.
-            EdkMonthlyUpload::where('period', $period)
-                ->update(['is_active' => false]);
-
-            $upload = EdkMonthlyUpload::create([
-                'period' => $period,
-                'version' => $nextVersion,
-                'original_filename' => $file->getClientOriginalName(),
-                'total_rows' => count($records),
-                'imported_rows' => count($records),
-                'status' => 'success',
-                'is_active' => true,
-            ]);
-
-            $columnMap = [
-                'SEGMENT' => 'segment',
-                'LANJUT_COMPLETE_ORDER' => 'lanjut_complete_order',
-                'LANJUT_COMPLETE_ABONEMEN_RP' => 'lanjut_complete_abonemen_rp',
-                'LANJUT_IN_PROGRESS_ORDER' => 'lanjut_in_progress_order',
-                'LANJUT_IN_PROGRESS_ABONEMEN_RP' => 'lanjut_in_progress_abonemen_rp',
-                'TIDAK_LANJUT_COMPLETE_ORDER' => 'tidak_lanjut_complete_order',
-                'TIDAK_LANJUT_COMPLETE_ABONEMEN_RP' => 'tidak_lanjut_complete_abonemen_rp',
-                'TIDAK_LANJUT_IN_PROGRESS_ORDER' => 'tidak_lanjut_in_progress_order',
-                'TIDAK_LANJUT_IN_PROGRESS_ABONEMEN_RP' => 'tidak_lanjut_in_progress_abonemen_rp',
-                                'KONFIRMASI_AM_AUTO_RENEWAL_ORDER' => 'konfirmasi_am_auto_renewal',
-                'KONFIRMASI_AM_AUTO_RENEWAL_ABONEMEN_RP' => 'konfirmasi_am_auto_renewal_abonemen_rp',
-                'KONFIRMASI_AM_IN_PROGRESS_ORDER' => 'konfirmasi_am_in_progress',
-                'KONFIRMASI_AM_IN_PROGRESS_ABONEMEN_RP' => 'konfirmasi_am_in_progress_abonemen_rp',
-                'BUKAN_WITEL_SOLO_JT_ORDER' => 'bukan_witel_solo_jt_order',
-                'BUKAN_WITEL_SOLO_JT_ABONEMEN_RP' => 'bukan_witel_solo_jt_abonemen_rp',
-                'TOTAL_ORDER' => 'total_order',
-            ];
-
-            foreach ($records as $record) {
-                $summary = [
-                    'edk_monthly_upload_id' => $upload->id,
-                ];
-
-                foreach ($columnMap as $excelColumn => $dbColumn) {
-                    $summary[$dbColumn] = $excelColumn === 'SEGMENT'
-                        ? strtoupper(trim((string) $record[$excelColumn]))
-                        : $record[$excelColumn];
-                }
-
-                                $summary['konfirmasi_am_order'] =
-                    (int) $record['KONFIRMASI_AM_AUTO_RENEWAL_ORDER'] +
-                    (int) $record['KONFIRMASI_AM_IN_PROGRESS_ORDER'];
-
-                $summary['konfirmasi_am_abonemen_rp'] =
-                    (int) $record['KONFIRMASI_AM_AUTO_RENEWAL_ABONEMEN_RP'] +
-                    (int) $record['KONFIRMASI_AM_IN_PROGRESS_ABONEMEN_RP'];
-
-                EdkMonthlySummary::create($summary);
-            }
-
-            return $upload;
-        });
+        $upload = $this->persistRecords($records, $file, $period);
 
         return response()->json([
             'message' => 'Upload EDK berhasil disimpan.',
@@ -483,6 +435,124 @@ public function monthlyData(Request $request)
         'updated_at' => $upload->updated_at,
         'data' => $upload->summaries,
     ]);
+}
+
+private function parseOrderFile(array $rows, array $headers, $periodInput): array
+{
+    $period = EdkOrderImporter::normalizePeriod($periodInput);
+
+    if (!preg_match('/^\d{6}$/', $period) || !EdkOrderImporter::isValidPeriod($period)) {
+        return ['response' => response()->json([
+            'message' => 'Periode wajib diisi dengan format YYYYMM (contoh 202610).',
+        ], 422)];
+    }
+
+    $parsed = EdkOrderImporter::parse($rows, $headers);
+
+    if (!empty($parsed['missing_headers'])) {
+        return ['response' => response()->json([
+            'message' => 'Format Excel tidak sesuai.',
+            'missing_headers' => $parsed['missing_headers'],
+        ], 422)];
+    }
+
+    if (!empty($parsed['errors'])) {
+        return ['response' => response()->json([
+            'message' => 'Data Excel tidak valid.',
+            'errors' => array_slice($parsed['errors'], 0, 50),
+            'total_errors' => count($parsed['errors']),
+        ], 422)];
+    }
+
+    $selected = array_values(array_filter(
+        $parsed['orders'],
+        fn ($o) => $o['periode_edk'] === $period
+    ));
+
+    if (empty($selected)) {
+        return ['response' => response()->json([
+            'message' => "Tidak ada baris dengan F_Periode EDK {$period}.",
+        ], 422)];
+    }
+
+    return [
+        'response' => null,
+        'period' => $period,
+        'records' => EdkOrderImporter::aggregate($selected),
+        'imported' => count($selected),
+        'skipped_period' => count($parsed['orders']) - count($selected),
+        'warnings' => $parsed['warnings'],
+        'status_counts' => $parsed['status_counts'],
+    ];
+}
+
+private function persistRecords(array $records, $file, string $period, ?int $rowCount = null)
+{
+    return DB::transaction(function () use ($records, $file, $period, $rowCount) {
+        // Nomor versi berikutnya untuk periode yang sama.
+        $lastVersion = EdkMonthlyUpload::where('period', $period)
+            ->lockForUpdate()
+            ->max('version');
+
+        $nextVersion = ($lastVersion ?? 0) + 1;
+
+        // Versi lama tetap tersimpan sebagai riwayat.
+        EdkMonthlyUpload::where('period', $period)
+            ->update(['is_active' => false]);
+
+        $upload = EdkMonthlyUpload::create([
+            'period' => $period,
+            'version' => $nextVersion,
+            'original_filename' => $file->getClientOriginalName(),
+            'total_rows' => $rowCount ?? count($records),
+            'imported_rows' => $rowCount ?? count($records),
+            'status' => 'success',
+            'is_active' => true,
+        ]);
+
+        $columnMap = [
+            'SEGMENT' => 'segment',
+            'LANJUT_COMPLETE_ORDER' => 'lanjut_complete_order',
+            'LANJUT_COMPLETE_ABONEMEN_RP' => 'lanjut_complete_abonemen_rp',
+            'LANJUT_IN_PROGRESS_ORDER' => 'lanjut_in_progress_order',
+            'LANJUT_IN_PROGRESS_ABONEMEN_RP' => 'lanjut_in_progress_abonemen_rp',
+            'TIDAK_LANJUT_COMPLETE_ORDER' => 'tidak_lanjut_complete_order',
+            'TIDAK_LANJUT_COMPLETE_ABONEMEN_RP' => 'tidak_lanjut_complete_abonemen_rp',
+            'TIDAK_LANJUT_IN_PROGRESS_ORDER' => 'tidak_lanjut_in_progress_order',
+            'TIDAK_LANJUT_IN_PROGRESS_ABONEMEN_RP' => 'tidak_lanjut_in_progress_abonemen_rp',
+            'KONFIRMASI_AM_AUTO_RENEWAL_ORDER' => 'konfirmasi_am_auto_renewal',
+            'KONFIRMASI_AM_AUTO_RENEWAL_ABONEMEN_RP' => 'konfirmasi_am_auto_renewal_abonemen_rp',
+            'KONFIRMASI_AM_IN_PROGRESS_ORDER' => 'konfirmasi_am_in_progress',
+            'KONFIRMASI_AM_IN_PROGRESS_ABONEMEN_RP' => 'konfirmasi_am_in_progress_abonemen_rp',
+            'BUKAN_WITEL_SOLO_JT_ORDER' => 'bukan_witel_solo_jt_order',
+            'BUKAN_WITEL_SOLO_JT_ABONEMEN_RP' => 'bukan_witel_solo_jt_abonemen_rp',
+            'TOTAL_ORDER' => 'total_order',
+        ];
+
+        foreach ($records as $record) {
+            $summary = [
+                'edk_monthly_upload_id' => $upload->id,
+            ];
+
+            foreach ($columnMap as $excelColumn => $dbColumn) {
+                $summary[$dbColumn] = $excelColumn === 'SEGMENT'
+                    ? strtoupper(trim((string) $record[$excelColumn]))
+                    : $record[$excelColumn];
+            }
+
+            $summary['konfirmasi_am_order'] =
+                (int) $record['KONFIRMASI_AM_AUTO_RENEWAL_ORDER'] +
+                (int) $record['KONFIRMASI_AM_IN_PROGRESS_ORDER'];
+
+            $summary['konfirmasi_am_abonemen_rp'] =
+                (int) $record['KONFIRMASI_AM_AUTO_RENEWAL_ABONEMEN_RP'] +
+                (int) $record['KONFIRMASI_AM_IN_PROGRESS_ABONEMEN_RP'];
+
+            EdkMonthlySummary::create($summary);
+        }
+
+        return $upload;
+    });
 }
 
 }
