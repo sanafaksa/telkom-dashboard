@@ -61,11 +61,19 @@ function UploadModal({ open, onClose, onSuccess }) {
   const [drag, setDrag] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [done, setDone] = useState(false);
-  const [uploadPeriod, setUploadPeriod] = useState('');
+    const [uploadPeriod, setUploadPeriod] = useState('');
   const [uploadError, setUploadError] = useState('');
-  const periodMonth = Number(uploadPeriod.slice(4, 6));
-  const periodValid = /^\d{6}$/.test(uploadPeriod) && periodMonth >= 1 && periodMonth <= 12;
-  const canUpload = files.length > 0 && periodValid && !uploading;
+  const [periodWarning, setPeriodWarning] = useState('');
+
+  const getPeriodError = (value) => {
+    if (!value) return 'Periode wajib diisi (contoh: 202611).';
+    if (!/^\d{6}$/.test(value)) return 'Format periode harus 6 digit angka (contoh: 202611).';
+    const month = Number(value.slice(4, 6));
+    if (month < 1 || month > 12) return 'Bulan periode harus 01 sampai 12 (contoh: 202611).';
+    return '';
+  };
+
+  const canUpload = files.length > 0 && !getPeriodError(uploadPeriod) && !uploading;
 
   const fileInputRef = useRef(null);
 
@@ -86,7 +94,17 @@ function UploadModal({ open, onClose, onSuccess }) {
   };
 
     const handleUpload = async () => {
-    if (!canUpload) return;
+        if (uploading) return;
+    if (!files.length) {
+      setUploadError('Pilih file Excel terlebih dahulu.');
+      return;
+    }
+    const periodError = getPeriodError(uploadPeriod);
+    if (periodError) {
+      setPeriodWarning(periodError);
+      return;
+    }
+    setPeriodWarning('');
     setUploading(true);
     setUploadError('');
 
@@ -156,19 +174,38 @@ function UploadModal({ open, onClose, onSuccess }) {
         </div>
 
         <div className="px-6 py-5">
-                  <div className="mb-3">
+          <div className="mb-3">
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               Periode EDK (YYYYMM)
             </label>
             <input
               type="text"
               inputMode="numeric"
-              maxLength={6}
               value={uploadPeriod}
-              onChange={(e) => setUploadPeriod(e.target.value.replace(/\D/g, ''))}
-              placeholder="cth: 202610"
-              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-[#1D8BCB]"
+              onChange={(e) => {
+                const raw = e.target.value;
+                const digits = raw.replace(/\D/g, '');
+
+                if (/\D/.test(raw)) {
+                  setPeriodWarning('Periode hanya boleh berisi angka (contoh: 202611).');
+                } else if (digits.length > 6) {
+                  setPeriodWarning('Periode maksimal 6 digit (contoh: 202611).');
+                } else {
+                  setPeriodWarning('');
+                }
+
+                setUploadPeriod(digits.slice(0, 6));
+              }}
+              placeholder="202611"
+              className={`w-full px-3 py-2 text-xs border rounded-lg focus:outline-none ${
+                periodWarning
+                  ? 'border-red-400 focus:border-red-500'
+                  : 'border-slate-200 focus:border-[#1D8BCB]'
+              }`}
             />
+            {periodWarning && (
+              <p className="mt-1 text-xs text-red-600">{periodWarning}</p>
+            )}
           </div>
           {uploadError && (
             <div className="mb-3 whitespace-pre-line text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
@@ -230,11 +267,11 @@ function UploadModal({ open, onClose, onSuccess }) {
           <button
             type="button"
             onClick={handleUpload}
-            disabled={!canUpload}
+            disabled={uploading}
             className={`px-5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-2 ${
               done
                 ? 'bg-emerald-500 text-white'
-                : files.length && !uploading
+                : canUpload
                 ? 'bg-[#2563EB] hover:bg-blue-700 text-white shadow-2xs'
                 : 'bg-slate-200 text-slate-400 cursor-not-allowed'
             }`}
