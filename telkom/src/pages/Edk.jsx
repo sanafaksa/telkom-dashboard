@@ -40,11 +40,40 @@ const toTitleCase = (str) => {
     .join(' ');
 };
 
+const buildUploadError = (data, fallback) => {
+  const parts = [data?.message || fallback];
+
+  if (Array.isArray(data?.errors)) {
+    parts.push(...data.errors.slice(0, 5));
+  } else if (data?.errors && typeof data.errors === 'object') {
+    parts.push(...Object.values(data.errors).flat().slice(0, 5));
+  }
+
+  if (Array.isArray(data?.missing_headers)) {
+    parts.push('Kolom hilang: ' + data.missing_headers.join(', '));
+  }
+
+  return parts.join('\n');
+};
+
 function UploadModal({ open, onClose, onSuccess }) {
   const [files, setFiles] = useState([]);
   const [drag, setDrag] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [done, setDone] = useState(false);
+    const [uploadPeriod, setUploadPeriod] = useState('');
+  const [uploadError, setUploadError] = useState('');
+  const [periodWarning, setPeriodWarning] = useState('');
+
+  const getPeriodError = (value) => {
+    if (!value) return 'Periode wajib diisi (contoh: 202611).';
+    if (!/^\d{6}$/.test(value)) return 'Format periode harus 6 digit angka (contoh: 202611).';
+    const month = Number(value.slice(4, 6));
+    if (month < 1 || month > 12) return 'Bulan periode harus 01 sampai 12 (contoh: 202611).';
+    return '';
+  };
+
+  const canUpload = files.length > 0 && !getPeriodError(uploadPeriod) && !uploading;
 
   const fileInputRef = useRef(null);
 
@@ -64,49 +93,66 @@ function UploadModal({ open, onClose, onSuccess }) {
     }
   };
 
-  const handleUpload = async () => {
-    if (!files.length) return;
+    const handleUpload = async () => {
+        if (uploading) return;
+    if (!files.length) {
+      setUploadError('Pilih file Excel terlebih dahulu.');
+      return;
+    }
+    const periodError = getPeriodError(uploadPeriod);
+    if (periodError) {
+      setPeriodWarning(periodError);
+      return;
+    }
+    setPeriodWarning('');
     setUploading(true);
+    setUploadError('');
 
     const formData = new FormData();
     formData.append('file', files[0]);
+    formData.append('period', uploadPeriod);
 
     try {
       const response = await fetch('http://localhost:8000/api/edk/import/preview', {
         method: 'POST',
+        headers: { Accept: 'application/json' },
         body: formData
       });
 
-      if (response.ok) {
-        const result = await response.json();
-
-                const storeResponse = await fetch('http://localhost:8000/api/edk/import/store', {
-          method: 'POST',
-          body: formData
-        });
-
-        if (!storeResponse.ok) {
-          const storeError = await storeResponse.json();
-          alert(storeError.message || 'Gagal menyimpan data EDK');
-          return;
-        }
-
-        if (onSuccess) onSuccess(result.preview);
-
-        setDone(true);
-        setTimeout(() => {
-          setDone(false);
-          setFiles([]);
-          onClose();
-        }, 1500);
-      } else {
-        const errorData = await response.json();
-        alert(errorData.message || "Gagal mengunggah file");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        setUploadError(buildUploadError(errorData, 'Gagal mengunggah file'));
+        return;
       }
+
+      const result = await response.json();
+
+      const storeResponse = await fetch('http://localhost:8000/api/edk/import/store', {
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+        body: formData
+      });
+
+      if (!storeResponse.ok) {
+        const storeError = await storeResponse.json().catch(() => null);
+        setUploadError(buildUploadError(storeError, 'Gagal menyimpan data EDK'));
+        return;
+      }
+
+      if (onSuccess) onSuccess(result.preview);
+
+      setDone(true);
+      setTimeout(() => {
+        setDone(false);
+        setFiles([]);
+        setUploadPeriod('');
+        onClose();
+      }, 1500);
     } catch (error) {
-      console.error("Error server:", error);
+      console.error('Error server:', error);
+      setUploadError('Tidak dapat terhubung ke server (http://localhost:8000).');
     } finally {
-      setUploading(false); 
+      setUploading(false);
     }
   };
 
@@ -117,7 +163,7 @@ function UploadModal({ open, onClose, onSuccess }) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <div>
             <h2 className="text-base font-bold text-slate-900">Upload Report EDK</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Format yang didukung: XLSX, CSV, PDF (maks 10MB)</p>
+            <p className="text-xs text-slate-500 mt-0.5">Format yang didukung: XLSX (maks 20MB)</p>
           </div>
           <button
             onClick={onClose}
@@ -128,12 +174,50 @@ function UploadModal({ open, onClose, onSuccess }) {
         </div>
 
         <div className="px-6 py-5">
+          <div className="mb-3">
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Periode EDK (YYYYMM)
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={uploadPeriod}
+              onChange={(e) => {
+                const raw = e.target.value;
+                const digits = raw.replace(/\D/g, '');
+
+                if (/\D/.test(raw)) {
+                  setPeriodWarning('Periode hanya boleh berisi angka (contoh: 202611).');
+                } else if (digits.length > 6) {
+                  setPeriodWarning('Periode maksimal 6 digit (contoh: 202611).');
+                } else {
+                  setPeriodWarning('');
+                }
+
+                setUploadPeriod(digits.slice(0, 6));
+              }}
+              placeholder="202611"
+              className={`w-full px-3 py-2 text-xs border rounded-lg focus:outline-none ${
+                periodWarning
+                  ? 'border-red-400 focus:border-red-500'
+                  : 'border-slate-200 focus:border-[#1D8BCB]'
+              }`}
+            />
+            {periodWarning && (
+              <p className="mt-1 text-xs text-red-600">{periodWarning}</p>
+            )}
+          </div>
+          {uploadError && (
+            <div className="mb-3 whitespace-pre-line text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+              {uploadError}
+            </div>
+          )}
           <input 
             type="file" 
             ref={fileInputRef} 
             onChange={handleFileSelect} 
             className="hidden" 
-            accept=".xlsx, .csv, .pdf"
+            accept=".xlsx,.xls"
           />
 
           <div
@@ -152,7 +236,7 @@ function UploadModal({ open, onClose, onSuccess }) {
               <Upload size={22} />
             </div>
             <p className="text-sm font-semibold text-slate-700">Drag & drop file report atau klik untuk pilih</p>
-            <p className="text-xs text-slate-400 mt-1">Excel (.xlsx), CSV (.csv), atau PDF</p>
+            <p className="text-xs text-slate-400 mt-1">Excel (.xlsx, .xls)</p>
           </div>
 
           {files.length > 0 && (
@@ -183,11 +267,11 @@ function UploadModal({ open, onClose, onSuccess }) {
           <button
             type="button"
             onClick={handleUpload}
-            disabled={!files.length || uploading}
+            disabled={uploading}
             className={`px-5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-2 ${
               done
                 ? 'bg-emerald-500 text-white'
-                : files.length && !uploading
+                : canUpload
                 ? 'bg-[#2563EB] hover:bg-blue-700 text-white shadow-2xs'
                 : 'bg-slate-200 text-slate-400 cursor-not-allowed'
             }`}
