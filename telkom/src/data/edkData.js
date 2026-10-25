@@ -53,7 +53,7 @@ export const mk = (l, a, extra = {}) => {
     k_prog_a,
     // Metadata
     periode: extra.periode || '202609',
-    segmen: extra.segmen || 'Enterprise',
+    segmen: extra.segmen || 'DGS',
     namaAm: extra.namaAm || l,
     flagging: extra.flagging || 'Updated Today',
     isTotalRow: extra.isTotalRow || false,
@@ -68,7 +68,7 @@ export const filterOptions = {
     '202606', '202607', '202608', '202609', '202610', '202611', '202612'
   ],
   segmen: [
-    'DGS', 'DPS', 'DSS', 'RBS', 'Enterprise', 'Government', 'Business', 'Regional', 'DES', 'DBS'
+    'DGS', 'DPS', 'DSS', 'RBS'
   ],
   namaAm: [
     'Erika Kurniawati',
@@ -282,10 +282,10 @@ export const modes = {
   ],
 
   'Nama CC': [
-    mk('CC Perbankan & Finansial', [35, 110500000, 22, 42100000, 15, 38900000, 10, 15200000, 8, 24500000, 25, 120400000, 10, 15], { segmen: 'Enterprise', periode: '202609', flagging: 'Updated Today' }),
-    mk('CC Manufaktur & Logistik', [28, 85400000, 18, 34200000, 12, 29800000, 8, 12400000, 6, 18300000, 18, 88200000, 8, 10], { segmen: 'Business', periode: '202608', flagging: 'Updated <7 Days' }),
-    mk('CC Pemerintahan & BUMN', [40, 135800000, 26, 51300000, 18, 46500000, 14, 21900000, 10, 31200000, 30, 145600000, 12, 18], { segmen: 'Government', periode: '202609', flagging: 'Updated Today' }),
-    mk('CC Pendidikan & Kesehatan', [22, 68900000, 15, 27600000, 9, 21400000, 6, 9800000, 5, 14600000, 14, 65400000, 5, 9], { segmen: 'Regional', periode: '202607', flagging: 'Need Review' })
+    mk('CC Perbankan & Finansial', [35, 110500000, 22, 42100000, 15, 38900000, 10, 15200000, 8, 24500000, 25, 120400000, 10, 15], { segmen: 'DSS', periode: '202609', flagging: 'Updated Today' }),
+    mk('CC Manufaktur & Logistik', [28, 85400000, 18, 34200000, 12, 29800000, 8, 12400000, 6, 18300000, 18, 88200000, 8, 10], { segmen: 'RBS', periode: '202608', flagging: 'Updated <7 Days' }),
+    mk('CC Pemerintahan & BUMN', [40, 135800000, 26, 51300000, 18, 46500000, 14, 21900000, 10, 31200000, 30, 145600000, 12, 18], { segmen: 'DGS', periode: '202609', flagging: 'Updated Today' }),
+    mk('CC Pendidikan & Kesehatan', [22, 68900000, 15, 27600000, 9, 21400000, 6, 9800000, 5, 14600000, 14, 65400000, 5, 9], { segmen: 'DPS', periode: '202607', flagging: 'Need Review' })
   ]
 };
 
@@ -348,14 +348,14 @@ export const topPelangganBySegmen = {
 
 // Data Top 10 Pelanggan untuk Nama CC (Corporate Customer)
 export const topPelangganByCC = [
-  mk('PT BANK MANDIRI (PERSERO) TBK', [14, 68500000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], { segmen: 'Enterprise', periode: '202609', flagging: 'Updated Today' }),
-  mk('PT BANK RAKYAT INDONESIA TBK', [12, 54200000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], { segmen: 'Enterprise', periode: '202609', flagging: 'Updated Today' }),
-  mk('PT BANK CENTRAL ASIA TBK', [10, 42100000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], { segmen: 'Enterprise', periode: '202609', flagging: 'Updated <7 Days' }),
-  mk('PT PERTAMINA PATRA NIAGA', [8, 38900000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], { segmen: 'Enterprise', periode: '202609', flagging: 'Updated Today' }),
-  mk('PT PLN (PERSERO) UID JATENG & DIY', [9, 34500000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], { segmen: 'Enterprise', periode: '202608', flagging: 'Need Review' }),
-  mk('PT TELEKOMUNIKASI SELULAR (TELKOMSEL)', [7, 28400000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], { segmen: 'Enterprise', periode: '202609', flagging: 'Updated Today' }),
-  mk('PT ASTRA INTERNATIONAL TBK', [6, 22150000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], { segmen: 'Enterprise', periode: '202608', flagging: 'Updated <7 Days' }),
-  mk('PT GUDANG GARAM TBK', [5, 18700000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], { segmen: 'Enterprise', periode: '202609', flagging: 'Updated Today' }),
-  mk('PT INDOFOOD SUKSES MAKMUR TBK', [5, 16250000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], { segmen: 'Enterprise', periode: '202608', flagging: 'Need Review' }),
-  mk('PT KERETA API INDONESIA (PERSERO)', [4, 12850000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], { segmen: 'Enterprise', periode: '202609', flagging: 'Updated Today' })
+  mk('PT BANK MANDIRI (PERSERO) TBK', [14, 68500000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], { segmen: 'DSS', periode: '202609', flagging: 'Updated Today' }),
+  mk('PT BANK RAKYAT INDONESIA TBK', [12, 54200000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], { segmen: 'DSS', periode: '202609', flagging: 'Updated Today' }),
+  mk('PT BANK CENTRAL ASIA TBK', [10, 42100000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], { segmen: 'DSS', periode: '202609', flagging: 'Updated <7 Days' }),
+  mk('PT PERTAMINA PATRA NIAGA', [8, 38900000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], { segmen: 'DSS', periode: '202609', flagging: 'Updated Today' }),
+  mk('PT PLN (PERSERO) UID JATENG & DIY', [9, 34500000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], { segmen: 'DGS', periode: '202608', flagging: 'Need Review' }),
+  mk('PT TELEKOMUNIKASI SELULAR (TELKOMSEL)', [7, 28400000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], { segmen: 'DSS', periode: '202609', flagging: 'Updated Today' }),
+  mk('PT ASTRA INTERNATIONAL TBK', [6, 22150000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], { segmen: 'RBS', periode: '202608', flagging: 'Updated <7 Days' }),
+  mk('PT GUDANG GARAM TBK', [5, 18700000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], { segmen: 'DSS', periode: '202609', flagging: 'Updated Today' }),
+  mk('PT INDOFOOD SUKSES MAKMUR TBK', [5, 16250000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], { segmen: 'DSS', periode: '202608', flagging: 'Need Review' }),
+  mk('PT KERETA API INDONESIA (PERSERO)', [4, 12850000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], { segmen: 'DSS', periode: '202609', flagging: 'Updated Today' })
 ];
