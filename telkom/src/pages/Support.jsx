@@ -17,7 +17,9 @@ import {
   Eye,
   Info,
   HelpCircle,
-  FileCheck2
+  FileCheck2,
+  Pencil,
+  Plus
 } from 'lucide-react';
 import {
   loadSavedSupportData,
@@ -26,13 +28,20 @@ import {
   parseSupportCSV,
   parseSupportExcel,
   computeSupportMetrics,
+  normalizeStatus,
   DEFAULT_SUPPORT_CSV
 } from '../data/supportParser';
 import { exportCSV, ShareDropdown } from '../components/ui';
 
 export default function Support() {
   // Action plans data state (loaded from LocalStorage or default CSV)
-  const [actionPlans, setActionPlans] = useState(() => loadSavedSupportData());
+  const [actionPlans, setActionPlans] = useState(() => {
+    const loaded = loadSavedSupportData();
+    return loaded.map((item, idx) => ({
+      ...item,
+      id: item.id !== undefined ? item.id : `plan_${idx + 1}`
+    }));
+  });
   const [metrics, setMetrics] = useState(() => computeSupportMetrics(actionPlans));
 
   // Search & Filter state for detail table
@@ -49,15 +58,81 @@ export default function Support() {
   const [uploadLoading, setUploadLoading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [uploadSuccess, setUploadSuccess] = useState('');
+
+  // Detail Modal & Direct All-Boxes Edit State
   const [detailItem, setDetailItem] = useState(null);
+  const [editFormData, setEditFormData] = useState({});
+  const [editSuccessMsg, setEditSuccessMsg] = useState('');
 
   // Recalculate metrics & persist whenever actionPlans change
   useEffect(() => {
     const computed = computeSupportMetrics(actionPlans);
     setMetrics(computed);
     saveSupportData(actionPlans);
-    setPage(1);
   }, [actionPlans]);
+
+  // Open detail modal with all boxes directly editable
+  const handleOpenDetail = (item) => {
+    setDetailItem(item);
+    setEditFormData({ ...item });
+    setEditSuccessMsg('');
+  };
+
+  // Close detail modal
+  const handleCloseDetail = () => {
+    setDetailItem(null);
+    setEditFormData({});
+    setEditSuccessMsg('');
+  };
+
+  // Update field in edit form
+  const handleFieldChange = (field, value) => {
+    setEditFormData((prev) => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Save changes to item, close modal, and update list + localStorage
+  const handleSaveAll = () => {
+    if (!detailItem) return;
+
+    const updatedData = {
+      ...detailItem,
+      ...editFormData
+    };
+
+    if (updatedData.status) {
+      updatedData.status = normalizeStatus(updatedData.status);
+    }
+
+    if (updatedData.supportNeeded !== undefined && !String(updatedData.supportNeeded).trim()) {
+      updatedData.supportNeeded = '-';
+    }
+
+    setActionPlans((prev) =>
+      prev.map((item) => {
+        const isMatch =
+          (item.id !== undefined && item.id === detailItem.id) ||
+          (item.no === detailItem.no && item.actionPlan === detailItem.actionPlan);
+        return isMatch ? updatedData : item;
+      })
+    );
+
+    setDetailItem(null);
+    setEditFormData({});
+  };
+
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && detailItem) {
+        handleCloseDetail();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [detailItem]);
 
   // Unique list of agendas and UICs for filters
   const uniqueAgendas = useMemo(() => {
@@ -455,13 +530,29 @@ export default function Support() {
                     Action Item
                   </span>
                 </div>
-                <span className={`text-[11px] font-medium px-2.5 py-1.5 rounded-lg border ${
-                  u.isTop
-                    ? 'bg-blue-50 text-blue-600 border-blue-100'
-                    : 'bg-slate-50 text-slate-600 border-slate-100'
-                }`}>
-                  {u.status}
-                </span>
+                <div
+                  className={`text-[11px] font-medium px-2.5 py-2 rounded-xl border flex flex-col gap-1 leading-tight shrink-0 ${
+                    u.isTop
+                      ? 'bg-blue-50 text-blue-700 border-blue-100'
+                      : 'bg-slate-50 text-slate-600 border-slate-100'
+                  }`}
+                >
+                  {(u.status || '').split(',').map((part, idx) => {
+                    const trimmed = part.trim();
+                    const dotColor =
+                      idx === 0
+                        ? 'bg-rose-500'
+                        : idx === 1
+                        ? 'bg-blue-500'
+                        : 'bg-emerald-500';
+                    return (
+                      <div key={idx} className="flex items-center gap-1.5 whitespace-nowrap font-medium">
+                        <span className={`size-1.5 rounded-full shrink-0 ${dotColor}`} />
+                        <span>{trimmed}</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           ))}
@@ -606,8 +697,12 @@ export default function Support() {
                         {item.mainTopic}
                       </span>
                     </td>
-                    <td className="py-3 px-4">
-                      <p className="text-slate-800 font-medium leading-relaxed text-xs break-words" title={item.actionPlan}>
+                    <td
+                      className="py-3 px-4 cursor-pointer group/cell"
+                      onClick={() => handleOpenDetail(item)}
+                      title="Klik untuk melihat & mengedit detail Action Plan"
+                    >
+                      <p className="text-slate-800 group-hover/cell:text-blue-700 font-medium leading-relaxed text-xs break-words transition-colors">
                         {item.actionPlan}
                       </p>
                     </td>
@@ -621,16 +716,22 @@ export default function Support() {
                         )}
                       </div>
                     </td>
-                    <td className="py-3 px-4 min-w-[280px]">
+                    <td
+                      className="py-3 px-4 min-w-[280px] cursor-pointer group/cell"
+                      onClick={() => handleOpenDetail(item)}
+                      title="Klik untuk melihat & mengedit detail Support Needed"
+                    >
                       {item.supportNeeded && item.supportNeeded !== '-' ? (
                         <div
-                          className="p-2.5 rounded-xl bg-rose-50/80 border border-rose-200/80 text-rose-900 text-xs leading-relaxed whitespace-pre-line break-words font-medium shadow-2xs"
+                          className="p-2.5 rounded-xl bg-rose-50/80 border border-rose-200/80 text-rose-900 text-xs leading-relaxed whitespace-pre-line break-words font-medium shadow-2xs group-hover/cell:border-rose-400 group-hover/cell:bg-rose-50 transition-all"
                           title={item.supportNeeded}
                         >
                           {item.supportNeeded}
                         </div>
                       ) : (
-                        <span className="text-slate-400 text-xs italic block pt-1">-</span>
+                        <span className="text-slate-400 group-hover/cell:text-blue-600 text-xs italic block pt-1 transition-colors">
+                          - <span className="text-[10px] text-slate-400 group-hover/cell:text-blue-600 font-normal">(Klik untuk tambah)</span>
+                        </span>
                       )}
                     </td>
                     <td className="py-3 px-3 text-center">
@@ -642,14 +743,24 @@ export default function Support() {
                       {getStatusBadge(item.status)}
                     </td>
                     <td className="py-3 px-2 text-center pt-2.5">
-                      <button
-                        type="button"
-                        onClick={() => setDetailItem(item)}
-                        title="Lihat detail lengkap notulen &amp; catatan"
-                        className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
-                      >
-                        <Eye size={15} />
-                      </button>
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenDetail(item)}
+                          title="Lihat detail lengkap notulen &amp; catatan"
+                          className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+                        >
+                          <Eye size={15} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenDetail(item)}
+                          title="Edit Action Plan &amp; boxes secara langsung"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-blue-700 hover:bg-blue-50 transition-colors cursor-pointer"
+                        >
+                          <Pencil size={13} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -836,140 +947,278 @@ export default function Support() {
         </div>
       )}
 
-      {/* 7. Action Plan Detail Modal */}
+      {/* 7. Action Plan Detail Modal - All Boxes Directly Editable */}
       {detailItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col border border-slate-200">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) handleCloseDetail();
+          }}
+        >
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-hidden flex flex-col border border-slate-200">
             {/* Modal Header */}
-            <div className="px-6 py-4.5 border-b border-slate-100 bg-[#0B1E48] text-white flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="size-8 rounded-xl bg-white/10 grid place-items-center font-black text-xs text-white">
+            <div className="px-6 py-4 border-b border-slate-100 bg-[#0B1E48] text-white flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <span className="size-9 rounded-xl bg-white/10 grid place-items-center font-black text-xs text-white shrink-0">
                   #{detailItem.no}
                 </span>
-                <div>
-                  <h3 className="font-extrabold text-base leading-tight">
-                    {detailItem.agenda}
-                  </h3>
-                  <p className="text-xs text-blue-200/80 mt-0.5">
-                    Tanggal: {detailItem.tgl} • Unit: {detailItem.unitTelda}
-                  </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 min-w-0 flex-1">
+                  <div>
+                    <label className="text-[10px] text-blue-200 block font-semibold mb-0.5">
+                      AGENDA
+                    </label>
+                    <input
+                      type="text"
+                      value={editFormData.agenda || ''}
+                      onChange={(e) => handleFieldChange('agenda', e.target.value)}
+                      className="w-full px-2.5 py-1 text-xs rounded-lg bg-white/15 text-white border border-white/20 focus:outline-none focus:border-white font-bold placeholder-white/50"
+                      placeholder="Agenda Rapat"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-blue-200 block font-semibold mb-0.5">
+                      TANGGAL
+                    </label>
+                    <input
+                      type="text"
+                      value={editFormData.tgl || ''}
+                      onChange={(e) => handleFieldChange('tgl', e.target.value)}
+                      className="w-full px-2.5 py-1 text-xs rounded-lg bg-white/15 text-white border border-white/20 focus:outline-none focus:border-white placeholder-white/50"
+                      placeholder="DD/MM/YYYY"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-blue-200 block font-semibold mb-0.5">
+                      UNIT / TELDA
+                    </label>
+                    <input
+                      type="text"
+                      value={editFormData.unitTelda || ''}
+                      onChange={(e) => handleFieldChange('unitTelda', e.target.value)}
+                      className="w-full px-2.5 py-1 text-xs rounded-lg bg-white/15 text-white border border-white/20 focus:outline-none focus:border-white placeholder-white/50"
+                      placeholder="Unit Telda"
+                    />
+                  </div>
                 </div>
               </div>
-              <button
-                onClick={() => setDetailItem(null)}
-                className="text-white/70 hover:text-white p-1 rounded-lg cursor-pointer"
-              >
-                <X size={18} />
-              </button>
+
+              {/* Header Right Actions */}
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleSaveAll}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
+                  title="Simpan semua perubahan"
+                >
+                  <Check size={14} />
+                  <span>Simpan</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseDetail}
+                  className="text-white/70 hover:text-white p-1.5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors"
+                  title="Tutup"
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto space-y-4.5 text-xs text-slate-700">
-              {/* Main Topic & Status */}
-              <div className="flex items-start justify-between gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                    TOPIK UTAMA
+            {/* Modal Body with All Boxes Directly Editable */}
+            <div className="p-6 overflow-y-auto space-y-4 text-xs text-slate-700">
+              {/* Notification Banner when saved */}
+              {editSuccessMsg && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs flex items-center justify-between font-bold animate-[fadeIn_0.2s_ease-out]">
+                  <span className="flex items-center gap-2">
+                    <Check size={16} className="text-emerald-600 shrink-0" />
+                    {editSuccessMsg}
                   </span>
-                  <p className="text-sm font-extrabold text-slate-900">
-                    {detailItem.mainTopic}
-                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setEditSuccessMsg('')}
+                    className="text-emerald-500 hover:text-emerald-700 cursor-pointer p-0.5"
+                  >
+                    <X size={14} />
+                  </button>
                 </div>
-                <div className="shrink-0 text-right">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                    STATUS AKSI
-                  </span>
-                  {getStatusBadge(detailItem.status)}
+              )}
+
+              {/* 1. Main Topic & Status Box */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-2">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                      TOPIK UTAMA
+                    </label>
+                    <input
+                      type="text"
+                      value={editFormData.mainTopic || ''}
+                      onChange={(e) => handleFieldChange('mainTopic', e.target.value)}
+                      className="w-full px-3 py-2 text-sm font-extrabold text-slate-900 bg-white border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                      placeholder="Judul topik utama notulen"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                      STATUS AKSI
+                    </label>
+                    <select
+                      value={editFormData.status || 'BELUM FU'}
+                      onChange={(e) => handleFieldChange('status', e.target.value)}
+                      className="w-full px-3 py-2 text-xs font-bold text-slate-800 bg-white border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none cursor-pointer"
+                    >
+                      <option value="DONE">DONE (Selesai)</option>
+                      <option value="IN PROGRESS">IN PROGRESS (Dalam Proses)</option>
+                      <option value="NEED DISCUSS">NEED DISCUSS (Butuh Diskusi)</option>
+                      <option value="BELUM FU">BELUM FU (Open)</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              {/* Action Plan */}
+              {/* 2. Action Plan Box */}
               <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1.5">
                   RENCANA AKSI (ACTION PLAN)
-                </span>
-                <div className="p-4 rounded-2xl bg-blue-50/50 border border-blue-200/60 font-medium text-slate-900 leading-relaxed text-xs sm:text-sm">
-                  {detailItem.actionPlan}
+                </label>
+                <textarea
+                  rows={4}
+                  value={editFormData.actionPlan || ''}
+                  onChange={(e) => handleFieldChange('actionPlan', e.target.value)}
+                  className="w-full p-3.5 rounded-2xl bg-blue-50/50 border border-blue-200 text-slate-900 font-medium leading-relaxed text-xs sm:text-sm focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                  placeholder="Tuliskan butir rencana aksi..."
+                />
+              </div>
+
+              {/* 3. Support Needed Callout Box */}
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-rose-600 block mb-1.5">
+                  DUKUNGAN YANG DIBUTUHKAN (SUPPORT NEEDED)
+                </label>
+                <textarea
+                  rows={3}
+                  value={editFormData.supportNeeded === '-' ? '' : editFormData.supportNeeded || ''}
+                  onChange={(e) => handleFieldChange('supportNeeded', e.target.value)}
+                  className="w-full p-3.5 rounded-2xl bg-rose-50/60 border border-rose-200 text-rose-900 font-medium leading-relaxed text-xs focus:border-rose-400 focus:bg-white focus:ring-2 focus:ring-rose-100 outline-none transition-all"
+                  placeholder="Tuliskan kebutuhan dukungan atau eskalasi ke regional / unit lain (kosongkan jika tidak ada)..."
+                />
+              </div>
+
+              {/* 4. UIC, Destinasi FU, Deadline Box */}
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1.5">
+                  PIC &amp; TARGET FOLLOW UP
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                    <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">
+                      UIC (Penanggung Jawab)
+                    </label>
+                    <input
+                      type="text"
+                      value={editFormData.uic || ''}
+                      onChange={(e) => handleFieldChange('uic', e.target.value)}
+                      className="w-full text-xs font-bold text-slate-900 bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 focus:border-blue-500 outline-none"
+                      placeholder="e.g. PRQ, BS"
+                    />
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                    <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">
+                      Destinasi FU
+                    </label>
+                    <input
+                      type="text"
+                      value={editFormData.destinasiFu || ''}
+                      onChange={(e) => handleFieldChange('destinasiFu', e.target.value)}
+                      className="w-full text-xs font-bold text-blue-700 bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 focus:border-blue-500 outline-none"
+                      placeholder="e.g. BS, SSGS, TELDA"
+                    />
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                    <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">
+                      Target Deadline
+                    </label>
+                    <input
+                      type="text"
+                      value={editFormData.deadline || ''}
+                      onChange={(e) => handleFieldChange('deadline', e.target.value)}
+                      className="w-full text-xs font-bold text-slate-900 bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 focus:border-blue-500 outline-none"
+                      placeholder="e.g. W3 Sep 2026"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Support Needed Callout */}
-              {detailItem.supportNeeded && detailItem.supportNeeded !== '-' && (
-                <div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-rose-600 block mb-1.5">
-                    DUKUNGAN YANG DIBUTUHKAN (SUPPORT NEEDED)
-                  </span>
-                  <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 leading-relaxed whitespace-pre-line font-medium">
-                    {detailItem.supportNeeded}
-                  </div>
-                </div>
-              )}
-
-              {/* UIC, Destinasi FU, Deadline */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="text-[10px] font-bold uppercase text-slate-400 block mb-0.5">
-                    UIC (Penanggung Jawab)
-                  </span>
-                  <span className="font-bold text-slate-900">{detailItem.uic}</span>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="text-[10px] font-bold uppercase text-slate-400 block mb-0.5">
-                    Destinasi FU
-                  </span>
-                  <span className="font-bold text-blue-700">{detailItem.destinasiFu}</span>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="text-[10px] font-bold uppercase text-slate-400 block mb-0.5">
-                    Target Deadline
-                  </span>
-                  <span className="font-bold text-slate-900">{detailItem.deadline}</span>
-                </div>
+              {/* 5. Notes to Follow Up Box */}
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1.5">
+                  CATATAN TINDAK LANJUT / NO. NOTA DINAS (NDE)
+                </label>
+                <textarea
+                  rows={3}
+                  value={editFormData.notes || ''}
+                  onChange={(e) => handleFieldChange('notes', e.target.value)}
+                  className="w-full p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 font-mono text-[11px] leading-relaxed focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                  placeholder="Nomor NDE, tanggal pengajuan, catatan tindak lanjut..."
+                />
               </div>
 
-              {/* Notes to Follow Up */}
-              {detailItem.notes && (
-                <div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
-                    CATATAN TINDAK LANJUT / NO. NOTA DINAS (NDE)
-                  </span>
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 leading-relaxed whitespace-pre-line font-mono text-[11px]">
-                    {detailItem.notes}
-                  </div>
-                </div>
-              )}
+              {/* 6. Full Pembahasan & Notulen Box */}
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1.5">
+                  POIN PEMBAHASAN LENGKAP
+                </label>
+                <textarea
+                  rows={6}
+                  value={editFormData.pembahasan || ''}
+                  onChange={(e) => handleFieldChange('pembahasan', e.target.value)}
+                  className="w-full p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-700 text-[11px] leading-relaxed focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                  placeholder="Poin pembahasan atau notulen rapat secara lengkap..."
+                />
+              </div>
 
-              {/* Full Pembahasan & Notulen */}
-              {detailItem.pembahasan && (
-                <div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
-                    POIN PEMBAHASAN LENGKAP
-                  </span>
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-600 leading-relaxed whitespace-pre-line text-[11px] max-h-48 overflow-y-auto">
-                    {detailItem.pembahasan}
-                  </div>
-                </div>
-              )}
-
-              {/* Peserta */}
-              {detailItem.peserta && (
-                <div className="p-3 rounded-xl bg-slate-50 text-slate-500 text-[11px]">
-                  <strong>Daftar Peserta Rapat:</strong> {detailItem.peserta}
-                </div>
-              )}
+              {/* 7. Peserta Rapat Box */}
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+                <label className="font-bold text-slate-700 text-[11px] block mb-1">
+                  Daftar Peserta Rapat
+                </label>
+                <input
+                  type="text"
+                  value={editFormData.peserta || ''}
+                  onChange={(e) => handleFieldChange('peserta', e.target.value)}
+                  className="w-full px-3 py-2 text-xs text-slate-800 bg-white border border-slate-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none"
+                  placeholder="Misal: GM WITEL, PRQ (3), SSGS (3), BS (3)..."
+                />
+              </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setDetailItem(null)}
-                className="px-5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl cursor-pointer"
-              >
-                Tutup
-              </button>
+            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+              <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                <Info size={13} className="text-blue-600 shrink-0" />
+                <span>
+                  Semua box dapat diedit langsung. Klik <strong className="text-slate-700 font-semibold">&quot;Simpan Perubahan&quot;</strong> setelah selesai.
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleCloseDetail}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-xl cursor-pointer transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveAll}
+                  className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl cursor-pointer transition-all shadow-md flex items-center gap-1.5"
+                >
+                  <Check size={14} />
+                  Simpan Perubahan
+                </button>
+              </div>
             </div>
           </div>
         </div>

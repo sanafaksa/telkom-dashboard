@@ -177,7 +177,7 @@ function Sidebar({ close, onCollapse }) {
         )}
 
         <SidebarItem to="/support-needed" icon={FileText}>
-          Catatan MoM & Support
+          MoM & Support Needed
         </SidebarItem>
       </div>
 
@@ -302,7 +302,7 @@ const SEARCH_INDEX = [
   // Halaman
   { type: 'Halaman', label: 'Dashboard', desc: 'Executive Overview', to: '/dashboard' },
   { type: 'Halaman', label: 'EDK Monitoring', desc: 'Evaluasi Data Kinerja', to: '/edk-monitoring' },
-  { type: 'Halaman', label: 'Catatan MoM & Support', desc: 'Minutes of Meeting & Support Needed', to: '/support-needed' },
+  { type: 'Halaman', label: 'MoM & Support Needed', desc: 'Minutes of Meeting & Support Needed', to: '/support-needed' },
   // Kuadran
   { type: 'Kuadran', label: 'Kuadran Moving', desc: 'Analisis pergerakan kuadran SJT', to: '/kuadran/moving' },
   { type: 'Kuadran', label: 'Witel Performance', desc: 'Performa per Witel', to: '/kuadran/witel' },

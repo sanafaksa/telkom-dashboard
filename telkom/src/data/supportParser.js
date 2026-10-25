@@ -379,6 +379,9 @@ export function computeSupportMetrics(actionPlans = []) {
       category: cat,
       name: `Unit ${u.name}`,
       count: u.count,
+      open: u.open,
+      progress: u.progress,
+      done: u.done,
       status: `${u.open} Belum FU, ${u.progress} On Progress, ${u.done} Done`,
       isTop: i === 0
     };
