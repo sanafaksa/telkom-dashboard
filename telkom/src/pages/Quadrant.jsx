@@ -16,6 +16,7 @@ import {
 import * as Q from '../data/quadrantData';
 import {exportCSV, ShareDropdown} from '../components/ui';
 import {QuadrantGrid, GrandTotalCard} from '../components/Quadrant';
+import {createPortal} from 'react-dom';
 
 export default function Quadrant() {
   const {view} = useParams();
@@ -372,7 +373,7 @@ export default function Quadrant() {
       {quadrantData.total && <GrandTotalCard t={quadrantData.total} />}
 
       {/* Upload Modal */}
-      {showUpload && (
+      {showUpload && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-[fadeIn_0.2s_ease-out]">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
@@ -477,7 +478,8 @@ export default function Quadrant() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

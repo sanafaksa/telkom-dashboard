@@ -32,6 +32,7 @@ import {
   DEFAULT_SUPPORT_CSV
 } from '../data/supportParser';
 import { exportCSV, ShareDropdown } from '../components/ui';
+import { createPortal } from "react-dom";
 
 export default function Support() {
   // Action plans data state (loaded from LocalStorage or default CSV)
@@ -122,6 +123,13 @@ export default function Support() {
     setDetailItem(null);
     setEditFormData({});
   };
+
+  useEffect(() => {
+  if (!detailItem) return;
+  const prev = document.body.style.overflow;
+  document.body.style.overflow = 'hidden';
+  return () => { document.body.style.overflow = prev; };
+}, [detailItem]);
 
   // Close modal on Escape key
   useEffect(() => {
@@ -798,7 +806,7 @@ export default function Support() {
       </section>
 
       {/* 6. Upload Modal */}
-      {showUpload && (
+      {showUpload && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200">
             <div className="flex items-center justify-between px-6 py-4.5 border-b border-slate-100 bg-slate-50/50">
@@ -944,13 +952,14 @@ export default function Support() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* 7. Action Plan Detail Modal - All Boxes Directly Editable */}
-      {detailItem && (
+      {detailItem && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"
           onClick={(e) => {
             if (e.target === e.currentTarget) handleCloseDetail();
           }}
@@ -1221,7 +1230,8 @@ export default function Support() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
