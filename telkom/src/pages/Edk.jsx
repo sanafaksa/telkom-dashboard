@@ -1464,15 +1464,13 @@ const grandTotal = useMemo(() => {
                             <span className="size-4 rounded bg-[#1D4ED8] text-white flex items-center justify-center font-bold text-[10px] leading-none shrink-0 shadow-2xs">
                               −
                             </span>
-                            <span className="font-bold text-xs text-[#1D4ED8]">{group.name}</span>
+                            <span className="font-bold text-xs text-[#1D4ED8]">Subtotal {group.name}</span>
                             <span className="text-[11px] text-slate-500 font-normal">({group.items.length} Account Manager)</span>
                           </div>
                         </td>
 
                         {/* Middle blank cells under Lanjut & Tidak Lanjut: 8 kolom */}
-                        <td colSpan={8} className="px-3 py-2 text-right font-bold text-xs text-[#1D4ED8] border-r border-slate-300 whitespace-nowrap">
-                          Subtotal {group.name}
-                        </td>
+                        <td colSpan={8} className="border-r border-slate-300" />
 
                         {/* Konfirmasi AM Subtotals (4 kolom) */}
                         <td className="px-3 py-2 text-center tabular-nums text-xs font-bold text-[#1D4ED8] border-r border-slate-200">

@@ -310,9 +310,6 @@ export default function Support() {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
               MoM &amp; Support Needed
             </h1>
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#1447B8] border border-blue-200">
-              Live Auto-Sync
-            </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500">
             Monitoring tindak lanjut MoM rapat koordinasi &amp; eskalasi support needed Regional 3
