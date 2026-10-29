@@ -106,45 +106,57 @@ export const modes = {
     mk('202606', [9, 4746508, 0, 0, 1, -43500000, 1, 0, 0, 0, 3, 4850000, 0, 3], { periode: '202606', flagging: 'Updated Today' }),
     mk('202607', [0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1], { periode: '202607', flagging: 'Updated Today' }),
     mk('202608', [12, 15590204, 18, 57615091, 0, 0, 1, 0, 0, 0, 6, 2730000, 0, 4], { periode: '202608', flagging: 'Updated Today' }),
-    mk('202609', [3, 3723550, 31, 42350873, 1, 0, 17, 43050115, 0, 0, 28, 42942334, 0, 28], { periode: '202609', flagging: 'Updated Today' })
+    mk('202609', [3, 3723550, 31, 42350873, 1, 0, 17, 43050115, 0, 0, 28, 42942334, 0, 28], { periode: '202609', flagging: 'Updated Today' }),
+    mk('202610', [3, 7220500, 5, 7206400, 0, 0, 5, 8233000, 0, 0, 85, 287721888, 30, 55], {
+      periode: '202610',
+      flagging: 'Updated Today',
+      k_auto_a: 64467283,
+      k_prog_a: 223254605
+    }),
+    mk('202611', [11, 52302500, 8, 571626993, 13, 0, 0, 0, 0, 0, 160, 1028831842, 22, 138], {
+      periode: '202611',
+      flagging: 'Updated Today',
+      k_auto_a: 48355584,
+      k_prog_a: 980476258
+    })
   ],
 
   'Segmen': [
-    mk('DGS', [42, 125431000, 28, 46228000, 18, 52774000, 12, 18631000, 18, 46020000, 100, 425017275], {
+    mk('DGS', [0, 0, 1, 59739078, 1, 0, 0, 0, 0, 0, 94, 423852275], {
       segmen: 'DGS',
-      periode: '202609',
+      periode: '202611',
       flagging: 'Updated Today',
-      k_auto: 8,
+      k_auto: 7,
       k_auto_a: 5065520,
-      k_prog: 92,
-      k_prog_a: 419951755
+      k_prog: 87,
+      k_prog_a: 418786755
     }),
-    mk('DPS', [88, 301520778, 40, 86532000, 47, 118947000, 26, 44598631, 18, 39547631, 37, 131131000], {
+    mk('DPS', [9, 50236000, 4, 10881631, 12, 0, 0, 0, 0, 0, 0, 0], {
       segmen: 'DPS',
-      periode: '202609',
-      flagging: 'Updated <7 Days',
-      k_auto: 2,
-      k_auto_a: 24000000,
-      k_prog: 35,
-      k_prog_a: 107131000
-    }),
-    mk('DSS', [54, 210885000, 32, 74190000, 29, 194235000, 18, 77535185, 9, 32045185, 47, 997567284], {
-      segmen: 'DSS',
-      periode: '202608',
+      periode: '202611',
       flagging: 'Updated Today',
       k_auto: 0,
       k_auto_a: 0,
-      k_prog: 47,
-      k_prog_a: 997567284
+      k_prog: 0,
+      k_prog_a: 0
     }),
-    mk('RBS', [53, 152446961, 43, 86872739, 26, 85175473, 12, 16402000, 56, 115044184, 139, 269029775], {
+    mk('DSS', [0, 0, 3, 501006284, 0, 0, 0, 0, 0, 0, 38, 492341000], {
+      segmen: 'DSS',
+      periode: '202611',
+      flagging: 'Updated Today',
+      k_auto: 0,
+      k_auto_a: 0,
+      k_prog: 38,
+      k_prog_a: 492341000
+    }),
+    mk('RBS', [2, 2066500, 0, 0, 0, 0, 0, 0, 0, 0, 28, 112638567], {
       segmen: 'RBS',
-      periode: '202608',
-      flagging: 'Need Review',
-      k_auto: 42,
-      k_auto_a: 91275064,
-      k_prog: 97,
-      k_prog_a: 177754711
+      periode: '202611',
+      flagging: 'Updated Today',
+      k_auto: 15,
+      k_auto_a: 43290064,
+      k_prog: 13,
+      k_prog_a: 69348503
     })
   ],
 
@@ -359,3 +371,84 @@ export const topPelangganByCC = [
   mk('PT INDOFOOD SUKSES MAKMUR TBK', [5, 16250000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], { segmen: 'DSS', periode: '202608', flagging: 'Need Review' }),
   mk('PT KERETA API INDONESIA (PERSERO)', [4, 12850000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], { segmen: 'DSS', periode: '202609', flagging: 'Updated Today' })
 ];
+
+// Breakdown per Segmen berdasarkan Periode EDK Excel
+export const segmenByPeriode = {
+  '202610': [
+    mk('DGS', [1, 3495000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], {
+      segmen: 'DGS',
+      periode: '202610',
+      flagging: 'Updated Today',
+      k_auto: 0,
+      k_auto_a: 0,
+      k_prog: 0,
+      k_prog_a: 0
+    }),
+    mk('DPS', [1, 2800000, 0, 0, 0, 0, 1, 1500000, 0, 0, 55, 239875110], {
+      segmen: 'DPS',
+      periode: '202610',
+      flagging: 'Updated Today',
+      k_auto: 6,
+      k_auto_a: 24000000,
+      k_prog: 49,
+      k_prog_a: 215875110
+    }),
+    mk('DSS', [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], {
+      segmen: 'DSS',
+      periode: '202610',
+      flagging: 'Updated Today',
+      k_auto: 0,
+      k_auto_a: 0,
+      k_prog: 0,
+      k_prog_a: 0
+    }),
+    mk('RBS', [1, 925500, 5, 7206400, 0, 0, 4, 6733000, 0, 0, 30, 47846778], {
+      segmen: 'RBS',
+      periode: '202610',
+      flagging: 'Updated Today',
+      k_auto: 24,
+      k_auto_a: 40467283,
+      k_prog: 6,
+      k_prog_a: 7379495
+    })
+  ],
+  '202611': [
+    mk('DGS', [0, 0, 1, 59739078, 1, 0, 0, 0, 0, 0, 94, 423852275], {
+      segmen: 'DGS',
+      periode: '202611',
+      flagging: 'Updated Today',
+      k_auto: 7,
+      k_auto_a: 5065520,
+      k_prog: 87,
+      k_prog_a: 418786755
+    }),
+    mk('DPS', [9, 50236000, 4, 10881631, 12, 0, 0, 0, 0, 0, 0, 0], {
+      segmen: 'DPS',
+      periode: '202611',
+      flagging: 'Updated Today',
+      k_auto: 0,
+      k_auto_a: 0,
+      k_prog: 0,
+      k_prog_a: 0
+    }),
+    mk('DSS', [0, 0, 3, 501006284, 0, 0, 0, 0, 0, 0, 38, 492341000], {
+      segmen: 'DSS',
+      periode: '202611',
+      flagging: 'Updated Today',
+      k_auto: 0,
+      k_auto_a: 0,
+      k_prog: 38,
+      k_prog_a: 492341000
+    }),
+    mk('RBS', [2, 2066500, 0, 0, 0, 0, 0, 0, 0, 0, 28, 112638567], {
+      segmen: 'RBS',
+      periode: '202611',
+      flagging: 'Updated Today',
+      k_auto: 15,
+      k_auto_a: 43290064,
+      k_prog: 13,
+      k_prog_a: 69348503
+    })
+  ]
+};
+
