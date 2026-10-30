@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, Fragment, useRef } from 'react';
-import { filterOptions, modes, topPelangganBySegmen } from '../data/edkData';
+import { filterOptions, modes, topPelangganBySegmen, segmenByPeriode } from '../data/edkData';
 import { ExportButton, exportCSV, ShareDropdown } from '../components/ui';
 import FilterDropdown from '../components/FilterDropdown';
+import { createPortal } from "react-dom";
 import { createPortal } from "react-dom";
 import {
   Filter,
@@ -40,6 +41,23 @@ const toTitleCase = (str) => {
     .join(' ');
 };
 
+const buildUploadError = (data, fallback) => {
+  const parts = [data?.message || fallback];
+
+  if (Array.isArray(data?.errors)) {
+    parts.push(...data.errors.slice(0, 5));
+  } else if (data?.errors && typeof data.errors === 'object') {
+    parts.push(...Object.values(data.errors).flat().slice(0, 5));
+  }
+
+  if (Array.isArray(data?.missing_headers)) {
+    parts.push('Kolom hilang: ' + data.missing_headers.join(', '));
+  }
+
+  return parts.join('\n');
+};
+
+function UploadModal({ open, onClose, onSuccess }) {
 const buildUploadError = (data, fallback) => {
   const parts = [data?.message || fallback];
 
@@ -1464,15 +1482,13 @@ const grandTotal = useMemo(() => {
                             <span className="size-4 rounded bg-[#1D4ED8] text-white flex items-center justify-center font-bold text-[10px] leading-none shrink-0 shadow-2xs">
                               −
                             </span>
-                            <span className="font-bold text-xs text-[#1D4ED8]">{group.name}</span>
+                            <span className="font-bold text-xs text-[#1D4ED8]">Subtotal {group.name}</span>
                             <span className="text-[11px] text-slate-500 font-normal">({group.items.length} Account Manager)</span>
                           </div>
                         </td>
 
                         {/* Middle blank cells under Lanjut & Tidak Lanjut: 8 kolom */}
-                        <td colSpan={8} className="px-3 py-2 text-right font-bold text-xs text-[#1D4ED8] border-r border-slate-300 whitespace-nowrap">
-                          Subtotal {group.name}
-                        </td>
+                        <td colSpan={8} className="border-r border-slate-300" />
 
                         {/* Konfirmasi AM Subtotals (4 kolom) */}
                         <td className="px-3 py-2 text-center tabular-nums text-xs font-bold text-[#1D4ED8] border-r border-slate-200">

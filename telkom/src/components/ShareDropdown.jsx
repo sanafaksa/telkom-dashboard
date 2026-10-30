@@ -54,28 +54,74 @@ export default function ShareDropdown({
     }, 2500);
   };
 
-  // 1. Copy as Picture (html2canvas)
+  // 1. Copy as Picture (html2canvas) - Otomatis Screenshot Seluruh Halaman
   const handleCopyPicture = async () => {
     setOpen(false);
     setLoading(true);
+
+    const prevScrollX = window.scrollX;
+    const prevScrollY = window.scrollY;
+
     try {
+      // Scroll ke paling atas terlebih dahulu agar tidak ada offset/bagian terpotong
+      window.scrollTo(0, 0);
+      await new Promise((r) => setTimeout(r, 120));
+
       const target =
-        document.querySelector(captureSelector) ||
         document.querySelector('main') ||
+        document.querySelector(captureSelector) ||
         document.querySelector('.overflow-x-auto') ||
         document.body;
 
+      const fullWidth = Math.max(
+        target.scrollWidth || 0,
+        target.offsetWidth || 0,
+        document.documentElement.scrollWidth || 0
+      );
+      const fullHeight = Math.max(
+        target.scrollHeight || 0,
+        target.offsetHeight || 0,
+        document.documentElement.scrollHeight || 0
+      );
+
       const canvas = await html2canvas(target, {
-        backgroundColor: '#f8fafc',
+        backgroundColor: '#F6F8FC',
         scale: 2,
         useCORS: true,
-        logging: false
+        logging: false,
+        allowTaint: true,
+        scrollX: 0,
+        scrollY: 0,
+        width: target.offsetWidth || fullWidth,
+        height: target.scrollHeight || fullHeight,
+        windowWidth: document.documentElement.offsetWidth || window.innerWidth,
+        windowHeight: fullHeight || window.innerHeight,
+        onclone: (clonedDoc) => {
+          const clonedTarget =
+            clonedDoc.querySelector('main') ||
+            clonedDoc.querySelector(captureSelector) ||
+            clonedDoc.body;
+          if (clonedTarget) {
+            clonedTarget.style.height = 'auto';
+            clonedTarget.style.maxHeight = 'none';
+            clonedTarget.style.overflow = 'visible';
+          }
+          // Perluas kontainer tabel/scroll agar konten lengkap tertangkap
+          const scrollables = clonedDoc.querySelectorAll(
+            '.overflow-x-auto, .overflow-y-auto, .overflow-auto'
+          );
+          scrollables.forEach((el) => {
+            el.style.overflow = 'visible';
+            el.style.maxHeight = 'none';
+          });
+        }
       });
 
       canvas.toBlob(async (blob) => {
         if (!blob) {
-          showFeedback('Gagal membuat gambar report');
+          showFeedback('Gagal membuat gambar screenshot');
           setLoading(false);
+          window.scrollTo(prevScrollX, prevScrollY);
           return;
         }
 
@@ -84,7 +130,7 @@ export default function ShareDropdown({
             await navigator.clipboard.write([
               new ClipboardItem({ 'image/png': blob })
             ]);
-            showFeedback('Gambar report berhasil disalin ke clipboard!', 'picture');
+            showFeedback('Screenshot seluruh halaman berhasil disalin ke clipboard!', 'picture');
           } else {
             throw new Error('ClipboardItem not supported');
           }
@@ -92,18 +138,20 @@ export default function ShareDropdown({
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `report-capture-${Date.now()}.png`;
+          a.download = `solaris-full-page-${Date.now()}.png`;
           a.click();
           URL.revokeObjectURL(url);
-          showFeedback('Gambar report diunduh sebagai file PNG!', 'picture');
+          showFeedback('Screenshot seluruh halaman diunduh sebagai file PNG!', 'picture');
         } finally {
           setLoading(false);
+          window.scrollTo(prevScrollX, prevScrollY);
         }
       }, 'image/png');
     } catch (err) {
       console.error(err);
       setLoading(false);
-      showFeedback('Gagal mengambil gambar report');
+      showFeedback('Gagal mengambil screenshot');
+      window.scrollTo(prevScrollX, prevScrollY);
     }
   };
 
@@ -168,7 +216,7 @@ export default function ShareDropdown({
       id: 'picture',
       icon: Image,
       title: 'Copy as Picture',
-      subtitle: 'Salin report sebagai gambar',
+      subtitle: 'Screenshot otomatis seluruh halaman',
       action: handleCopyPicture
     },
     {

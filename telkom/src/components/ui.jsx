@@ -5,6 +5,7 @@ import ShareDropdown from './ShareDropdown';
 export function ShareButton(props) {
   return <ShareDropdown {...props} />;
 }
+import {createPortal} from 'react-dom';
 
 export function ExportButton({ onClick, onExportData, filename = 'export-report' }) {
   const [open, setOpen] = useState(false);
@@ -187,7 +188,8 @@ function UploadModal({open,onClose}){
 
   if(!open) return null;
 
-  return <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={handleClose}>
+  return createPortal(
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={handleClose}>
     <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" aria-hidden/>
     <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-[fadeIn_0.2s_ease-out]" onClick={e=>e.stopPropagation()}>
       {/* Header */}
@@ -254,7 +256,9 @@ function UploadModal({open,onClose}){
         </div>
       </div>
     </div>
-  </div>;
+  </div>,
+  document.body
+  )
 }
 
 export function PageHeader({title,sub,onExport,actions}){const [showUpload,setShowUpload]=useState(false);return <><header className="flex flex-wrap items-end justify-between gap-3 mb-6">
