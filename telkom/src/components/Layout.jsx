@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home,
   BarChart2,
+  ClipboardList,
   LayoutGrid,
   Folder,
   ArrowRight,
@@ -136,6 +137,10 @@ function Sidebar({ close, onCollapse }) {
           EDK Monitoring
         </SidebarItem>
 
+        <SidebarItem to="/monitoring-order-sjt" icon={ClipboardList}>
+          Monitoring Order SJT
+        </SidebarItem>
+
         <SidebarItem
           to="/kuadran"
           icon={LayoutGrid}
@@ -204,6 +209,7 @@ function Sidebar({ close, onCollapse }) {
 const MINI_NAV = [
   { to: '/dashboard', icon: Home, label: 'Dashboard', end: true },
   { to: '/edk-monitoring', icon: BarChart2, label: 'EDK Monitoring' },
+  { to: '/monitoring-order-sjt', icon: ClipboardList, label: 'Monitoring Order SJT' },
   { to: '/kuadran', icon: LayoutGrid, label: 'Kuadran SJT', isKuadran: true },
   { to: '/support-needed', icon: FileText, label: 'Catatan MoM & Support' },
 ];
@@ -302,6 +308,7 @@ const SEARCH_INDEX = [
   // Halaman
   { type: 'Halaman', label: 'Dashboard', desc: 'Executive Overview', to: '/dashboard' },
   { type: 'Halaman', label: 'EDK Monitoring', desc: 'Evaluasi Data Kinerja', to: '/edk-monitoring' },
+  { type: 'Halaman', label: 'Monitoring Order SJT', desc: 'Dashboard Monitoring Order SJT 2026 — Witel Solo Jateng Timur', to: '/monitoring-order-sjt' },
   { type: 'Halaman', label: 'MoM & Support Needed', desc: 'Minutes of Meeting & Support Needed', to: '/support-needed' },
   // Kuadran
   { type: 'Kuadran', label: 'Kuadran Moving', desc: 'Analisis pergerakan kuadran SJT', to: '/kuadran/moving' },
@@ -320,6 +327,8 @@ const SEARCH_INDEX = [
   { type: 'KPI', label: 'EDK Lanjut Complete', desc: 'Status EDK diselesaikan', to: '/edk-monitoring' },
   { type: 'KPI', label: 'EDK In Progress', desc: 'Status EDK sedang berjalan', to: '/edk-monitoring' },
   { type: 'KPI', label: 'Konfirmasi AM', desc: 'Konfirmasi Account Manager', to: '/edk-monitoring' },
+  { type: 'KPI', label: 'Order SJT > 60 Hari', desc: 'Monitoring aging order > 60 hari SJT', to: '/monitoring-order-sjt' },
+  { type: 'KPI', label: 'Posisi Milestone Order SJT', desc: 'Monitoring milestone per divisi & AM SJT', to: '/monitoring-order-sjt' },
   { type: 'KPI', label: 'Kuadran 1 — Tanpa Tagihan & Tanpa Usage', desc: 'Pelanggan KW1', to: '/kuadran/moving' },
   { type: 'KPI', label: 'Kuadran 4 — Dengan Tagihan & Dengan Usage', desc: 'Pelanggan KW4', to: '/kuadran/moving' },
 ];
@@ -464,7 +473,7 @@ export default function Layout({ children }) {
           <div className="relative hidden md:block min-w-0 shrink" ref={searchRef}>
             <label className={`flex items-center gap-2 border rounded-full px-3.5 py-1.5 w-48 lg:w-64 xl:w-80 text-xs transition-all ${searchOpen ? 'bg-white border-[#235CE5] shadow-sm shadow-[#235CE5]/10' : 'bg-slate-50/60 border-slate-200'
               }`}>
-              <Search size={14} className="text-slate-400 shrink-0" />
+            <Search size={14} className="text-slate-400 shrink-0" />
               <input
                 aria-label="Cari"
                 placeholder="Search Regional, Witel, KPI..."
