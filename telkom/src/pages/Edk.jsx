@@ -813,16 +813,16 @@ const grandTotal = useMemo(() => {
       {/* 4. Table Card */}
       <section className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
         {/* Table Header Status Bar */}
-        <div className="px-5 py-3.5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="size-2 rounded-full bg-[#2563EB]" />
+        <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4 text-xs">
+          <div className="flex items-center gap-2.5">
+            <span className="size-2.5 rounded-full bg-[#2563EB]" />
             <span className="text-slate-500 font-medium">Last Update :</span>
                       <b className="font-bold text-slate-800">
                         {lastUpdate ? formatLastUpdate(lastUpdate) : 'Belum ada update'}
                       </b>
           </div>
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center bg-slate-100/90 p-0.5 rounded-lg border border-slate-200/80 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 bg-slate-100/90 p-1.5 rounded-xl border border-slate-200/80 shrink-0">
               {['Segmen', 'Periode EDK', 'Nama AM', 'Nama CC'].map((m) => {
                 const isActive = mode === m;
                 return (
@@ -830,10 +830,10 @@ const grandTotal = useMemo(() => {
                     key={m}
                     type="button"
                     onClick={() => handleModeChange(m)}
-                    className={`px-3 py-1 text-[11px] font-semibold transition-all rounded-md cursor-pointer ${
+                    className={`px-4 py-2 text-xs font-semibold transition-all rounded-lg cursor-pointer focus:outline-none ${
                       isActive
-                        ? 'bg-[#1D4ED8] text-white shadow-2xs font-bold'
-                        : 'text-slate-600 hover:text-slate-900 font-medium hover:bg-slate-200/60'
+                        ? 'bg-[#1D4ED8] text-white shadow-xs font-bold'
+                        : 'text-slate-600 hover:text-slate-900 font-medium hover:bg-white/70'
                     }`}
                   >
                     {m}
@@ -1912,7 +1912,7 @@ const grandTotal = useMemo(() => {
         </div>
 
         {/* 5. ini pagination  */}
-        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 border-t border-slate-100 text-xs text-slate-500">
+        <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 border-t border-slate-100 text-xs text-slate-500">
           <div>
             Menampilkan{' '}
             <span className="font-bold text-slate-800">
@@ -1929,12 +1929,12 @@ const grandTotal = useMemo(() => {
               : 'data'}
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-3.5">
+            <div className="flex items-center gap-2">
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
-                className="bg-white border border-slate-200/90 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                className="bg-white border border-slate-200/90 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
               >
                 {[10, 25, 50, 100].map((ps) => (
                   <option key={ps} value={ps}>
@@ -1945,19 +1945,19 @@ const grandTotal = useMemo(() => {
               <span className="text-slate-500">data per halaman</span>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 disabled={pageIndex === 0}
                 onClick={() => setPageIndex((prev) => Math.max(0, prev - 1))}
-                className="size-7 rounded-lg border border-slate-200/90 bg-white flex items-center justify-center text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 cursor-pointer transition-colors"
+                className="size-8 rounded-xl border border-slate-200/90 bg-white flex items-center justify-center text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 cursor-pointer transition-colors"
               >
                 <ChevronLeft size={14} />
               </button>
 
               <button
                 type="button"
-                className="size-7 rounded-lg font-bold text-xs bg-[#2563EB] text-white shadow-2xs flex items-center justify-center cursor-pointer"
+                className="size-8 rounded-xl font-bold text-xs bg-[#2563EB] text-white shadow-2xs flex items-center justify-center cursor-pointer"
               >
                 1
               </button>
@@ -1965,7 +1965,7 @@ const grandTotal = useMemo(() => {
               <button
                 type="button"
                 disabled={true}
-                className="size-7 rounded-lg border border-slate-200/90 bg-white flex items-center justify-center text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 cursor-pointer transition-colors"
+                className="size-8 rounded-xl border border-slate-200/90 bg-white flex items-center justify-center text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 cursor-pointer transition-colors"
               >
                 <ChevronRight size={14} />
               </button>
