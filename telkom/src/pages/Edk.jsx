@@ -3,7 +3,7 @@ import { filterOptions, modes, topPelangganBySegmen, segmenByPeriode } from '../
 import { ExportButton, exportCSV, ShareDropdown } from '../components/ui';
 import FilterDropdown from '../components/FilterDropdown';
 import { createPortal } from "react-dom";
-import { createPortal } from "react-dom";
+import { parseExcelFile } from '../utils/parseExcel';
 import {
   Filter,
   Upload,
@@ -18,6 +18,14 @@ import {
   AlignLeft,
   ChevronDown
 } from 'lucide-react';
+
+const formatLastUpdate = (date) => {
+  return date.toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+};
 
 const formatRupiah = (val) => {
   if (val === undefined || val === null || val === '-') return '-';
@@ -55,33 +63,16 @@ const buildUploadError = (data, fallback) => {
   }
 
   return parts.join('\n');
-};
-
-function UploadModal({ open, onClose, onSuccess }) {
-const buildUploadError = (data, fallback) => {
-  const parts = [data?.message || fallback];
-
-  if (Array.isArray(data?.errors)) {
-    parts.push(...data.errors.slice(0, 5));
-  } else if (data?.errors && typeof data.errors === 'object') {
-    parts.push(...Object.values(data.errors).flat().slice(0, 5));
   }
 
-  if (Array.isArray(data?.missing_headers)) {
-    parts.push('Kolom hilang: ' + data.missing_headers.join(', '));
-  }
-
-  return parts.join('\n');
-};
-
-function UploadModal({ open, onClose, onSuccess }) {
-  const [files, setFiles] = useState([]);
-  const [drag, setDrag] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [done, setDone] = useState(false);
+  function UploadModal({ open, onClose, onSuccess }) {
+    const [files, setFiles] = useState([]);
+    const [drag, setDrag] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [done, setDone] = useState(false);
     const [uploadPeriod, setUploadPeriod] = useState('');
-  const [uploadError, setUploadError] = useState('');
-  const [periodWarning, setPeriodWarning] = useState('');
+    const [uploadError, setUploadError] = useState('');
+    const [periodWarning, setPeriodWarning] = useState('');
 
   const getPeriodError = (value) => {
     if (!value) return 'Periode wajib diisi (contoh: 202611).';
@@ -158,6 +149,10 @@ function UploadModal({ open, onClose, onSuccess }) {
       }
 
       if (onSuccess) onSuccess(result.preview);
+      if (onSuccess) onSuccess(result.preview);
+  const parsed = parseExcelFile(files[0]);
+  if (onSuccess) onSuccess(parsed);
+      if (setLastUpdate) setLastUpdate(new Date());
 
       setDone(true);
       setTimeout(() => {
@@ -322,6 +317,7 @@ export default function Edk() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [apiLoading, setApiLoading] = useState(true);
   const [apiError, setApiError] = useState('');
+  const [lastUpdate, setLastUpdate] = useState(null);
   
   useEffect(() => {
     const fetchEdkMonthly = async () => {
@@ -342,6 +338,7 @@ export default function Edk() {
         }
 
         setApiSegmen(result.data || []);
+        setLastUpdate(new Date());
       } catch (error) {
         setApiError(error.message || 'Gagal terhubung ke server.');
       } finally {
@@ -620,23 +617,11 @@ const grandTotal = useMemo(() => {
 
   // Active count for pagination
   const activeCount = isTop10View ? top10List.length : data.length;
-
-  // Dynamic KPI Metrics reacting to filters
+  
   const kpiMetrics = useMemo(() => {
-    if (!hasActiveFilters && mode === 'Nama AM') {
-      return {
-        totalOrder: 426,
-        totalAbonemen: 328221859,
-        inProgress: 211,
-        inProgressPercent: '49.5%',
-        complete: 215,
-        completePercent: '50.5%'
-      };
-    }
-
     const currentList = isTop10View ? top10List : data;
     const totalOrder = currentList.reduce((acc, r) => acc + (r.to || 0), 0);
-    const totalAbonemen = currentList.reduce((acc, r) => acc + (r.ta2 || 0), 0);
+    const totalAbonemeetn = currentList.reduce((acc, r) => acc + (r.ta2 || 0), 0);
     const inProgress = currentList.reduce(
       (acc, r) => acc + ((r.lp || 0) + (r.tp || 0) + (r.k_prog || 0)),
       0
@@ -832,7 +817,9 @@ const grandTotal = useMemo(() => {
           <div className="flex items-center gap-2">
             <span className="size-2 rounded-full bg-[#2563EB]" />
             <span className="text-slate-500 font-medium">Last Update :</span>
-            <b className="font-bold text-slate-800">10 Oktober 2026</b>
+                      <b className="font-bold text-slate-800">
+                        {lastUpdate ? formatLastUpdate(lastUpdate) : 'Belum ada update'}
+                      </b>
           </div>
           <div className="flex items-center gap-2.5">
             <div className="flex items-center bg-slate-100/90 p-0.5 rounded-lg border border-slate-200/80 shrink-0">
@@ -1989,10 +1976,13 @@ const grandTotal = useMemo(() => {
 
       {/* Upload Report Modal */}
       <UploadModal 
+        setLastUpdate={setLastUpdate}
         open={showUpload} 
         onClose={() => setShowUpload(false)} 
-        onSuccess={() => setRefreshKey((k) => k + 1)}
-      />
+              onSuccess={(preview) => {
+                setRefreshKey((k) => k + 1);
+              }}
+            />
     </div>
   );
 }
