@@ -12,8 +12,8 @@ return new class extends Migration
         Schema::create('edk_monthly_summaries', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('edk_monthly_upload_id')
-                ->constrained('edk_monthly_uploads')
+            $table->foreignId('edk_uploads_id')
+                ->constrained('edk_uploads')
                 ->cascadeOnDelete();
 
             $table->string('segment', 10);
@@ -43,7 +43,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(
-                ['edk_monthly_upload_id', 'segment'],
+                ['edk_uploads_id', 'segment'],
                 'edk_monthly_summaries_upload_segment_unique'
             );
         });

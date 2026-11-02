@@ -1,37 +1,28 @@
-
 <?php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
-        Schema::create('edk_monthly_uploads', function (Blueprint $table) {
-            $table->id();
-            $table->string('period', 6)->index();
-            $table->unsignedInteger('version')->default(1);
-            $table->string('original_filename')->nullable();
-            $table->unsignedInteger('total_rows')->default(0);
-            $table->unsignedInteger('imported_rows')->default(0);
-            $table->string('status')->default('pending');
-            $table->boolean('is_active')->default(false);
-            $table->text('error_summary')->nullable();
-            $table->foreignId('user_id')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
-            $table->timestamps();
-
-            $table->unique(['period', 'version']);
-            $table->index(['period', 'is_active']);
+        Schema::create('edk_uploads', function (Blueprint $t) {
+            $t->id();
+            $t->date('report_date');
+            $t->string('original_name');
+            $t->string('file_path');
+            $t->enum('status', ['processing', 'done', 'failed'])->default('processing');
+            $t->boolean('is_active')->default(false)->index();
+            $t->unsignedInteger('total_rows')->default(0);
+            $t->json('errors')->nullable();
+            $t->foreignId('uploaded_by')->nullable()->constrained('users')->nullOnDelete();
+            $t->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('edk_monthly_uploads');
+        Schema::dropIfExists('edk_uploads');
     }
 };
