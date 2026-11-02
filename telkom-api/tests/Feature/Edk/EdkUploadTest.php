@@ -73,19 +73,40 @@ class EdkUploadTest extends TestCase
         $this->assertSame(1, EdkUpload::where('is_active', true)->count());
     }
 
-    public function test_tolak_duplikat_status_invalid_dan_periode_salah(): void
+        public function test_tolak_format_salah_status_dan_periode(): void
     {
         $res = $this->upload($this->makeXlsx([
             ['S1','A','AM1','DGS','202611','LANJUT','COMPLETE',1,1000],
-            ['S1','A','AM1','DGS','202611','LANJUT','COMPLETE',1,1000],     // baris 3 duplikat
-            ['S2','B','AM1','DGS','202611','LANJUT','AUTO_RENEWAL',1,1000], // baris 4 kombinasi salah
-            ['S3','C','AM1','DGS','20261','LANJUT','COMPLETE',1,1000],      // baris 5 periode salah
+            ['S2','B','AM1','DGS','202611','LANJUT','AUTO_RENEWAL',1,1000], // baris 3 kombinasi salah
+            ['S3','C','AM1','DGS','20261','LANJUT','COMPLETE',1,1000],      // baris 4 periode salah
+            ['S4','D','AM1','XYZ','202611','LANJUT','COMPLETE',1,'abc'],    // baris 5 segmen & abonemen salah
         ]));
 
         $res->assertStatus(422)->assertJsonPath('total_errors', 3);
         $this->assertSame([3, 4, 5], array_column($res->json('errors'), 'row'));
         $this->assertSame(0, EdkRecord::count());                         // all-or-nothing
         $this->assertSame('failed', EdkUpload::first()->status);
+    }
+
+    public function test_kolom_kosong_boleh_dan_duplikat_tetap_masuk(): void
+    {
+        $this->upload($this->makeXlsx([
+            ['S1', 'A', 'AM1', 'DGS', '202611', 'LANJUT', 'COMPLETE', 1, 1000],
+            ['S1', 'A', 'AM1', 'DGS', '202611', 'LANJUT', 'COMPLETE', 1, 1000],      // dobel → S1|202611#2
+            ['S2', null, null, null, null, null, null, null, null],                 // hampir semua kosong
+            [null, 'Tanpa SID', 'AM2', 'DPS', '202610', 'LANJUT', 'IN_PROGRESS', 2, 500],
+        ]))->assertCreated();
+
+        $this->assertSame(4, EdkRecord::count());
+        $this->assertSame(
+            ['ROW5', 'S1|202611', 'S1|202611#2', 'S2|'],
+            EdkRecord::orderBy('row_key')->pluck('row_key')->all()
+        );
+
+        $empty = EdkRecord::where('sid', 'S2')->first();
+        $this->assertNull($empty->nama_pelanggan);
+        $this->assertSame(1, $empty->order_qty);      // ORDER kosong → 1
+        $this->assertEquals(0, $empty->abonemen);     // ABONEMEN kosong → 0
     }
 
     public function test_activate_rollback(): void

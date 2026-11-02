@@ -438,7 +438,7 @@ export default function Edk() {
 
     const map = new Map();
     data.forEach((item) => {
-      const name = `Segmen ${item.segmen}`;
+      const name = `Segmen ${item.segmen ?? '(Kosong)'}`;
       if (!map.has(name)) map.set(name, { name, items: [] });
       map.get(name).items.push(item);
     });

@@ -24,6 +24,9 @@ class EdkImporter
         'KONFIRMASI_AM' => ['AUTO_RENEWAL', 'IN_PROGRESS'],
     ];
 
+    private const STATUS_DETAIL = ['COMPLETE', 'IN_PROGRESS', 'AUTO_RENEWAL'];
+
+    /** Header wajib ADA di baris 1 (isi selnya boleh kosong). */
     private const REQUIRED_HEADERS = [
         'sid', 'nama_pelanggan', 'nama_am', 'segmen', 'periode_edk',
         'status_utama', 'status_detail', 'order', 'abonemen',
@@ -66,10 +69,9 @@ class EdkImporter
         return $upload->fresh();
     }
 
-    /** Baca + normalisasi + validasi semua baris (all-or-nothing). */
+    /** Baca + normalisasi + validasi format semua baris (all-or-nothing). */
     private function parse(string $path): array
     {
-        /** @var Collection $sheet */
         $sheet = $this->readSheet($path);
 
         $headers = array_keys($sheet->first()?->toArray() ?? []);
@@ -83,22 +85,25 @@ class EdkImporter
         $rows = $errors = $seen = [];
 
         foreach ($sheet as $i => $raw) {
-            $line = $i + 2;                       // data mulai baris 2
-            $r    = $this->normalize($raw->toArray());
-            $msgs = $this->validateRow($r);
+            $line = $i + 2;                                   // data mulai baris 2
+            $r    = $this->normalize($raw->toArray(), $line);
 
-            if (!$msgs && isset($seen[$r['row_key']])) {
-                $msgs[] = "Duplikat dengan baris {$seen[$r['row_key']]} (kunci {$r['row_key']}).";
-            }
-            $seen[$r['row_key']] ??= $line;
-
-            if ($msgs) {
+            if ($msgs = $this->validateRow($r)) {
                 $errors[] = ['row' => $line, 'messages' => $msgs];
                 continue;
             }
 
-            $r['order_qty'] = (int) $r['order_qty'];
-            $r['abonemen']  = round((float) $r['abonemen'], 2);
+            // Kunci dobel tidak ditolak: beri akhiran #2, #3, ... supaya tetap unik
+            $base = $r['row_key'];
+            $key  = $base;
+            for ($n = 2; isset($seen[$key]); $n++) {
+                $key = "{$base}#{$n}";
+            }
+            $seen[$key]   = true;
+            $r['row_key'] = $key;
+
+            $r['order_qty'] = $r['order_qty'] === null ? 1 : (int) $r['order_qty'];   // kosong → 1 order
+            $r['abonemen']  = $r['abonemen'] === null ? 0 : round((float) $r['abonemen'], 2);
             $rows[] = $r;
         }
 
@@ -108,91 +113,108 @@ class EdkImporter
         return $rows;
     }
 
-     private function readSheet(string $path): Collection
+    /** Baca sheet pertama → Collection<int, Collection> dengan key header snake_case. */
+    private function readSheet(string $path): Collection
     {
         $reader = IOFactory::createReader('Xlsx');
         $reader->setReadDataOnly(true);
         $ws = $reader->load(Storage::path($path))->getSheet(0);
 
-        // nullValue, calculateFormulas, formatData=false (nilai mentah), returnCellRef=false
         $data = $ws->toArray(null, true, false, false);
 
         $headers = array_map(
-            fn ($h) => strtolower(preg_replace('/\s+/', '_', trim((string) $h))),   // "NAMA PELANGGAN" → nama_pelanggan
+            fn ($h) => strtolower(preg_replace('/\s+/', '_', trim((string) $h))),
             array_shift($data) ?? []
         );
         $n = count($headers);
 
         return collect($data)
-            ->reject(fn ($row) => !array_filter($row, fn ($v) => $v !== null && trim((string) $v) !== ''))  // skip baris kosong
+            ->reject(fn ($row) => !array_filter($row, fn ($v) => $v !== null && trim((string) $v) !== ''))
             ->map(fn ($row) => collect(array_combine(
                 $headers,
                 array_pad(array_slice($row, 0, $n), $n, null)
             )));
-        // index 0 = baris Excel 2 → di parse() dipakai $i + 2
     }
 
-    private function normalize(array $raw): array
+    private function normalize(array $raw, int $line): array
     {
-        $s  = fn (string $k) => trim((string) ($raw[$k] ?? ''));
-        $up = fn (string $k) => strtoupper(preg_replace('/\s+/', '_', $s($k)));   // "tidak lanjut" → TIDAK_LANJUT
+        $text = function (string $k) use ($raw): ?string {
+            $v = trim((string) ($raw[$k] ?? ''));
+            return $v === '' ? null : $v;
+        };
+        $code = function (string $k) use ($text): ?string {
+            $v = $text($k);
+            return $v === null ? null : strtoupper(preg_replace('/\s+/', '_', $v));   // "tidak lanjut" → TIDAK_LANJUT
+        };
+        $number = function (string $k) use ($raw) {
+            $v = $raw[$k] ?? null;
+            return ($v === null || trim((string) $v) === '') ? null : $v;
+        };
 
         // Excel sering baca 202611 sebagai angka/float
-        $periode = $raw['periode_edk'] ?? '';
-        $periode = is_numeric($periode) ? (string) (int) $periode : trim((string) $periode);
+        $periode = $raw['periode_edk'] ?? null;
+        $periode = is_numeric($periode) ? (string) (int) $periode : $text('periode_edk');
 
-        $sid     = $s('sid');
-        $noOrder = $s('no_order') ?: null;
+        $sid     = $text('sid');
+        $noOrder = $text('no_order');
+        $witel   = $text('witel');
 
         return [
-            'row_key'        => $noOrder ?: "{$sid}|{$periode}",
+            'row_key'        => $noOrder ?? ($sid !== null ? "{$sid}|{$periode}" : "ROW{$line}"),
             'sid'            => $sid,
             'no_order'       => $noOrder,
-            'nama_pelanggan' => $s('nama_pelanggan'),
-            'nama_am'        => $s('nama_am'),
-            'nama_cc'        => $s('nama_cc') ?: null,
-            'segmen'         => $up('segmen'),
-            'witel'          => strtoupper($s('witel')) ?: 'SOLO JT',
+            'nama_pelanggan' => $text('nama_pelanggan'),
+            'nama_am'        => $text('nama_am'),
+            'nama_cc'        => $text('nama_cc'),
+            'segmen'         => $code('segmen'),
+            'witel'          => $witel === null ? 'SOLO JT' : strtoupper($witel),
             'periode_edk'    => $periode,
-            'status_utama'   => $up('status_utama'),
-            'status_detail'  => $up('status_detail'),
-            'order_qty'      => $raw['order'] ?? null,
-            'abonemen'       => $raw['abonemen'] ?? null,
+            'status_utama'   => $code('status_utama'),
+            'status_detail'  => $code('status_detail'),
+            'order_qty'      => $number('order'),
+            'abonemen'       => $number('abonemen'),
         ];
     }
 
+    /** Semua kolom opsional; yang dicek hanya FORMAT nilai yang terisi. */
     private function validateRow(array $r): array
     {
         $v = Validator::make($r, [
             'row_key'        => 'max:80',
-            'sid'            => 'required|max:50',
+            'sid'            => 'nullable|max:50',
             'no_order'       => 'nullable|max:50',
-            'nama_pelanggan' => 'required|max:255',
-            'nama_am'        => 'required|max:255',
+            'nama_pelanggan' => 'nullable|max:255',
+            'nama_am'        => 'nullable|max:255',
             'nama_cc'        => 'nullable|max:255',
-            'segmen'         => ['required', Rule::in(self::SEGMEN)],
+            'segmen'         => ['nullable', Rule::in(self::SEGMEN)],
             'witel'          => 'max:30',
-            'periode_edk'    => ['required', 'regex:/^\d{4}(0[1-9]|1[0-2])$/'],
-            'status_utama'   => ['required', Rule::in(array_keys(self::STATUS))],
-            'status_detail'  => 'required',
-            'order_qty'      => 'required|integer|min:0',
-            'abonemen'       => 'required|numeric',            // boleh negatif
+            'periode_edk'    => ['nullable', 'regex:/^\d{4}(0[1-9]|1[0-2])$/'],
+            'status_utama'   => ['nullable', Rule::in(array_keys(self::STATUS))],
+            'status_detail'  => ['nullable', Rule::in(self::STATUS_DETAIL)],
+            'order_qty'      => 'nullable|integer|min:0',
+            'abonemen'       => 'nullable|numeric',            // boleh negatif
         ], [
-            'required'          => ':attribute wajib diisi.',
             'in'                => ':attribute tidak valid (":input").',
             'periode_edk.regex' => 'PERIODE_EDK harus 6 digit YYYYMM.',
             'integer'           => ':attribute harus bilangan bulat.',
             'numeric'           => ':attribute harus angka.',
+            'min'               => ':attribute tidak boleh negatif.',
+            'max'               => ':attribute terlalu panjang (maks :max karakter).',
         ], [
             'order_qty' => 'ORDER', 'abonemen' => 'ABONEMEN', 'segmen' => 'SEGMEN',
             'status_utama' => 'STATUS_UTAMA', 'status_detail' => 'STATUS_DETAIL',
-            'sid' => 'SID', 'nama_pelanggan' => 'NAMA_PELANGGAN', 'nama_am' => 'NAMA_AM',
+            'sid' => 'SID', 'no_order' => 'NO_ORDER', 'nama_pelanggan' => 'NAMA_PELANGGAN',
+            'nama_am' => 'NAMA_AM', 'nama_cc' => 'NAMA_CC', 'periode_edk' => 'PERIODE_EDK',
+            'witel' => 'WITEL', 'row_key' => 'Kunci baris',
         ]);
 
         $msgs = $v->errors()->all();
 
+        // Kombinasi hanya dicek kalau dua-duanya terisi dan valid
         $allowed = self::STATUS[$r['status_utama']] ?? null;
-        if ($allowed && $r['status_detail'] !== '' && !in_array($r['status_detail'], $allowed, true)) {
+        if ($allowed && $r['status_detail'] !== null
+            && in_array($r['status_detail'], self::STATUS_DETAIL, true)
+            && !in_array($r['status_detail'], $allowed, true)) {
             $msgs[] = "STATUS_DETAIL {$r['status_detail']} tidak valid untuk {$r['status_utama']} (pilihan: "
                 . implode('/', $allowed) . ').';
         }

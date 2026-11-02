@@ -207,9 +207,10 @@ class EdkExporter
 
         if ($by === 'am') {
             foreach ($rows->groupBy('segmen') as $segmen => $items) {
-                $out[] = [["Subtotal Segmen {$segmen}", "({$items->count()} Account Manager)"], $this->sum($items), 'subtotal'];
+                $segmenLabel = $segmen !== '' ? $segmen : '(Kosong)';
+                $out[] = [["Subtotal Segmen {$segmenLabel}", "({$items->count()} Account Manager)"], $this->sum($items), 'subtotal'];
                 foreach ($items as $row) {
-                    $out[] = [[$segmen, $row['label']], $row, 'row'];
+                    $out[] = [[$segmenLabel, $row['label']], $row, 'row'];
                 }
             }
         } else {

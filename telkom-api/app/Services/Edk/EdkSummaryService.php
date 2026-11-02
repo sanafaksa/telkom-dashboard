@@ -90,7 +90,8 @@ class EdkSummaryService
         $yearStart = $upload->report_date->year . '01';
         $base      = fn () => EdkRecord::where('edk_upload_id', $upload->id)->toBase();
 
-        $periode = $base()->distinct()->orderBy('periode_edk')->pluck('periode_edk');
+        $periode = $base()->whereNotNull('periode_edk')->distinct()->orderBy('periode_edk')->pluck('periode_edk');
+
         $hasOld  = $periode->contains(fn ($p) => $p < $yearStart);
 
         return [
@@ -99,8 +100,8 @@ class EdkSummaryService
             'periode'     => collect($hasOld ? [['value' => 'old', 'label' => '< ' . $upload->report_date->year]] : [])
                 ->concat($periode->filter(fn ($p) => $p >= $yearStart)->map(fn ($p) => ['value' => $p, 'label' => $p]))
                 ->values(),
-            'segmen'      => $base()->distinct()->orderBy('segmen')->pluck('segmen'),
-            'am'          => $base()->select('nama_am', 'segmen')->distinct()->orderBy('nama_am')->get(),
+            'segmen'      => $base()->whereNotNull('segmen')->distinct()->orderBy('segmen')->pluck('segmen'),
+            'am'          => $base()->whereNotNull('nama_am')->select('nama_am', 'segmen')->distinct()->orderBy('nama_am')->get(),
             'flag'        => $base()->selectRaw('flag, COUNT(*) AS total')->groupBy('flag')->pluck('total', 'flag'),
         ];
     }
