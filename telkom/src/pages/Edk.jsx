@@ -3,7 +3,6 @@ import { filterOptions, modes, topPelangganBySegmen, segmenByPeriode } from '../
 import { ExportButton, exportCSV, ShareDropdown } from '../components/ui';
 import FilterDropdown from '../components/FilterDropdown';
 import { createPortal } from "react-dom";
-import { parseExcelFile } from '../utils/parseExcel';
 import {
   Filter,
   Upload,
@@ -65,7 +64,7 @@ const buildUploadError = (data, fallback) => {
   return parts.join('\n');
   }
 
-  function UploadModal({ open, onClose, onSuccess }) {
+  function UploadModal({ open, onClose, onSuccess, setLastUpdate }) {
     const [files, setFiles] = useState([]);
     const [drag, setDrag] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -148,11 +147,13 @@ const buildUploadError = (data, fallback) => {
         return;
       }
 
-      if (onSuccess) onSuccess(result.preview);
-      if (onSuccess) onSuccess(result.preview);
-  const parsed = parseExcelFile(files[0]);
-  if (onSuccess) onSuccess(parsed);
-      if (setLastUpdate) setLastUpdate(new Date());
+      if (onSuccess) {
+        onSuccess(result.preview);
+      }
+
+      if (setLastUpdate) {
+        setLastUpdate(new Date());
+      }
 
       setDone(true);
       setTimeout(() => {
@@ -621,7 +622,7 @@ const grandTotal = useMemo(() => {
   const kpiMetrics = useMemo(() => {
     const currentList = isTop10View ? top10List : data;
     const totalOrder = currentList.reduce((acc, r) => acc + (r.to || 0), 0);
-    const totalAbonemeetn = currentList.reduce((acc, r) => acc + (r.ta2 || 0), 0);
+    const totalAbonemen = currentList.reduce((acc, r) => acc + (r.ta2 || 0), 0);
     const inProgress = currentList.reduce(
       (acc, r) => acc + ((r.lp || 0) + (r.tp || 0) + (r.k_prog || 0)),
       0
@@ -1979,8 +1980,8 @@ const grandTotal = useMemo(() => {
         setLastUpdate={setLastUpdate}
         open={showUpload} 
         onClose={() => setShowUpload(false)} 
-              onSuccess={(preview) => {
-                setRefreshKey((k) => k + 1);
+              onSuccess={() => {
+                setRefreshKey((key) => key + 1);
               }}
             />
     </div>
