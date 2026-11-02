@@ -1,13 +1,29 @@
+import React, { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import App from './App';
+import App from './App.jsx';
 import { ThemeProvider } from './context/ThemeContext';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import './index.css';
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,
+      refetchOnWindowFocus: false,
+      retry: (count, err) => (err?.status ?? 500) >= 500 && count < 2, // 401/404/422 tidak di-retry
+    },
+  },
+})
+
 createRoot(document.getElementById('root')).render(
-  <BrowserRouter>
-    <ThemeProvider>
-      <App />
-    </ThemeProvider>
-  </BrowserRouter>
+  <StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+      </ThemeProvider>
+    </QueryClientProvider>
+  </StrictMode>
 );

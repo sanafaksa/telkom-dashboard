@@ -12,7 +12,7 @@ Route::post('/edk/import/store', [EdkImportController::class, 'store']);
 Route::get('/edk/monthly', [EdkImportController::class, 'monthlyData']);
 
 // ===== BARU =====
-Route::prefix('edk')->middleware('auth:sanctum')->group(function () {
+Route::prefix('edk')->group(function () {
     // Fase 1: upload snapshot
     Route::get('uploads', [EdkUploadController::class, 'index']);
     Route::post('uploads', [EdkUploadController::class, 'store']);

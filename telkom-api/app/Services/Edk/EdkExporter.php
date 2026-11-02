@@ -240,10 +240,13 @@ class EdkExporter
         return collect($this->metricKeys())->mapWithKeys(fn ($k) => [$k => $items->sum($k)])->all();
     }
 
-    private function filterText(array $f): string
+        private function filterText(array $f): string
     {
         if (!$f) return '';
-        $parts = collect($f)->map(fn ($v, $k) => $k === 'periode' && $v === 'old' ? 'periode=< tahun ini' : "{$k}={$v}");
+        $parts = collect($f)->map(function ($v, $k) {
+            $values = array_map(fn ($x) => $x === 'old' ? '< tahun ini' : $x, (array) $v);
+            return "{$k}=" . implode('/', $values);
+        });
         return ' | Filter: ' . $parts->implode(', ');
     }
 

@@ -6,7 +6,8 @@ export default function ShareDropdown({
   className = '',
   buttonLabel = 'Salin & Bagikan',
   tableSelector = 'table',
-  captureSelector = '#edk-main-content'
+  captureSelector = '#edk-main-content',
+  getLink = null
 }) {
   const [open, setOpen] = useState(false);
   const [feedback, setFeedback] = useState(null);
@@ -203,7 +204,7 @@ export default function ShareDropdown({
   const handleCopyLink = async () => {
     setOpen(false);
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(getLink ? getLink() : window.location.href);
       showFeedback('Link halaman berhasil disalin!', 'link');
     } catch (err) {
       console.error(err);

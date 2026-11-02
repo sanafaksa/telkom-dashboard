@@ -21,17 +21,27 @@ class EdkRecord extends Model
     }
 
     /** Satu filter untuk semua: summary, cards, top-customers, export. */
-    public function scopeFilter(Builder $q, EdkUpload $upload, array $f = []): Builder
+        public function scopeFilter(Builder $q, EdkUpload $upload, array $f = []): Builder
     {
         $yearStart = $upload->report_date->year . '01';
 
         return $q->where('edk_upload_id', $upload->id)
-            ->when($f['periode'] ?? null, fn ($q, $p) => $p === 'old'
-                ? $q->where('periode_edk', '<', $yearStart)
-                : $q->where('periode_edk', $p))
-            ->when($f['segmen'] ?? null, fn ($q, $v) => $q->where('segmen', $v))
-            ->when($f['am'] ?? null, fn ($q, $v) => $q->where('nama_am', $v))
-            ->when($f['flag'] ?? null, fn ($q, $v) => $q->where('flag', $v))
+            ->when($f['periode'] ?? null, function ($q, $list) use ($yearStart) {
+                $list  = (array) $list;
+                $exact = array_values(array_diff($list, ['old']));
+
+                $q->where(function ($w) use ($list, $exact, $yearStart) {
+                    if (in_array('old', $list, true)) {
+                        $w->orWhere('periode_edk', '<', $yearStart);
+                    }
+                    if ($exact) {
+                        $w->orWhereIn('periode_edk', $exact);
+                    }
+                });
+            })
+            ->when($f['segmen'] ?? null, fn ($q, $v) => $q->whereIn('segmen', (array) $v))
+            ->when($f['am'] ?? null, fn ($q, $v) => $q->whereIn('nama_am', (array) $v))
+            ->when($f['flag'] ?? null, fn ($q, $v) => $q->whereIn('flag', (array) $v))
             ->when($f['q'] ?? null, fn ($q, $v) => $q->where('nama_pelanggan', 'like', "%{$v}%"));
     }
 }
