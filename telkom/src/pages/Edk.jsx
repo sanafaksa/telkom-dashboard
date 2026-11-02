@@ -18,6 +18,14 @@ import {
   ChevronDown
 } from 'lucide-react';
 
+const formatLastUpdate = (date) => {
+  return date.toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+};
+
 const formatRupiah = (val) => {
   if (val === undefined || val === null || val === '-') return '-';
   const isNegative = val < 0;
@@ -54,16 +62,16 @@ const buildUploadError = (data, fallback) => {
   }
 
   return parts.join('\n');
-};
+  }
 
-function UploadModal({ open, onClose, onSuccess }) {
-  const [files, setFiles] = useState([]);
-  const [drag, setDrag] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [done, setDone] = useState(false);
+  function UploadModal({ open, onClose, onSuccess, setLastUpdate }) {
+    const [files, setFiles] = useState([]);
+    const [drag, setDrag] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [done, setDone] = useState(false);
     const [uploadPeriod, setUploadPeriod] = useState('');
-  const [uploadError, setUploadError] = useState('');
-  const [periodWarning, setPeriodWarning] = useState('');
+    const [uploadError, setUploadError] = useState('');
+    const [periodWarning, setPeriodWarning] = useState('');
 
   const getPeriodError = (value) => {
     if (!value) return 'Periode wajib diisi (contoh: 202611).';
@@ -139,7 +147,13 @@ function UploadModal({ open, onClose, onSuccess }) {
         return;
       }
 
-      if (onSuccess) onSuccess(result.preview);
+      if (onSuccess) {
+        onSuccess(result.preview);
+      }
+
+      if (setLastUpdate) {
+        setLastUpdate(new Date());
+      }
 
       setDone(true);
       setTimeout(() => {
@@ -304,6 +318,7 @@ export default function Edk() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [apiLoading, setApiLoading] = useState(true);
   const [apiError, setApiError] = useState('');
+  const [lastUpdate, setLastUpdate] = useState(null);
   
   useEffect(() => {
     const fetchEdkMonthly = async () => {
@@ -324,6 +339,7 @@ export default function Edk() {
         }
 
         setApiSegmen(result.data || []);
+        setLastUpdate(new Date());
       } catch (error) {
         setApiError(error.message || 'Gagal terhubung ke server.');
       } finally {
@@ -434,38 +450,30 @@ export default function Edk() {
 
   // General dataset for Segmen, Periode EDK & Nama AM
   const data = useMemo(() => {
-    let list = [];
-    if (mode === 'Segmen') {
-      if (apiSegmen.length > 0) {
-        list = apiSegmen.map((r) => ({
-          ...r,
-          l: r.segment,
-          segmen: r.segment,
-          lc: Number(r.lanjut_complete_order) || 0,
-          la: Number(r.lanjut_complete_abonemen_rp) || 0,
-          lp: Number(r.lanjut_in_progress_order) || 0,
-          lpa: Number(r.lanjut_in_progress_abonemen_rp) || 0,
-          tc: Number(r.tidak_lanjut_complete_order) || 0,
-          ta: Number(r.tidak_lanjut_complete_abonemen_rp) || 0,
-          tp: Number(r.tidak_lanjut_in_progress_order) || 0,
-          tpa: Number(r.tidak_lanjut_in_progress_abonemen_rp) || 0,
-          b: Number(r.bukan_witel_solo_jt_order) || 0,
-          ba: Number(r.bukan_witel_solo_jt_abonemen_rp) || 0,
-          k: Number(r.konfirmasi_am_order) || 0,
-          ka: Number(r.konfirmasi_am_abonemen_rp) || 0,
-          k_auto: Number(r.konfirmasi_am_auto_renewal) || 0,
-          k_prog: Number(r.konfirmasi_am_in_progress) || 0,
-          k_auto_a: Number(r.konfirmasi_am_auto_renewal_abonemen_rp) || 0,
-          k_prog_a: Number(r.konfirmasi_am_in_progress_abonemen_rp) || 0,
-        }));
-      } else if (selectedPeriode.length === 1 && segmenByPeriode?.[selectedPeriode[0]]) {
-        list = segmenByPeriode[selectedPeriode[0]];
-      } else {
-        list = modes['Segmen'] || [];
-      }
-    } else {
-      list = modes[mode] || [];
-    }
+    let list =
+  mode === 'Segmen' && apiSegmen.length > 0
+    ? apiSegmen.map((r) => ({
+        ...r,
+        l: r.segment,
+        segmen: r.segment,
+        lc: Number(r.lanjut_complete_order) || 0,
+        la: Number(r.lanjut_complete_abonemen_rp) || 0,
+        lp: Number(r.lanjut_in_progress_order) || 0,
+        lpa: Number(r.lanjut_in_progress_abonemen_rp) || 0,
+        tc: Number(r.tidak_lanjut_complete_order) || 0,
+        ta: Number(r.tidak_lanjut_complete_abonemen_rp) || 0,
+        tp: Number(r.tidak_lanjut_in_progress_order) || 0,
+        tpa: Number(r.tidak_lanjut_in_progress_abonemen_rp) || 0,
+        b: Number(r.bukan_witel_solo_jt_order) || 0,
+        ba: Number(r.bukan_witel_solo_jt_abonemen_rp) || 0,
+        k: Number(r.konfirmasi_am_order) || 0,
+        ka: Number(r.konfirmasi_am_abonemen_rp) || 0,
+        k_auto: Number(r.konfirmasi_am_auto_renewal) || 0,
+        k_prog: Number(r.konfirmasi_am_in_progress) || 0,
+        k_auto_a: Number(r.konfirmasi_am_auto_renewal_abonemen_rp) || 0,
+        k_prog_a: Number(r.konfirmasi_am_in_progress_abonemen_rp) || 0,
+      }))
+    : modes[mode] || [];
 
     if (selectedPeriode.length > 0) {
       list = list.filter((r) => selectedPeriode.includes(r.periode) || selectedPeriode.includes(r.l));
@@ -485,56 +493,92 @@ export default function Edk() {
       list = list.filter((r) => selectedFlagging.includes(r.flagging));
     }
 
-    return list.map((r) => {
-      const sumOrder =
-        (r.lc || 0) + (r.lp || 0) + (r.tc || 0) + (r.tp || 0) + (r.k || 0) + (r.b || 0);
+    
+return list.map((r) => {
+  const sumOrder =
+    (r.lc || 0) + (r.lp || 0) + (r.tc || 0) + (r.tp || 0) + (r.k || 0) + (r.b || 0);
 
-      const apiTotal = Number(r.total_order) || 0;
-      const to = mode === 'Segmen' && apiTotal > 0 ? apiTotal : sumOrder;
+  const apiTotal = Number(r.total_order) || 0;
+  const to = mode === 'Segmen' && apiTotal > 0 ? apiTotal : sumOrder;
 
-      const ta2 =
-        (r.la || 0) + (r.lpa || 0) + (r.ta || 0) + (r.tpa || 0) + (r.ka || 0) + (r.ba || 0);
+  const ta2 =
+    (r.la || 0) + (r.lpa || 0) + (r.ta || 0) + (r.tpa || 0) + (r.ka || 0) + (r.ba || 0);
 
-      return { ...r, to, ta2 };
-    });
+  return { ...r, to, ta2 };
+});
+
   }, [mode, apiSegmen, selectedPeriode, selectedSegmen, selectedNamaAm, selectedFlagging]);
 
   // Grand Total for Periode EDK & Segmen
-  const grandTotal = useMemo(() => {
-    return data.reduce(
-      (acc, r) => ({
-        lc: acc.lc + (r.lc || 0),
-        la: acc.la + (r.la || 0),
-        lp: acc.lp + (r.lp || 0),
-        lpa: acc.lpa + (r.lpa || 0),
-        tc: acc.tc + (r.tc || 0),
-        ta: acc.ta + (r.ta || 0),
-        tp: acc.tp + (r.tp || 0),
-        tpa: acc.tpa + (r.tpa || 0),
-        k: acc.k + (r.k || 0),
-        ka: acc.ka + (r.ka || 0),
-        k_auto: acc.k_auto + (r.k_auto || 0),
-        k_prog: acc.k_prog + (r.k_prog || 0),
-        k_auto_a: (acc.k_auto_a || 0) + (r.k_auto_a || 0),
-        k_prog_a: (acc.k_prog_a || 0) + (r.k_prog_a || 0),
-        b: acc.b + (r.b || 0),
-        ba: acc.ba + (r.ba || 0),
-        to:
-          acc.to +
-          (r.to ?? ((r.lc || 0) + (r.lp || 0) + (r.tc || 0) + (r.tp || 0) + (r.k || 0) + (r.b || 0))),
-        ta2:
-          acc.ta2 +
-          (r.ta2 ?? ((r.la || 0) + (r.lpa || 0) + (r.ta || 0) + (r.tpa || 0) + (r.ka || 0) + (r.ba || 0))),
-      }),
-      {
-        lc: 0, la: 0, lp: 0, lpa: 0,
-        tc: 0, ta: 0, tp: 0, tpa: 0,
-        k: 0, ka: 0, k_auto: 0, k_prog: 0,
-        k_auto_a: 0, k_prog_a: 0,
-        b: 0, ba: 0, to: 0, ta2: 0,
-      }
-    );
-  }, [data]);
+  
+const grandTotal = useMemo(() => {
+    const useApi = mode === 'Segmen' && apiSegmen.length > 0;
+
+    const list = useApi
+      ? apiSegmen.map((r) => ({
+          lc: Number(r.lanjut_complete_order) || 0,
+          la: Number(r.lanjut_complete_abonemen_rp) || 0,
+          lp: Number(r.lanjut_in_progress_order) || 0,
+          lpa: Number(r.lanjut_in_progress_abonemen_rp) || 0,
+          tc: Number(r.tidak_lanjut_complete_order) || 0,
+          ta: Number(r.tidak_lanjut_complete_abonemen_rp) || 0,
+          tp: Number(r.tidak_lanjut_in_progress_order) || 0,
+          tpa: Number(r.tidak_lanjut_in_progress_abonemen_rp) || 0,
+          k: Number(r.konfirmasi_am_order) || 0,
+          ka: Number(r.konfirmasi_am_abonemen_rp) || 0,
+          k_auto: Number(r.konfirmasi_am_auto_renewal) || 0,
+          k_prog: Number(r.konfirmasi_am_in_progress) || 0,
+          k_auto_a: Number(r.konfirmasi_am_auto_renewal_abonemen_rp) || 0,
+          k_prog_a: Number(r.konfirmasi_am_in_progress_abonemen_rp) || 0,
+          b: Number(r.bukan_witel_solo_jt_order) || 0,
+          ba: Number(r.bukan_witel_solo_jt_abonemen_rp) || 0,
+        }))
+      : modes[mode] || [];
+
+  return list.reduce(
+    (acc, r) => ({
+      lc: acc.lc + (r.lc || 0),
+      la: acc.la + (r.la || 0),
+      lp: acc.lp + (r.lp || 0),
+      lpa: acc.lpa + (r.lpa || 0),
+      tc: acc.tc + (r.tc || 0),
+      ta: acc.ta + (r.ta || 0),
+      tp: acc.tp + (r.tp || 0),
+      tpa: acc.tpa + (r.tpa || 0),
+      k: acc.k + (r.k || 0),
+      ka: acc.ka + (r.ka || 0),
+      k_auto: acc.k_auto + (r.k_auto || 0),
+      k_prog: acc.k_prog + (r.k_prog || 0),
+      k_auto_a: (acc.k_auto_a || 0) + (r.k_auto_a || 0),
+      k_prog_a: (acc.k_prog_a || 0) + (r.k_prog_a || 0),
+      b: acc.b + (r.b || 0),
+      ba: acc.ba + (r.ba || 0),
+      to:
+        acc.to +
+        (r.lc || 0) +
+        (r.lp || 0) +
+        (r.tc || 0) +
+        (r.tp || 0) +
+        (r.k || 0) +
+        (r.b || 0),
+      ta2:
+        acc.ta2 +
+        (r.la || 0) +
+        (r.lpa || 0) +
+        (r.ta || 0) +
+        (r.tpa || 0) +
+        (r.ka || 0) +
+        (r.ba || 0),
+    }),
+    {
+  lc: 0, la: 0, lp: 0, lpa: 0,
+  tc: 0, ta: 0, tp: 0, tpa: 0,
+  k: 0, ka: 0, k_auto: 0, k_prog: 0,
+  k_auto_a: 0, k_prog_a: 0,
+  b: 0, ba: 0, to: 0, ta2: 0,
+}
+  );
+}, [mode, apiSegmen]);
 
 
   // Groups for Nama AM (with dynamic subtotal recalculation when filters active)
@@ -574,20 +618,8 @@ export default function Edk() {
 
   // Active count for pagination
   const activeCount = isTop10View ? top10List.length : data.length;
-
-  // Dynamic KPI Metrics reacting to filters
+  
   const kpiMetrics = useMemo(() => {
-    if (!hasActiveFilters && mode === 'Nama AM') {
-      return {
-        totalOrder: 426,
-        totalAbonemen: 328221859,
-        inProgress: 211,
-        inProgressPercent: '49.5%',
-        complete: 215,
-        completePercent: '50.5%'
-      };
-    }
-
     const currentList = isTop10View ? top10List : data;
     const totalOrder = currentList.reduce((acc, r) => acc + (r.to || 0), 0);
     const totalAbonemen = currentList.reduce((acc, r) => acc + (r.ta2 || 0), 0);
@@ -786,7 +818,9 @@ export default function Edk() {
           <div className="flex items-center gap-2.5">
             <span className="size-2.5 rounded-full bg-[#2563EB]" />
             <span className="text-slate-500 font-medium">Last Update :</span>
-            <b className="font-bold text-slate-800">10 Oktober 2026</b>
+                      <b className="font-bold text-slate-800">
+                        {lastUpdate ? formatLastUpdate(lastUpdate) : 'Belum ada update'}
+                      </b>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 bg-slate-100/90 p-1.5 rounded-xl border border-slate-200/80 shrink-0">
@@ -1943,10 +1977,13 @@ export default function Edk() {
 
       {/* Upload Report Modal */}
       <UploadModal 
+        setLastUpdate={setLastUpdate}
         open={showUpload} 
         onClose={() => setShowUpload(false)} 
-        onSuccess={() => setRefreshKey((k) => k + 1)}
-      />
+              onSuccess={() => {
+                setRefreshKey((key) => key + 1);
+              }}
+            />
     </div>
   );
 }
