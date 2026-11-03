@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\KuadranController;
+use App\Http\Controllers\Api\MomSupportController;
 use App\Http\Controllers\Edk\EdkExportController;
 use App\Http\Controllers\Edk\EdkSummaryController;
 use App\Http\Controllers\Edk\EdkUploadController;
@@ -22,11 +24,6 @@ Route::prefix('edk')->group(function () {
     // Export
     Route::get('export', [EdkExportController::class, 'export']);
 });
-<?php
-
-use App\Http\Controllers\Api\KuadranController;
-use App\Http\Controllers\Api\MomSupportController;
-use Illuminate\Support\Facades\Route;
 
 Route::prefix('kuadran')->group(function () {
     Route::get('/', [KuadranController::class, 'index']);
