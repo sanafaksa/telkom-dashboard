@@ -272,4 +272,25 @@ export function StatusBadge({s}){const c={Done:'bg-emerald-50 text-emerald-700',
 export function KeyInsight({text}){return <div className="card p-4 flex gap-3 bg-gradient-to-r from-white to-red-100 border-red-100"><span className="size-8 shrink-0 rounded-full bg-red-100 text-brand grid place-items-center"><Lightbulb size={16}/></span><div><b>Key Insight</b><p className="text-xs text-mute mt-0.5">{text}</p></div></div>}
 export function KpiCard({label,value,note,tone='text-ok'}){return <div className="card p-5"><p className="text-xs text-mute font-medium">{label}</p><p className="text-3xl font-bold mt-1">{value}</p><p className={`text-xs mt-1 ${tone}`}>{note}</p></div>}
 export function ProgressBar({v,c='bg-brand'}){return <div className="h-1.5 w-full rounded-full bg-slate-100"><div className={`h-full rounded-full ${c}`} style={{width:v+'%'}}/></div>}
-export function exportCSV(rows,name='export'){const k=Object.keys(rows[0]);const t=[k,...rows.map(r=>k.map(x=>JSON.stringify(r[x]??'')))].join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/csv'}));a.download=name+'.csv';a.click()}
+export function exportCSV(rows, name = 'export') {
+  if (!rows || !rows.length) return;
+  const keys = Object.keys(rows[0]);
+  const escapeCell = (val) => {
+    const str = String(val ?? '')
+      .replace(/\r?\n+/g, ' | ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return `"${str.replace(/"/g, '""')}"`;
+  };
+  const headerLine = keys.map(escapeCell).join(',');
+  const dataLines = rows.map((r) => keys.map((k) => escapeCell(r[k])).join(','));
+  // 'sep=,' instructs Microsoft Excel (both ID and EN locales) to split columns by comma automatically
+  const csvContent = '\uFEFFsep=,\r\n' + [headerLine, ...dataLines].join('\r\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${name}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}

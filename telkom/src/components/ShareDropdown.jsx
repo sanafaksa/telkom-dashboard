@@ -2,11 +2,212 @@ import { useState, useRef, useEffect } from 'react';
 import { Share2, ChevronDown, Check, Image, Grid3x3, Link2, Loader2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 
+/**
+ * Converts any modern CSS color (oklch, oklab, color-mix, lch, lab) into standard rgb/rgba
+ * using an offscreen 1x1 canvas so html2canvas 1.4.1 never fails or skips table rendering.
+ */
+function createCssColorSanitizer() {
+  const cvs = document.createElement('canvas');
+  cvs.width = 1;
+  cvs.height = 1;
+  const ctx = cvs.getContext('2d', { willReadFrequently: true });
+  const cache = new Map();
+
+  const toRgb = (cssColor) => {
+    if (!cssColor) return cssColor;
+    if (cache.has(cssColor)) return cache.get(cssColor);
+    try {
+      ctx.clearRect(0, 0, 1, 1);
+      ctx.fillStyle = '#000000';
+      ctx.fillStyle = cssColor;
+      ctx.fillRect(0, 0, 1, 1);
+      const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
+      const res =
+        a === 0
+          ? 'rgba(0, 0, 0, 0)'
+          : a === 255
+          ? `rgb(${r}, ${g}, ${b})`
+          : `rgba(${r}, ${g}, ${b}, ${(a / 255).toFixed(3)})`;
+      cache.set(cssColor, res);
+      return res;
+    } catch {
+      return 'rgb(100, 116, 139)';
+    }
+  };
+
+  // Replace any oklch(...), oklab(...), color(...), lch(...), lab(...) function with rgb/rgba
+  const sanitizeColorString = (str) => {
+    if (!str || !/(oklch|oklab|color|lch|lab)\s*\(/i.test(str)) {
+      return str;
+    }
+    return str.replace(/(?:oklch|oklab|color|lch|lab)\([^()]*\)/gi, (match) => toRgb(match));
+  };
+
+  return { toRgb, sanitizeColorString };
+}
+
+const COLOR_PROPS = [
+  'color',
+  'background-color',
+  'border-top-color',
+  'border-right-color',
+  'border-bottom-color',
+  'border-left-color',
+  'outline-color',
+  'text-decoration-color',
+  'column-rule-color',
+  'fill',
+  'stroke'
+];
+
+/**
+ * Captures a DOM element cleanly as a PNG blob by mounting an isolated clone at (0,0)
+ * so html2canvas bounds are 100% exact and never shifted by other elements on the page.
+ */
+export async function captureElementToBlob(targetEl, backgroundColor = '#FFFFFF') {
+  if (!targetEl) throw new Error('Target element not found');
+
+  const { sanitizeColorString } = createCssColorSanitizer();
+
+  // Measure full table/scroll width inside the target so wide tables are never clipped
+  let maxInnerWidth = targetEl.scrollWidth || targetEl.offsetWidth || 1000;
+  targetEl.querySelectorAll('table, .overflow-x-auto').forEach((el) => {
+    if (el.scrollWidth > maxInnerWidth) {
+      maxInnerWidth = el.scrollWidth + 56; // +56px card padding
+    }
+  });
+
+  const captureWidth = Math.max(targetEl.offsetWidth || 0, maxInnerWidth);
+
+  // Create an isolated stage at (0,0) behind the page so html2canvas bounds are (0,0,captureWidth,finalHeight)
+  const stage = document.createElement('div');
+  stage.setAttribute('data-capture-stage', 'true');
+  stage.style.cssText = `
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: ${captureWidth}px;
+    background: ${backgroundColor};
+    padding: 16px;
+    margin: 0;
+    z-index: -9999;
+    pointer-events: none;
+    overflow: visible;
+    box-sizing: border-box;
+  `;
+
+  const clone = targetEl.cloneNode(true);
+  const origNodes = [targetEl, ...Array.from(targetEl.querySelectorAll('*'))];
+  const clonedNodes = [clone, ...Array.from(clone.querySelectorAll('*'))];
+
+  // Copy computed styles and sanitize any oklch/oklab/color() values to rgb/rgba
+  clonedNodes.forEach((cNode, idx) => {
+    const oNode = origNodes[idx];
+    if (!oNode || !cNode.style) return;
+    const cs = window.getComputedStyle(oNode);
+
+    for (const prop of COLOR_PROPS) {
+      const val = cs.getPropertyValue(prop);
+      if (val && /(oklch|oklab|color|lch|lab)\s*\(/i.test(val)) {
+        cNode.style.setProperty(prop, sanitizeColorString(val), 'important');
+      }
+    }
+
+    const boxShadow = cs.getPropertyValue('box-shadow');
+    if (boxShadow && /(oklch|oklab|color|lch|lab)\s*\(/i.test(boxShadow)) {
+      cNode.style.setProperty('box-shadow', sanitizeColorString(boxShadow), 'important');
+    }
+
+    const bgImage = cs.getPropertyValue('background-image');
+    if (bgImage && /(oklch|oklab|color|lch|lab)\s*\(/i.test(bgImage)) {
+      cNode.style.setProperty('background-image', sanitizeColorString(bgImage), 'important');
+    }
+
+    // Sync form values (input/select/textarea) into the clone
+    if (oNode.tagName === 'SELECT' && cNode.tagName === 'SELECT') {
+      cNode.value = oNode.value;
+    } else if (oNode.tagName === 'INPUT' && cNode.tagName === 'INPUT') {
+      cNode.value = oNode.value;
+    }
+
+    // Disable animations/transforms that can shift html2canvas rendering
+    cNode.style.animation = 'none';
+    cNode.style.transition = 'none';
+  });
+
+  clone.style.width = '100%';
+  clone.style.maxWidth = 'none';
+  clone.style.height = 'auto';
+  clone.style.maxHeight = 'none';
+  clone.style.overflow = 'visible';
+  clone.style.margin = '0';
+
+  clone.querySelectorAll('.overflow-x-auto, .overflow-y-auto, .overflow-auto').forEach((el) => {
+    el.style.overflow = 'visible';
+    el.style.maxHeight = 'none';
+    el.style.width = '100%';
+  });
+
+  stage.appendChild(clone);
+  document.body.appendChild(stage);
+
+  try {
+    // Allow browser 1 frame to lay out the isolated stage
+    await new Promise((r) => requestAnimationFrame(r));
+    const finalWidth = stage.offsetWidth || captureWidth;
+    const finalHeight = stage.scrollHeight || stage.offsetHeight || 600;
+
+    const canvas = await html2canvas(stage, {
+      backgroundColor,
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      allowTaint: true,
+      x: 0,
+      y: 0,
+      width: finalWidth,
+      height: finalHeight,
+      windowWidth: finalWidth,
+      windowHeight: finalHeight,
+      scrollX: 0,
+      scrollY: 0,
+      onclone: (clonedDoc, clonedStage) => {
+        // Remove every other element in clonedDoc.body so ONLY clonedStage can ever be rendered
+        Array.from(clonedDoc.body.children).forEach((child) => {
+          if (child !== clonedStage) {
+            child.remove();
+          }
+        });
+        if (clonedStage) {
+          clonedStage.style.position = 'fixed';
+          clonedStage.style.left = '0px';
+          clonedStage.style.top = '0px';
+          clonedStage.style.zIndex = '999999';
+        }
+        clonedDoc.querySelectorAll('style').forEach((styleTag) => {
+          if (styleTag.textContent && /(oklch|oklab|lch|lab)\s*\(/i.test(styleTag.textContent)) {
+            styleTag.textContent = sanitizeColorString(styleTag.textContent);
+          }
+        });
+      }
+    });
+
+    return await new Promise((resolve) => {
+      canvas.toBlob((blob) => resolve(blob), 'image/png');
+    });
+  } finally {
+    if (stage.parentNode) {
+      stage.parentNode.removeChild(stage);
+    }
+  }
+}
+
 export default function ShareDropdown({
   className = '',
   buttonLabel = 'Salin & Bagikan',
   tableSelector = 'table',
-  captureSelector = '#edk-main-content'
+  captureSelector = '#edk-main-content',
+  pictureTargets = null
 }) {
   const [open, setOpen] = useState(false);
   const [feedback, setFeedback] = useState(null);
@@ -20,7 +221,6 @@ export default function ShareDropdown({
 
     if (ref.current) {
       const rect = ref.current.getBoundingClientRect();
-      // If closer to left screen edge than dropdown width (~290px), align left
       if (rect.left < 280) {
         setDropdownAlign('left');
       } else {
@@ -54,104 +254,58 @@ export default function ShareDropdown({
     }, 2500);
   };
 
-  // 1. Copy as Picture (html2canvas) - Otomatis Screenshot Seluruh Halaman
-  const handleCopyPicture = async () => {
+  // Capture any selector or custom Canvas renderer as Picture (Copy to Clipboard + Fallback PNG Download)
+  const handleCopySelectorAsPicture = async (
+    selector,
+    label = 'Tabel',
+    bg = '#FFFFFF',
+    renderBlob = null
+  ) => {
     setOpen(false);
     setLoading(true);
 
-    const prevScrollX = window.scrollX;
-    const prevScrollY = window.scrollY;
-
     try {
-      // Scroll ke paling atas terlebih dahulu agar tidak ada offset/bagian terpotong
-      window.scrollTo(0, 0);
-      await new Promise((r) => setTimeout(r, 120));
+      let blob = null;
+      if (typeof renderBlob === 'function') {
+        blob = await renderBlob();
+      } else {
+        const target =
+          (selector && document.querySelector(selector)) ||
+          (captureSelector && document.querySelector(captureSelector)) ||
+          document.querySelector('main') ||
+          document.body;
 
-      const target =
-        document.querySelector('main') ||
-        document.querySelector(captureSelector) ||
-        document.querySelector('.overflow-x-auto') ||
-        document.body;
+        blob = await captureElementToBlob(target, bg);
+      }
+      if (!blob) {
+        showFeedback('Gagal membuat gambar screenshot');
+        setLoading(false);
+        return;
+      }
 
-      const fullWidth = Math.max(
-        target.scrollWidth || 0,
-        target.offsetWidth || 0,
-        document.documentElement.scrollWidth || 0
-      );
-      const fullHeight = Math.max(
-        target.scrollHeight || 0,
-        target.offsetHeight || 0,
-        document.documentElement.scrollHeight || 0
-      );
-
-      const canvas = await html2canvas(target, {
-        backgroundColor: '#F6F8FC',
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        allowTaint: true,
-        scrollX: 0,
-        scrollY: 0,
-        width: target.offsetWidth || fullWidth,
-        height: target.scrollHeight || fullHeight,
-        windowWidth: document.documentElement.offsetWidth || window.innerWidth,
-        windowHeight: fullHeight || window.innerHeight,
-        onclone: (clonedDoc) => {
-          const clonedTarget =
-            clonedDoc.querySelector('main') ||
-            clonedDoc.querySelector(captureSelector) ||
-            clonedDoc.body;
-          if (clonedTarget) {
-            clonedTarget.style.height = 'auto';
-            clonedTarget.style.maxHeight = 'none';
-            clonedTarget.style.overflow = 'visible';
-          }
-          // Perluas kontainer tabel/scroll agar konten lengkap tertangkap
-          const scrollables = clonedDoc.querySelectorAll(
-            '.overflow-x-auto, .overflow-y-auto, .overflow-auto'
-          );
-          scrollables.forEach((el) => {
-            el.style.overflow = 'visible';
-            el.style.maxHeight = 'none';
-          });
+      try {
+        if (navigator.clipboard?.write && window.ClipboardItem) {
+          await navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': blob })
+          ]);
+          showFeedback(`Gambar ${label} berhasil disalin ke clipboard!`, 'picture');
+        } else {
+          throw new Error('ClipboardItem not supported');
         }
-      });
-
-      canvas.toBlob(async (blob) => {
-        if (!blob) {
-          showFeedback('Gagal membuat gambar screenshot');
-          setLoading(false);
-          window.scrollTo(prevScrollX, prevScrollY);
-          return;
-        }
-
-        try {
-          if (navigator.clipboard?.write && window.ClipboardItem) {
-            await navigator.clipboard.write([
-              new ClipboardItem({ 'image/png': blob })
-            ]);
-            showFeedback('Screenshot seluruh halaman berhasil disalin ke clipboard!', 'picture');
-          } else {
-            throw new Error('ClipboardItem not supported');
-          }
-        } catch {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `solaris-full-page-${Date.now()}.png`;
-          a.click();
-          URL.revokeObjectURL(url);
-          showFeedback('Screenshot seluruh halaman diunduh sebagai file PNG!', 'picture');
-        } finally {
-          setLoading(false);
-          window.scrollTo(prevScrollX, prevScrollY);
-        }
-      }, 'image/png');
+      } catch {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `solaris-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showFeedback(`Gambar ${label} diunduh sebagai file PNG!`, 'picture');
+      }
     } catch (err) {
       console.error(err);
+      showFeedback('Gagal mengambil gambar');
+    } finally {
       setLoading(false);
-      showFeedback('Gagal mengambil screenshot');
-      window.scrollTo(prevScrollX, prevScrollY);
     }
   };
 
@@ -211,14 +365,33 @@ export default function ShareDropdown({
     }
   };
 
+  const pictureOptions =
+    Array.isArray(pictureTargets) && pictureTargets.length > 0
+      ? pictureTargets.map((pt) => ({
+          id: `pic_${pt.id}`,
+          icon: Image,
+          title: pt.title,
+          subtitle: pt.subtitle,
+          action: () =>
+            handleCopySelectorAsPicture(
+              pt.selector,
+              pt.label || pt.title,
+              pt.bg || '#FFFFFF',
+              pt.renderBlob
+            )
+        }))
+      : [
+          {
+            id: 'picture',
+            icon: Image,
+            title: 'Copy as Picture',
+            subtitle: 'Screenshot otomatis seluruh halaman',
+            action: () => handleCopySelectorAsPicture(captureSelector, 'Halaman', '#F6F8FC')
+          }
+        ];
+
   const menuOptions = [
-    {
-      id: 'picture',
-      icon: Image,
-      title: 'Copy as Picture',
-      subtitle: 'Screenshot otomatis seluruh halaman',
-      action: handleCopyPicture
-    },
+    ...pictureOptions,
     {
       id: 'table',
       icon: Grid3x3,

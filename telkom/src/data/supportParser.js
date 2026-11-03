@@ -101,17 +101,75 @@ GS: NDE Pelurusan Revenue RSUD Sultan Fatah Demak, dan yang sejenisnya (POLRES) 
 export function normalizeStatus(rawStatus) {
   if (!rawStatus) return 'BELUM FU';
   const s = String(rawStatus).trim().toUpperCase();
-  if (s === 'DONE' || s === 'TUNTAS' || s === 'SELESAI') return 'DONE';
+  if (
+    s === 'DONE' ||
+    s === 'TUNTAS' ||
+    s === 'SELESAI' ||
+    s === 'CLOSED' ||
+    s === 'CLOSE' ||
+    s.startsWith('DONE')
+  )
+    return 'DONE';
   if (
     s === 'IN PROGRESS' ||
     s === 'ON PROGRESS' ||
     s === 'PROGRESS' ||
-    s === 'ON-PROGRESS'
+    s === 'ON-PROGRESS' ||
+    s === 'OGP' ||
+    s.includes('PROGRESS') ||
+    s.includes('DRAFT')
   )
     return 'IN PROGRESS';
-  if (s === 'NEED DISCUSS' || s === 'DISCUSS' || s === 'BUTUH DISKUSI')
+  if (
+    s === 'NEED DISCUSS' ||
+    s === 'DISCUSS' ||
+    s === 'BUTUH DISKUSI' ||
+    s.includes('DISCUSS')
+  )
     return 'NEED DISCUSS';
   return 'BELUM FU'; // Default for 'BELUM FU', 'OPEN', 'PENDING', etc.
+}
+
+/**
+ * Formats Excel serial date or US short date into DD/MM/YYYY
+ */
+export function formatSupportDate(rawVal) {
+  if (!rawVal && rawVal !== 0) return '';
+  const str = String(rawVal).trim();
+  if (!str) return '';
+
+  // Excel serial number (e.g. 45911 -> 11/09/2026)
+  if (/^\d{5}$/.test(str)) {
+    const serial = Number(str);
+    if (serial > 40000 && serial < 60000) {
+      const utcDays = Math.floor(serial - 25569);
+      const d = new Date(utcDays * 86400 * 1000);
+      const dd = String(d.getUTCDate()).padStart(2, '0');
+      const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+      const yyyy = d.getUTCFullYear();
+      return `${dd}/${mm}/${yyyy}`;
+    }
+  }
+
+  // Already DD/MM/YYYY
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
+    return str;
+  }
+
+  // Short M/D/YY from XLSX sheet_to_csv (e.g. 9/11/26 -> 11/09/2026)
+  const mdyMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (mdyMatch) {
+    let p1 = Number(mdyMatch[1]);
+    let p2 = Number(mdyMatch[2]);
+    let yr = Number(mdyMatch[3]);
+    if (yr < 100) yr += 2000;
+    // If first part <= 12 and original was M/D/YY from sheet_to_csv
+    const dd = String(p2).padStart(2, '0');
+    const mm = String(p1).padStart(2, '0');
+    return `${dd}/${mm}/${yr}`;
+  }
+
+  return str;
 }
 
 /**
@@ -158,7 +216,7 @@ export function parseSupportCSV(csvString) {
 
     // Fill-down parent meeting data
     if (no) currentMeeting.no = no;
-    if (tgl) currentMeeting.tgl = tgl;
+    if (tgl) currentMeeting.tgl = formatSupportDate(tgl);
     if (agenda) currentMeeting.agenda = agenda;
     if (mainTopic) currentMeeting.mainTopic = mainTopic;
     if (unitTelda) currentMeeting.unitTelda = unitTelda;
@@ -202,19 +260,148 @@ export function parseSupportCSV(csvString) {
 }
 
 /**
- * Parses binary Excel file (XLSX / XLS) into Action Plan items.
+ * Inspects an Excel file and returns the list of sheet names + recommended default sheet.
  */
-export async function parseSupportExcel(file) {
+export async function listSupportExcelSheets(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array', bookSheets: true });
+        const sheetNames = workbook.SheetNames || [];
+        const preferred =
+          sheetNames.find((s) => /notulensi/i.test(s)) ||
+          sheetNames.find((s) => /tracker/i.test(s)) ||
+          sheetNames[0] ||
+          '';
+        resolve({ sheetNames, defaultSheet: preferred });
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = (err) => reject(err);
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+/**
+ * Parses a single worksheet from Notulensi Rapat GM / Support Needed workbook.
+ * Supports standard 'Notulensi Tracker' format as well as auxiliary sheets
+ * ('Note Pak GM ke PRQ', 'Tracker Draft NDE', 'Rekap SN untuk CORE', 'SN LEAP H2 2026').
+ */
+function parseWorksheetToActionPlans(worksheet, sheetName) {
+  const csv = XLSX.utils.sheet_to_csv(worksheet);
+  const stdParsed = parseSupportCSV(csv);
+  if (stdParsed.length > 0) {
+    return stdParsed;
+  }
+
+  // Fallback smart mapper for auxiliary sheets in Notulensi Rapat GM workbook
+  const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+  if (!rows || rows.length < 2) return [];
+
+  // Find header row within first 5 rows
+  let headerIdx = 0;
+  for (let i = 0; i < Math.min(rows.length, 6); i++) {
+    const nonEmpty = rows[i].filter((c) => String(c || '').trim() !== '').length;
+    if (nonEmpty >= 3) {
+      headerIdx = i;
+      break;
+    }
+  }
+
+  const headers = rows[headerIdx].map((h) => String(h || '').trim().toUpperCase());
+  const dataRows = rows.slice(headerIdx + 1);
+  const mapped = [];
+
+  let lastMain = '';
+  let lastUnit = 'PRQ';
+  let lastTgl = 'N/A';
+
+  dataRows.forEach((r) => {
+    const getCol = (...names) => {
+      for (const n of names) {
+        const idx = headers.findIndex((h) => h === n.toUpperCase() || h.includes(n.toUpperCase()));
+        if (idx !== -1 && r[idx] !== undefined && String(r[idx]).trim() !== '') {
+          return String(r[idx]).trim();
+        }
+      }
+      return '';
+    };
+
+    // Detect sheet type by columns
+    const actionPlan =
+      getCol('ACTION PLAN', 'KEY ACTIONS', 'SUB-TOPIK NDE', 'TUJUAN NDE', 'SUPPORT NEEDED') || '';
+    const mainTopic =
+      getCol('MAIN TOPIC', 'MAIN ACTIVITIES', 'TOPIK', 'KATEGORI', 'TELDA') || lastMain || sheetName;
+    const uic =
+      getCol('UIC', 'PIC', 'UIC - DRAFTER NDE', 'FU UIC', 'UNIT') || lastUnit || 'PRQ';
+    const supportNeeded =
+      getCol('SUPPORT NEEDED', 'NOTE', 'OUTCOME') || '-';
+    const statusRaw =
+      getCol('STATUS', 'STATUS PROGRESS', 'ATBT', 'RESPONSE') || '';
+    const notes =
+      getCol('NOTES TO FOLLOW UP', 'KETERANGAN', 'OUTPUT', 'RESPONSE') || '';
+    const deadline =
+      getCol('DEADLINE', 'PRIORITY', 'PERIODE') || '-';
+    const tglRaw =
+      getCol('TGL', 'TANGGAL CORE', 'TANGGAL NDE') || lastTgl;
+
+    if (mainTopic) lastMain = mainTopic;
+    if (uic) lastUnit = uic;
+    if (tglRaw && tglRaw !== 'N/A') lastTgl = formatSupportDate(tglRaw);
+
+    if (!actionPlan && !supportNeeded && !notes) return;
+
+    mapped.push({
+      id: mapped.length + 1,
+      no: getCol('NO') || String(mapped.length + 1),
+      tgl: lastTgl || 'N/A',
+      agenda: sheetName.toUpperCase(),
+      mainTopic: mainTopic || sheetName,
+      unitTelda: uic || 'PRQ',
+      peserta: '',
+      pembahasan: getCol('OUTCOME', 'TUJUAN NDE') || '',
+      pembahasanNotulen: '',
+      actionPlan: actionPlan || supportNeeded || '(Tidak ada rincian aksi)',
+      uic: uic || 'PRQ',
+      destinasiFu: getCol('DESTINASI FU', 'FU UIC') || '-',
+      supportNeeded: supportNeeded || '-',
+      deadline: formatSupportDate(deadline) || '-',
+      status: normalizeStatus(statusRaw),
+      notes: notes || ''
+    });
+  });
+
+  return mapped;
+}
+
+/**
+ * Parses binary Excel file (XLSX / XLS) into Action Plan items.
+ * @param {File} file
+ * @param {string} [selectedSheet] Optional sheet name (defaults to 'Notulensi Tracker' or first sheet)
+ */
+export async function parseSupportExcel(file, selectedSheet = '') {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
-        const csv = XLSX.utils.sheet_to_csv(worksheet);
-        const parsed = parseSupportCSV(csv);
+        const sheetNames = workbook.SheetNames || [];
+        if (sheetNames.length === 0) {
+          resolve([]);
+          return;
+        }
+
+        const targetSheet =
+          selectedSheet && workbook.Sheets[selectedSheet]
+            ? selectedSheet
+            : sheetNames.find((s) => /notulensi/i.test(s)) || sheetNames[0];
+
+        const worksheet = workbook.Sheets[targetSheet];
+        const parsed = parseWorksheetToActionPlans(worksheet, targetSheet);
         resolve(parsed);
       } catch (err) {
         reject(err);
@@ -423,4 +610,214 @@ export function resetSupportData() {
     console.error('Failed to reset support data:', e);
   }
   return parseSupportCSV(DEFAULT_SUPPORT_CSV);
+}
+
+// =========================================================================
+// MySQL + Laravel API Helpers (/api/mom-support)
+// =========================================================================
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+
+export async function fetchSupportFromApi() {
+  try {
+    const res = await fetch(`${API_BASE}/mom-support`, {
+      headers: { Accept: 'application/json' }
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (json && json.success && Array.isArray(json.items) && json.items.length > 0) {
+      saveSupportData(json.items);
+      return json.items;
+    }
+  } catch {
+    // Fallback to localStorage when offline
+  }
+  return null;
+}
+
+export async function syncSupportToApi(items, filename = 'Notulensi Rapat GM.xlsx', sheetName = 'Notulensi Tracker', mode = 'replace') {
+  try {
+    const res = await fetch(`${API_BASE}/mom-support/sync`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
+      },
+      body: JSON.stringify({
+        filename,
+        sheet_name: sheetName,
+        mode,
+        items
+      })
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (json && json.success && Array.isArray(json.items)) {
+      saveSupportData(json.items);
+    }
+    return json;
+  } catch {
+    return null;
+  }
+}
+
+export async function updateSupportItemApi(item) {
+  if (!item || item.id === undefined) return null;
+  try {
+    const res = await fetch(`${API_BASE}/mom-support/${item.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
+      },
+      body: JSON.stringify(item)
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function resetSupportApi() {
+  try {
+    const res = await fetch(`${API_BASE}/mom-support/reset`, {
+      method: 'POST',
+      headers: { Accept: 'application/json' }
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (json && json.success && Array.isArray(json.items)) {
+      saveSupportData(json.items);
+      return json.items;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+/**
+ * Exports Action Plans & Support Needed into a neatly formatted multi-sheet Excel (.xlsx) workbook
+ * with custom column widths so all columns are immediately readable in Microsoft Excel.
+ */
+export function exportSupportExcel(actionPlans = [], metrics = null, filename = 'Report_Support_Needed') {
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1: Daftar Detail Action Plan & Support Needed
+  const detailRows = actionPlans.map((r, i) => ({
+    'NO': i + 1,
+    'NO RAPAT': r.no || i + 1,
+    'TGL': r.tgl || '-',
+    'AGENDA': r.agenda || '-',
+    'MAIN TOPIC': r.mainTopic || '-',
+    'UNIT/TELDA': r.unitTelda || '-',
+    'PESERTA': r.peserta || '-',
+    'ACTION PLAN': r.actionPlan || '-',
+    'UIC': r.uic || '-',
+    'DESTINASI FU': r.destinasiFu || '-',
+    'SUPPORT NEEDED': r.supportNeeded || '-',
+    'DEADLINE': r.deadline || '-',
+    'STATUS': r.status || 'BELUM FU',
+    'NOTES TO FOLLOW UP': r.notes || '-',
+    'PEMBAHASAN': r.pembahasan || '-'
+  }));
+
+  const wsDetail = XLSX.utils.json_to_sheet(detailRows);
+  wsDetail['!cols'] = [
+    { wch: 6 },   // NO
+    { wch: 10 },  // NO RAPAT
+    { wch: 13 },  // TGL
+    { wch: 18 },  // AGENDA
+    { wch: 28 },  // MAIN TOPIC
+    { wch: 14 },  // UNIT/TELDA
+    { wch: 35 },  // PESERTA
+    { wch: 58 },  // ACTION PLAN
+    { wch: 16 },  // UIC
+    { wch: 22 },  // DESTINASI FU
+    { wch: 48 },  // SUPPORT NEEDED
+    { wch: 16 },  // DEADLINE
+    { wch: 15 },  // STATUS
+    { wch: 45 },  // NOTES TO FOLLOW UP
+    { wch: 55 }   // PEMBAHASAN
+  ];
+  XLSX.utils.book_append_sheet(wb, wsDetail, 'Notulensi Tracker');
+
+  // Sheet 2: Rekap Follow Up By Agenda & UIC
+  const computed = metrics || computeSupportMetrics(actionPlans);
+  const summaryAoA = [
+    ['REPORT FOLLOW UP SUPPORT NEEDED — BY AGENDA'],
+    [],
+    [
+      'NO',
+      'NAMA AGENDA KOORDINASI',
+      'OPEN / BELUM FU',
+      '% OPEN',
+      'NEED DISCUSS',
+      '% DISCUSS',
+      'ON PROGRESS',
+      '% PROGRESS',
+      'DONE',
+      '% DONE',
+      'TOTAL'
+    ]
+  ];
+
+  (computed.agendaList || []).forEach((ag) => {
+    summaryAoA.push([
+      ag.no,
+      ag.name,
+      ag.open,
+      ag.pctOpen,
+      ag.discuss,
+      ag.pctDiscuss,
+      ag.progress,
+      ag.pctProgress,
+      ag.done,
+      ag.pctDone,
+      ag.total
+    ]);
+  });
+
+  if (computed.agendaSummary) {
+    const s = computed.agendaSummary;
+    summaryAoA.push([
+      '',
+      'TOTAL KESELURUHAN',
+      s.totalOpen,
+      s.pctOpen,
+      s.totalDiscuss,
+      s.pctDiscuss,
+      s.totalProgress,
+      s.pctProgress,
+      s.totalDone,
+      s.pctDone,
+      s.grandTotal
+    ]);
+  }
+
+  summaryAoA.push([]);
+  summaryAoA.push(['REPORT FOLLOW UP SUPPORT NEEDED — BY UNIT (UIC)']);
+  summaryAoA.push(['UNIT / UIC', 'KATEGORI', 'TOTAL ACTION ITEM', 'BELUM FU', 'ON PROGRESS', 'DONE']);
+
+  (computed.unitsList || []).forEach((u) => {
+    summaryAoA.push([u.name, u.category, u.count, u.open, u.progress, u.done]);
+  });
+
+  const wsSummary = XLSX.utils.aoa_to_sheet(summaryAoA);
+  wsSummary['!cols'] = [
+    { wch: 18 },
+    { wch: 28 },
+    { wch: 18 },
+    { wch: 12 },
+    { wch: 15 },
+    { wch: 12 },
+    { wch: 15 },
+    { wch: 14 },
+    { wch: 12 },
+    { wch: 12 },
+    { wch: 12 }
+  ];
+  XLSX.utils.book_append_sheet(wb, wsSummary, 'Rekap Agenda & UIC');
+
+  XLSX.writeFile(wb, `${filename}.xlsx`);
 }
