@@ -3,6 +3,7 @@ node_modules/
 .pnp
 .pnp.js
 vendor/
+git-history-mouren-laravel.md
 EDK Monitoring 1x upload– Handoff Plan, Todo & Roadmap.md
 
 # Build output
@@ -37,3 +38,8 @@ pnpm-debug.log*
 Thumbs.db
 
 .vercel
+# Excel temporary lock files
+~$*
+
+# Large raw Excel files (>25MB)
+data/kuadran/*.xlsx
