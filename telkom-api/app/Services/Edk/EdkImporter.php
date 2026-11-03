@@ -56,7 +56,13 @@ class EdkImporter
                 }
 
                 EdkUpload::where('is_active', true)->update(['is_active' => false]);
-                $upload->update(['status' => 'done', 'is_active' => true, 'total_rows' => count($rows)]);
+                $upload->update([
+                    'status'       => 'done',
+                    'is_active'    => true,
+                    'total_rows'   => count($rows),
+                    'activated_by' => $upload->uploaded_by,
+                    'activated_at' => now(),
+                ]);
             });
         } catch (EdkImportException $e) {
             $upload->update(['status' => 'failed', 'errors' => $e->errors]);

@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Edk;
 
+use App\Exceptions\EdkImportException;
 use App\Http\Controllers\Controller;
 use App\Models\EdkUpload;
 use App\Services\Edk\EdkImporter;
+use App\Support\Audit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -12,9 +14,12 @@ class EdkUploadController extends Controller
 {
     public function index()
     {
-        return EdkUpload::with('uploader:id,name')
+        return EdkUpload::with(['uploader:id,name', 'activator:id,name'])
             ->latest('id')
-            ->paginate(20);
+            ->paginate(20)
+            ->through(fn (EdkUpload $u) => $u
+                ->setAttribute('error_count', count($u->errors ?? []))
+                ->makeHidden('errors'));
     }
 
     public function store(Request $request, EdkImporter $importer)
@@ -24,26 +29,52 @@ class EdkUploadController extends Controller
             'report_date' => 'required|date',
         ]);
 
-        $upload = $importer->import($data['file'], $data['report_date'], $request->user()?->id);
+        try {
+            $upload = $importer->import($data['file'], $data['report_date'], $request->user()?->id);
+        } catch (EdkImportException $e) {
+            Audit::log('edk.upload_failed', null, [
+                'original_name' => $data['file']->getClientOriginalName(),
+                'report_date'   => $data['report_date'],
+                'error_count'   => count($e->errors),
+            ]);
+            throw $e;
+        }
+
+        Audit::log('edk.upload', $upload, [
+            'original_name' => $upload->original_name,
+            'report_date'   => $upload->report_date->toDateString(),
+            'total_rows'    => $upload->total_rows,
+        ]);
 
         return response()->json(['message' => 'Upload berhasil.', 'data' => $upload], 201);
     }
 
-    public function activate(EdkUpload $upload)
+    public function activate(Request $request, EdkUpload $upload)
     {
         abort_unless($upload->status === 'done', 422, 'Hanya snapshot berstatus done yang bisa diaktifkan.');
 
-        DB::transaction(function () use ($upload) {
+        $previousId = EdkUpload::active()->value('id');
+
+        DB::transaction(function () use ($upload, $request) {
             EdkUpload::where('is_active', true)->update(['is_active' => false]);
-            $upload->update(['is_active' => true]);
+            $upload->update([
+                'is_active'    => true,
+                'activated_by' => $request->user()?->id,
+                'activated_at' => now(),
+            ]);
         });
+
+        Audit::log('edk.activate', $upload, [
+            'report_date'        => $upload->report_date->toDateString(),
+            'previous_active_id' => $previousId,
+        ]);
 
         return response()->json(['message' => 'Snapshot diaktifkan.', 'data' => $upload->fresh()]);
     }
 
     public function template()
     {
-        $path = storage_path('app/templates/Template_Import_EDK_Monitoring.xlsx');
+        $path = resource_path('templates/Template_Import_EDK_Monitoring.xlsx');
         abort_unless(is_file($path), 404, 'Template belum tersedia.');
 
         return response()->download($path, 'Template_Import_EDK_Monitoring.xlsx');

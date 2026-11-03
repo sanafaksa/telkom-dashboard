@@ -50,3 +50,10 @@ export function useActivateEdk() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['edk'] }),
   });
 }
+
+export const useAuditLogs = (page = 1) =>
+  useQuery({
+    queryKey: ['edk', 'audit', page],
+    queryFn: () => edkApi.auditLogs(page),
+    placeholderData: keepPreviousData,
+  });

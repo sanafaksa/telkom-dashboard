@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\Audit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -22,6 +23,8 @@ class AuthController extends Controller
         $user  = User::where($field, trim($data['login']))->first();
 
         if (!$user || !Hash::check($data['password'], $user->password)) {
+            Audit::log('auth.login_failed', null, ['login' => $data['login']], $user);
+
             throw ValidationException::withMessages([
                 'login' => 'Email/NIK atau kata sandi salah.',
             ]);
@@ -29,6 +32,8 @@ class AuthController extends Controller
 
         $expiresAt = ($data['remember'] ?? false) ? now()->addDays(30) : now()->addHours(12);
         $token     = $user->createToken('dashboard', ['*'], $expiresAt)->plainTextToken;
+
+        Audit::log('auth.login', null, ['remember' => (bool) ($data['remember'] ?? false)], $user);
 
         return response()->json([
             'token'      => $token,
@@ -44,6 +49,8 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        Audit::log('auth.logout');
+
         $token = $request->user()->currentAccessToken();
         if ($token instanceof PersonalAccessToken) {
             $token->delete();

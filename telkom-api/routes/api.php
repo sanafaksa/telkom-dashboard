@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Edk\EdkExportController;
 use App\Http\Controllers\Edk\EdkSummaryController;
@@ -34,3 +35,6 @@ Route::prefix('edk')->middleware('auth:sanctum')->group(function () {
     // Export
     Route::get('export', [EdkExportController::class, 'export']);
 });
+
+// ===== Audit log (khusus admin) =====
+Route::get('audit-logs', [AuditLogController::class, 'index'])->middleware(['auth:sanctum', 'role:admin']);

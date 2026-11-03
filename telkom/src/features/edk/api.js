@@ -25,4 +25,6 @@ export const edkApi = {
     apiDownload('/edk/export', { ...filters, by, format }, `EDK_Monitoring_${by}.${format}`),
 
   template: () => apiDownload('/edk/template', {}, 'Template_Import_EDK_Monitoring.xlsx'),
+
+  auditLogs: (page = 1) => apiGet('/audit-logs', { page }),
 };

@@ -9,6 +9,7 @@ class EdkUpload extends Model
     protected $fillable = [
         'report_date', 'original_name', 'file_path', 'status',
         'is_active', 'total_rows', 'errors', 'uploaded_by',
+        'activated_by', 'activated_at',
     ];
 
     protected $hidden = ['file_path'];
@@ -16,11 +17,13 @@ class EdkUpload extends Model
     protected $casts = [
         'report_date' => 'date:Y-m-d',
         'is_active'   => 'boolean',
-        'errors'      => 'array',
+        'errors'       => 'array',
+        'activated_at' => 'datetime',
     ];
 
     public function records()  { return $this->hasMany(EdkRecord::class); }
     public function uploader() { return $this->belongsTo(User::class, 'uploaded_by'); }
+    public function activator() { return $this->belongsTo(User::class, 'activated_by'); }
 
     public function scopeActive($q) { return $q->where('is_active', true); }
 
