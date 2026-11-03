@@ -3,8 +3,7 @@ node_modules/
 .pnp
 .pnp.js
 vendor/
-
-/telkom-api/
+git-history-mouren-laravel.md
 
 # Build output
 dist/
