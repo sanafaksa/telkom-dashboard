@@ -31,6 +31,15 @@ import {
   Moon
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { getUser, logout } from '../features/auth/auth';
+
+const initials = (name = '') =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join('') || 'U';
 
 const sub = [
   ['moving', 'Kuadran Moving'],
@@ -188,14 +197,15 @@ function Sidebar({ close, onCollapse }) {
 
       {/* Sidebar Footer */}
       <div className="mt-auto pt-3.5 border-t border-white/20 flex items-center justify-between px-2 text-[11px]">
-        <NavLink
-          to="/login"
-          className="flex items-center gap-1.5 font-medium text-white/80 hover:text-white transition-colors"
-          title="Keluar ke Halaman Login"
+                <button
+          type="button"
+          onClick={logout}
+          className="flex items-center gap-1.5 font-medium text-white/80 hover:text-white transition-colors cursor-pointer"
+          title="Keluar dari akun"
         >
           <LogOut size={13} />
           <span>Keluar</span>
-        </NavLink>
+        </button>
         <span className="flex items-center gap-1.5 font-medium text-white/90">
           <span className="size-1.5 rounded-full bg-emerald-400 shadow-xs" />
           Active
@@ -286,19 +296,20 @@ function CollapsedSidebar({ onExpand }) {
       <div className="w-5 h-px bg-slate-200 my-2" />
 
       {/* Logout */}
-      <NavLink
-        to="/login"
+            <button
+        type="button"
+        onClick={logout}
         title="Keluar"
-        className="group relative size-10 rounded-2xl grid place-items-center text-slate-400 hover:bg-red-50 hover:text-red-400 transition-all"
+        className="group relative size-10 rounded-2xl grid place-items-center text-slate-400 hover:bg-red-50 hover:text-red-400 transition-all cursor-pointer"
       >
         <LogOut size={17} strokeWidth={1.8} />
         <span
           className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-lg px-2.5 py-1 text-[11px] font-semibold text-white opacity-0 group-hover:opacity-100 transition-opacity z-50"
           style={{ background: '#06246A', boxShadow: '0 2px 8px rgba(6,36,106,0.18)' }}
         >
-          Keluar
+                    Keluar
         </span>
-      </NavLink>
+      </button>
     </nav>
   );
 }
@@ -362,6 +373,7 @@ function formatDate(date) {
 export default function Layout({ children }) {
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const user = getUser();
   const [d, setD] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -449,22 +461,30 @@ export default function Layout({ children }) {
 
         {/* User profile dropdown pill */}
         <div className="relative group shrink-0">
-          <NavLink
-            to="/login"
+          <button
+            type="button"
+            onClick={logout}
             className="flex items-center gap-2.5 p-1 rounded-full hover:bg-slate-100/70 transition-colors cursor-pointer"
-            title="Keluar / Ganti Akun"
+            title="Klik untuk keluar / ganti akun"
           >
             <span className="size-8 rounded-full bg-[#2563EB] text-white grid place-items-center text-xs font-bold shrink-0 shadow-xs">
-              DU
+              {initials(user?.name)}
             </span>
             <div className="hidden sm:block leading-tight text-left">
               <div className="flex items-center gap-1">
-                <b className="text-xs font-bold text-slate-800">DU — Dashboard Utama</b>
+                <b className="text-xs font-bold text-slate-800">{user?.name ?? 'Pengguna'}</b>
+                <span
+                  className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full ${
+                    user?.role === 'admin' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
+                  }`}
+                >
+                  {user?.role ?? '-'}
+                </span>
                 <ChevronDown size={13} className="text-slate-400 group-hover:text-slate-600 transition-colors" />
               </div>
-              <p className="text-[11px] text-slate-400">executive.lead@telkom.co.id</p>
+              <p className="text-[11px] text-slate-400">{user?.email ?? ''}</p>
             </div>
-          </NavLink>
+          </button>
         </div>
 
         {/* Right Header items */}

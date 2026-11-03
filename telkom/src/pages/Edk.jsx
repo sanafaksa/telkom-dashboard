@@ -1,9 +1,7 @@
-import { useEffect, useMemo, useState, Fragment, useRef } from 'react';
-import { filterOptions, modes, topPelangganBySegmen, segmenByPeriode } from '../data/edkData';
-import { ExportButton, exportCSV, ShareDropdown } from '../components/ui';
+import { useMemo, useState, Fragment, useRef } from 'react';
+import { ExportButton, ShareDropdown } from '../components/ui';
 import FilterDropdown from '../components/FilterDropdown';
-import { createPortal } from "react-dom";
-import { edkApi } from '../features/edk/api';
+import { createPortal } from 'react-dom';
 import {
   Filter,
   Upload,
@@ -16,8 +14,21 @@ import {
   Building2,
   ArrowUpDown,
   AlignLeft,
-  ChevronDown
+  ChevronDown,
+  Download,
+  History
 } from 'lucide-react';
+import { useEdkFilters } from '../features/edk/useEdkFilters';
+import {
+  useEdkCards,
+  useEdkOptions,
+  useEdkSummary,
+  useEdkTopCustomers,
+  useUploadEdk
+} from '../features/edk/queries';
+import { edkApi } from '../features/edk/api';
+import UploadHistoryModal from '../features/edk/UploadHistoryModal';
+import { isAdmin } from '../features/auth/auth';
 
 const formatLastUpdate = (date) => {
   return date.toLocaleDateString('id-ID', {
@@ -49,46 +60,92 @@ const toTitleCase = (str) => {
     .join(' ');
 };
 
-const buildUploadError = (data, fallback) => {
-  const parts = [data?.message || fallback];
+// ───────────────────────── Konstanta & helper API ─────────────────────────
 
-  if (Array.isArray(data?.errors)) {
-    parts.push(...data.errors.slice(0, 5).map((error) =>
-      error && typeof error === 'object'
-        ? `Baris ${error.row}: ${(error.messages || []).join('; ')}`
-        : error
-    ));
-  } else if (data?.errors && typeof data.errors === 'object') {
-    parts.push(...Object.values(data.errors).flat().slice(0, 5));
-  }
+const MODE_TO_TAB = { Segmen: 'segmen', 'Periode EDK': 'periode', 'Nama AM': 'am', 'Nama CC': 'cc' };
+const TAB_TO_MODE = { segmen: 'Segmen', periode: 'Periode EDK', am: 'Nama AM', cc: 'Nama CC' };
 
-  if (Array.isArray(data?.missing_headers)) {
-    parts.push('Kolom hilang: ' + data.missing_headers.join(', '));
-  }
+const FLAG_LABEL = { NEW: 'Baru', UPDATED: 'Berubah', UNCHANGED: 'Tidak Berubah' };
+const FLAG_KEY = { Baru: 'NEW', Berubah: 'UPDATED', 'Tidak Berubah': 'UNCHANGED' };
 
-  return parts.join('\n');
-  }
+const splitList = (v) => (v ? String(v).split(',').filter(Boolean) : []);
 
-  function UploadModal({ open, onClose, onSuccess, setLastUpdate }) {
-    const [files, setFiles] = useState([]);
-    const [drag, setDrag] = useState(false);
-    const [uploading, setUploading] = useState(false);
-    const [done, setDone] = useState(false);
-    const [uploadPeriod, setUploadPeriod] = useState('');
-    const [uploadError, setUploadError] = useState('');
-    const [periodWarning, setPeriodWarning] = useState('');
+const sumBy = (items, key) => items.reduce((acc, it) => acc + (it[key] || 0), 0);
 
-  const getPeriodError = (value) => {
-    if (!value) return 'Periode wajib diisi (contoh: 202611).';
-    if (!/^\d{6}$/.test(value)) return 'Format periode harus 6 digit angka (contoh: 202611).';
-    const month = Number(value.slice(4, 6));
-    if (month < 1 || month > 12) return 'Bulan periode harus 01 sampai 12 (contoh: 202611).';
-    return '';
+const todayLocal = () => {
+  const d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+};
+
+/** Baris API (snake_case) → bentuk lama yang dipakai JSX tabel (lc, la, lp, ... to, ta2) */
+const toRow = (r) => {
+  const x = r ?? {};
+  return {
+    ...x,
+    l: x.label ?? x.nama_pelanggan ?? '-',
+    lc: x.lanjut_complete_order ?? 0,
+    la: x.lanjut_complete_abonemen ?? 0,
+    lp: x.lanjut_in_progress_order ?? 0,
+    lpa: x.lanjut_in_progress_abonemen ?? 0,
+    tc: x.tidak_lanjut_complete_order ?? 0,
+    ta: x.tidak_lanjut_complete_abonemen ?? 0,
+    tp: x.tidak_lanjut_in_progress_order ?? 0,
+    tpa: x.tidak_lanjut_in_progress_abonemen ?? 0,
+    k_auto: x.konfirmasi_am_auto_renewal_order ?? 0,
+    k_auto_a: x.konfirmasi_am_auto_renewal_abonemen ?? 0,
+    k_prog: x.konfirmasi_am_in_progress_order ?? 0,
+    k_prog_a: x.konfirmasi_am_in_progress_abonemen ?? 0,
+    b: x.bukan_witel_order ?? 0,
+    ba: x.bukan_witel_abonemen ?? 0,
+    to: x.total_order ?? 0,
+    ta2: x.total_abonemen ?? 0
   };
+};
 
-  const canUpload = files.length > 0 && !getPeriodError(uploadPeriod) && !uploading;
+/** Error dari API upload → { message, rows: [{row, messages}], list: [], total } */
+const toUploadError = (err) => {
+  const data = err?.data;
+  if (!err?.status) {
+    return { message: 'Tidak dapat terhubung ke server. Pastikan backend Laravel berjalan.', rows: [], list: [] };
+  }
+  if (Array.isArray(data?.errors)) {
+    return { message: data.message, rows: data.errors, list: [], total: data.total_errors ?? data.errors.length };
+  }
+  if (data?.errors && typeof data.errors === 'object') {
+    return { message: data.message, rows: [], list: Object.values(data.errors).flat() };
+  }
+  return { message: data?.message || err.message || 'Gagal mengunggah file.', rows: [], list: [] };
+};
 
+function DeltaText({ value }) {
+  if (value === null || value === undefined) {
+    return <p className="text-xs mt-1.5 text-slate-400">Belum ada pembanding</p>;
+  }
+  const up = value >= 0;
+  return (
+    <p className={`text-xs mt-1.5 flex items-center gap-1 font-semibold ${up ? 'text-emerald-600' : 'text-rose-600'}`}>
+      <span>
+        {up ? '+' : ''}
+        {value.toLocaleString('id-ID', { maximumFractionDigits: 1 })}%
+      </span>
+      <span className="text-slate-400 font-normal">dari upload sebelumnya</span>
+    </p>
+  );
+}
+
+// ───────────────────────── Modal Upload ─────────────────────────
+
+function UploadModal({ open, onClose, onUploaded }) {
+  const [files, setFiles] = useState([]);
+  const [drag, setDrag] = useState(false);
+  const [done, setDone] = useState(false);
+  const [reportDate, setReportDate] = useState(todayLocal());
+  const [uploadError, setUploadError] = useState(null);
   const fileInputRef = useRef(null);
+
+  const uploadMutation = useUploadEdk();
+  const uploading = uploadMutation.isPending;
+  const canUpload = files.length > 0 && !!reportDate && !uploading;
 
   if (!open) return null;
 
@@ -96,64 +153,46 @@ const buildUploadError = (data, fallback) => {
     e.preventDefault();
     setDrag(false);
     if (e.dataTransfer.files.length) {
-      setFiles(Array.from(e.dataTransfer.files));
+      setFiles(Array.from(e.dataTransfer.files).slice(0, 1));
     }
   };
 
   const handleFileSelect = (e) => {
     if (e.target.files && e.target.files.length > 0) {
-      setFiles(Array.from(e.target.files));
+      setFiles(Array.from(e.target.files).slice(0, 1));
     }
   };
 
-    const handleUpload = async () => {
-        if (uploading) return;
-    if (!files.length) {
-      setUploadError('Pilih file Excel terlebih dahulu.');
-      return;
-    }
-    const periodError = getPeriodError(uploadPeriod);
-    if (periodError) {
-      setPeriodWarning(periodError);
-      return;
-    }
-    setPeriodWarning('');
-    setUploading(true);
-    setUploadError('');
+  const handleClose = () => {
+    setUploadError(null);
+    onClose();
+  };
+
+  const handleUpload = async () => {
+    if (!canUpload) return;
+    setUploadError(null);
 
     try {
-      const reportDate = `${uploadPeriod.slice(0, 4)}-${uploadPeriod.slice(4, 6)}-01`;
-      const result = await edkApi.upload(files[0], reportDate);
-
-      if (onSuccess) {
-        onSuccess(result.data);
-      }
-
-      if (setLastUpdate) {
-        setLastUpdate(new Date());
-      }
-
+      await uploadMutation.mutateAsync({ file: files[0], reportDate });
+      onUploaded?.();
       setDone(true);
       setTimeout(() => {
         setDone(false);
         setFiles([]);
-        setUploadPeriod('');
         onClose();
-      }, 1500);
-    } catch (error) {
-      console.error('Error server:', error);
-      setUploadError(buildUploadError(
-        error.data,
-        error.message || 'Tidak dapat terhubung ke server.'
-      ));
-    } finally {
-      setUploading(false);
+      }, 1200);
+    } catch (err) {
+      setUploadError(toUploadError(err));
     }
+  };
+
+  const handleTemplate = () => {
+    edkApi.template().catch((err) => setUploadError(toUploadError(err)));
   };
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={handleClose} />
       <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-[fadeIn_0.2s_ease-out]">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <div>
@@ -161,7 +200,7 @@ const buildUploadError = (data, fallback) => {
             <p className="text-xs text-slate-500 mt-0.5">Format yang didukung: XLSX (maks 10MB)</p>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="size-8 rounded-lg hover:bg-slate-100 grid place-items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
           >
             <X size={18} />
@@ -169,49 +208,62 @@ const buildUploadError = (data, fallback) => {
         </div>
 
         <div className="px-6 py-5">
-          <div className="mb-3">
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Periode EDK (YYYYMM)
-            </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={uploadPeriod}
-              onChange={(e) => {
-                const raw = e.target.value;
-                const digits = raw.replace(/\D/g, '');
-
-                if (/\D/.test(raw)) {
-                  setPeriodWarning('Periode hanya boleh berisi angka (contoh: 202611).');
-                } else if (digits.length > 6) {
-                  setPeriodWarning('Periode maksimal 6 digit (contoh: 202611).');
-                } else {
-                  setPeriodWarning('');
-                }
-
-                setUploadPeriod(digits.slice(0, 6));
-              }}
-              placeholder="202611"
-              className={`w-full px-3 py-2 text-xs border rounded-lg focus:outline-none ${
-                periodWarning
-                  ? 'border-red-400 focus:border-red-500'
-                  : 'border-slate-200 focus:border-[#1D8BCB]'
-              }`}
-            />
-            {periodWarning && (
-              <p className="mt-1 text-xs text-red-600">{periodWarning}</p>
-            )}
+          <div className="mb-3 flex items-end justify-between gap-3">
+            <div className="flex-1">
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Tanggal Laporan (Last Update)
+              </label>
+              <input
+                type="date"
+                value={reportDate}
+                onChange={(e) => setReportDate(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-[#1D8BCB]"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleTemplate}
+              className="text-xs font-semibold text-[#2563EB] hover:underline flex items-center gap-1 cursor-pointer whitespace-nowrap pb-2"
+            >
+              <Download size={13} /> Download template
+            </button>
           </div>
+          <p className="mb-3 text-[11px] text-slate-400">
+            Periode EDK dibaca dari kolom PERIODE_EDK di file. Upload baru otomatis menjadi data aktif.
+          </p>
+
           {uploadError && (
-            <div className="mb-3 whitespace-pre-line text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
-              {uploadError}
+            <div className="mb-3 text-xs text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+              <p className="font-semibold">{uploadError.message}</p>
+
+              {uploadError.list.length > 0 && (
+                <ul className="mt-1 list-disc pl-4">
+                  {uploadError.list.map((m, i) => (
+                    <li key={i}>{m}</li>
+                  ))}
+                </ul>
+              )}
+
+              {uploadError.rows.length > 0 && (
+                <div className="mt-2 max-h-40 overflow-y-auto space-y-1">
+                  {uploadError.rows.map((e, i) => (
+                    <div key={`${e.row}-${i}`}>
+                      <span className="font-bold">Baris {e.row}:</span> {e.messages.join(' ')}
+                    </div>
+                  ))}
+                  {uploadError.total > uploadError.rows.length && (
+                    <p className="italic">…dan {uploadError.total - uploadError.rows.length} baris lainnya</p>
+                  )}
+                </div>
+              )}
             </div>
           )}
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileSelect} 
-            className="hidden" 
+
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+            className="hidden"
             accept=".xlsx"
           />
 
@@ -254,7 +306,7 @@ const buildUploadError = (data, fallback) => {
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="px-4 py-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
           >
             Batal
@@ -262,7 +314,7 @@ const buildUploadError = (data, fallback) => {
           <button
             type="button"
             onClick={handleUpload}
-            disabled={uploading}
+            disabled={!canUpload}
             className={`px-5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-2 ${
               done
                 ? 'bg-emerald-500 text-white'
@@ -282,360 +334,166 @@ const buildUploadError = (data, fallback) => {
   );
 }
 
-const AM_GROUP_SUBTOTALS = {
-  'Segmen DGS': { auto_order: 8, auto_abon: 5065520, inprog_order: 92, inprog_abon: 419951755 },
-  'Segmen DPS': { auto_order: 2, auto_abon: 24000000, inprog_order: 35, inprog_abon: 107131000 },
-  'Segmen DSS': { auto_order: 0, auto_abon: 0, inprog_order: 47, inprog_abon: 997567284 },
-  'Segmen RBS': { auto_order: 42, auto_abon: 91275064, inprog_order: 97, inprog_abon: 177754711 }
-};
+// ───────────────────────── Halaman EDK ─────────────────────────
 
 export default function Edk() {
-  const [mode, setMode] = useState('Segmen');
-  const [activeSegmen, setActiveSegmen] = useState('DGS');
+  const { filters, tab, setFilter, setTab, resetFilters: resetUrlFilters } = useEdkFilters();
+  const mode = TAB_TO_MODE[tab] ?? 'Segmen';
+  const isTop10View = mode === 'Nama CC';
+
   const [showUpload, setShowUpload] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const canManage = isAdmin();
   const [pageSize, setPageSize] = useState(25);
   const [pageIndex, setPageIndex] = useState(0);
-  const [apiSegmen, setApiSegmen] = useState([]);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [apiLoading, setApiLoading] = useState(true);
-  const [apiError, setApiError] = useState('');
-  const [lastUpdate, setLastUpdate] = useState(null);
-  
-  useEffect(() => {
-    const fetchEdkMonthly = async () => {
-      try {
-        setApiLoading(true);
-        setApiError('');
+  const [sortOrder, setSortOrder] = useState('Sort by');
 
-        const result = await edkApi.summary('segmen');
-        setApiSegmen((result.rows || []).map((row) => ({
-          ...row,
-          segment: row.key,
-          lanjut_complete_abonemen_rp: row.lanjut_complete_abonemen,
-          lanjut_in_progress_abonemen_rp: row.lanjut_in_progress_abonemen,
-          tidak_lanjut_complete_abonemen_rp: row.tidak_lanjut_complete_abonemen,
-          tidak_lanjut_in_progress_abonemen_rp: row.tidak_lanjut_in_progress_abonemen,
-          konfirmasi_am_order:
-            Number(row.konfirmasi_am_auto_renewal_order || 0) +
-            Number(row.konfirmasi_am_in_progress_order || 0),
-          konfirmasi_am_abonemen_rp:
-            Number(row.konfirmasi_am_auto_renewal_abonemen || 0) +
-            Number(row.konfirmasi_am_in_progress_abonemen || 0),
-          konfirmasi_am_auto_renewal: row.konfirmasi_am_auto_renewal_order,
-          konfirmasi_am_auto_renewal_abonemen_rp: row.konfirmasi_am_auto_renewal_abonemen,
-          konfirmasi_am_in_progress: row.konfirmasi_am_in_progress_order,
-          konfirmasi_am_in_progress_abonemen_rp: row.konfirmasi_am_in_progress_abonemen,
-          bukan_witel_solo_jt_order: row.bukan_witel_order,
-          bukan_witel_solo_jt_abonemen_rp: row.bukan_witel_abonemen,
-        })));
-        setLastUpdate(result.last_update ? new Date(`${result.last_update}T00:00:00`) : new Date());
-      } catch (error) {
-        setApiError(error.message || 'Gagal terhubung ke server.');
-      } finally {
-        setApiLoading(false);
-      }
+  // ── Opsi dropdown dari /edk/options ──
+  const { data: options } = useEdkOptions(filters.upload_id);
+
+  const filterOptions = useMemo(
+    () => ({
+      periode: (options?.periode ?? []).map((o) => o.label),
+      segmen: options?.segmen ?? [],
+      namaAm: [...new Set((options?.am ?? []).map((a) => a.nama_am))],
+      flagging: Object.values(FLAG_LABEL)
+    }),
+    [options]
+  );
+
+  const periodeMaps = useMemo(() => {
+    const list = options?.periode ?? [];
+    return {
+      toLabel: Object.fromEntries(list.map((o) => [o.value, o.label])),
+      toValue: Object.fromEntries(list.map((o) => [o.label, o.value]))
     };
+  }, [options]);
 
-    fetchEdkMonthly();
-  }, [refreshKey]);
+  // ── Filter terpilih (sumbernya URL, format "a,b,c") ──
+  const selectedPeriode = useMemo(
+    () => splitList(filters.periode).map((v) => periodeMaps.toLabel[v] ?? v),
+    [filters.periode, periodeMaps]
+  );
+  const selectedSegmen = useMemo(() => splitList(filters.segmen), [filters.segmen]);
+  const selectedNamaAm = useMemo(() => splitList(filters.am), [filters.am]);
+  const selectedFlagging = useMemo(
+    () => splitList(filters.flag).map((f) => FLAG_LABEL[f] ?? f),
+    [filters.flag]
+  );
 
-  // Filter States
-  const [selectedPeriode, setSelectedPeriode] = useState([]);
-  const [selectedSegmen, setSelectedSegmen] = useState([]);
-  const [selectedNamaAm, setSelectedNamaAm] = useState([]);
-  const [selectedFlagging, setSelectedFlagging] = useState([]);
-  const [sortOrder, setSortOrder] = useState('Sort by'); // 'Sort by', 'A-Z', 'Z-A'
+  const applyFilter = (key, values) => {
+    setFilter(key, values.join(','));
+    setPageIndex(0);
+  };
+  const setSelectedPeriode = (labels) => applyFilter('periode', labels.map((l) => periodeMaps.toValue[l] ?? l));
+  const handleSegmenFilterChange = (segs) => applyFilter('segmen', segs);
+  const setSelectedNamaAm = (names) => applyFilter('am', names);
+  const setSelectedFlagging = (labels) => applyFilter('flag', labels.map((l) => FLAG_KEY[l] ?? l));
+
+  const activeSegmen = selectedSegmen[0] ?? 'DGS';
 
   const handleModeChange = (newMode) => {
-    setMode(newMode);
-    setSelectedPeriode([]);
-    setSelectedNamaAm([]);
-    setSelectedFlagging([]);
+    setTab(MODE_TO_TAB[newMode]);
+    setSortOrder('Sort by');
     setPageIndex(0);
-
-    if (newMode === 'Nama CC') {
-      setSelectedSegmen(['DGS']);
-      setActiveSegmen('DGS');
-      setSortOrder('Sort by');
-    } else {
-      setSelectedSegmen([]);
-      setSortOrder('Sort by');
-    }
-  };
-
-  const handleSegmenFilterChange = (segs) => {
-    setSelectedSegmen(segs);
-    if (segs.length > 0 && ['RBS', 'DGS', 'DPS', 'DSS'].includes(segs[0])) {
-      setActiveSegmen(segs[0]);
-    } else if (segs.length === 0) {
-      setActiveSegmen('DGS');
-    }
   };
 
   const resetFilters = () => {
-    setSelectedPeriode([]);
-    if (mode === 'Nama CC') {
-      setSelectedSegmen(['DGS']);
-      setActiveSegmen('DGS');
-      setSortOrder('Sort by');
-    } else {
-      setSelectedSegmen([]);
-      setSortOrder('Sort by');
-    }
-    setSelectedNamaAm([]);
-    setSelectedFlagging([]);
+    resetUrlFilters();
+    setSortOrder('Sort by');
     setPageIndex(0);
   };
 
-  // Top 10 View is active ONLY for Nama CC
-  const isTop10View = mode === 'Nama CC';
+  const hasActiveFilters =
+    Object.keys(filters).some((k) => k !== 'upload_id') || (sortOrder !== 'Sort by' && sortOrder !== '');
 
-  // Check if any filter is currently active
-  const hasActiveFilters = useMemo(() => {
-    const isDefaultSegmen = isTop10View && selectedSegmen.length === 1 && selectedSegmen[0] === 'DGS';
-    return (
-      selectedPeriode.length > 0 ||
-      (!isDefaultSegmen && selectedSegmen.length > 0) ||
-      selectedNamaAm.length > 0 ||
-      selectedFlagging.length > 0 ||
-      (sortOrder !== 'Sort by' && sortOrder !== '')
-    );
-  }, [selectedPeriode, selectedSegmen, selectedNamaAm, selectedFlagging, sortOrder, isTop10View]);
+  // ── Data dari API ──
+  const summaryTab = isTop10View ? 'segmen' : tab;
+  const summaryQ = useEdkSummary(summaryTab, filters);
+  const cardsQ = useEdkCards(filters);
+  const topQ = useEdkTopCustomers({ ...filters, segmen: activeSegmen }, { limit: 10, enabled: isTop10View });
 
-  // Top 10 data for active segment (Nama CC)
-  const top10List = useMemo(() => {
-    let list = topPelangganBySegmen[activeSegmen] || topPelangganBySegmen['DGS'] || [];
-    let enriched = list.map((r) => {
-      const to = (r.lc || 0) + (r.lp || 0) + (r.tc || 0) + (r.tp || 0) + (r.k || 0) + (r.b || 0);
-      const ta2 = (r.la || 0) + (r.lpa || 0) + (r.ta || 0) + (r.tpa || 0) + (r.ka || 0) + (r.ba || 0);
-      return { ...r, to, ta2 };
-    });
+  // keepPreviousData: abaikan data tab lama selama data tab baru belum datang
+  const summary = summaryQ.data?.by === summaryTab ? summaryQ.data : null;
+  const lastUpdate = summary?.last_update ? new Date(summary.last_update) : null;
 
-    if (selectedPeriode.length > 0) {
-      enriched = enriched.filter((r) => selectedPeriode.includes(r.periode));
-    }
-    if (selectedFlagging.length > 0) {
-      enriched = enriched.filter((r) => selectedFlagging.includes(r.flagging));
-    }
+  const isLoading = summaryQ.isFetching || cardsQ.isFetching || (isTop10View && topQ.isFetching);
+  const apiError = summaryQ.error ?? cardsQ.error ?? (isTop10View ? topQ.error : null);
 
-    if (sortOrder === 'Nama (A-Z)' || sortOrder === 'A-Z' || sortOrder === 'Sort: Nama (A-Z)') {
-      return [...enriched].sort((a, b) => a.l.localeCompare(b.l));
-    }
-    if (sortOrder === 'Nama (Z-A)' || sortOrder === 'Z-A' || sortOrder === 'Sort: Nama (Z-A)') {
-      return [...enriched].sort((a, b) => b.l.localeCompare(a.l));
-    }
-    if (sortOrder === 'Order Terbanyak' || sortOrder === 'Sort: Order Terbanyak') {
-      return [...enriched].sort((a, b) => (b.to || 0) - (a.to || 0));
-    }
-    if (sortOrder === 'Abonemen Tertinggi' || sortOrder === 'Sort: Abonemen Tertinggi') {
-      return [...enriched].sort((a, b) => (b.ta2 || 0) - (a.ta2 || 0));
-    }
-    return enriched;
-  }, [activeSegmen, sortOrder, selectedPeriode, selectedFlagging]);
-
-  const top10TotalAbonemen = useMemo(() => {
-    return top10List.reduce((acc, r) => acc + (r.ta2 || 0), 0);
-  }, [top10List]);
-
-  // General dataset for Segmen, Periode EDK & Nama AM
-  const data = useMemo(() => {
-    let list =
-  mode === 'Segmen' && apiSegmen.length > 0
-    ? apiSegmen.map((r) => ({
-        ...r,
-        l: r.segment,
-        segmen: r.segment,
-        lc: Number(r.lanjut_complete_order) || 0,
-        la: Number(r.lanjut_complete_abonemen_rp) || 0,
-        lp: Number(r.lanjut_in_progress_order) || 0,
-        lpa: Number(r.lanjut_in_progress_abonemen_rp) || 0,
-        tc: Number(r.tidak_lanjut_complete_order) || 0,
-        ta: Number(r.tidak_lanjut_complete_abonemen_rp) || 0,
-        tp: Number(r.tidak_lanjut_in_progress_order) || 0,
-        tpa: Number(r.tidak_lanjut_in_progress_abonemen_rp) || 0,
-        b: Number(r.bukan_witel_solo_jt_order) || 0,
-        ba: Number(r.bukan_witel_solo_jt_abonemen_rp) || 0,
-        k: Number(r.konfirmasi_am_order) || 0,
-        ka: Number(r.konfirmasi_am_abonemen_rp) || 0,
-        k_auto: Number(r.konfirmasi_am_auto_renewal) || 0,
-        k_prog: Number(r.konfirmasi_am_in_progress) || 0,
-        k_auto_a: Number(r.konfirmasi_am_auto_renewal_abonemen_rp) || 0,
-        k_prog_a: Number(r.konfirmasi_am_in_progress_abonemen_rp) || 0,
-      }))
-    : modes[mode] || [];
-
-    if (selectedPeriode.length > 0) {
-      list = list.filter((r) => selectedPeriode.includes(r.periode) || selectedPeriode.includes(r.l));
-    }
-    if (selectedSegmen.length > 0) {
-      list = list.filter((r) => {
-        if (selectedSegmen.includes(r.segmen)) return true;
-        if (selectedSegmen.includes(r.l)) return true;
-        if (r.subgroup && selectedSegmen.some((s) => r.subgroup.includes(s))) return true;
-        return false;
-      });
-    }
-    if (selectedNamaAm.length > 0) {
-      list = list.filter((r) => selectedNamaAm.includes(r.namaAm) || selectedNamaAm.includes(r.l));
-    }
-    if (selectedFlagging.length > 0) {
-      list = list.filter((r) => selectedFlagging.includes(r.flagging));
-    }
-
-    
-return list.map((r) => {
-  const sumOrder =
-    (r.lc || 0) + (r.lp || 0) + (r.tc || 0) + (r.tp || 0) + (r.k || 0) + (r.b || 0);
-
-  const apiTotal = Number(r.total_order) || 0;
-  const to = mode === 'Segmen' && apiTotal > 0 ? apiTotal : sumOrder;
-
-  const ta2 =
-    (r.la || 0) + (r.lpa || 0) + (r.ta || 0) + (r.tpa || 0) + (r.ka || 0) + (r.ba || 0);
-
-  return { ...r, to, ta2 };
-});
-
-  }, [mode, apiSegmen, selectedPeriode, selectedSegmen, selectedNamaAm, selectedFlagging]);
-
-  // Grand Total for Periode EDK & Segmen
-  
-const grandTotal = useMemo(() => {
-    const useApi = mode === 'Segmen' && apiSegmen.length > 0;
-
-    const list = useApi
-      ? apiSegmen.map((r) => ({
-          lc: Number(r.lanjut_complete_order) || 0,
-          la: Number(r.lanjut_complete_abonemen_rp) || 0,
-          lp: Number(r.lanjut_in_progress_order) || 0,
-          lpa: Number(r.lanjut_in_progress_abonemen_rp) || 0,
-          tc: Number(r.tidak_lanjut_complete_order) || 0,
-          ta: Number(r.tidak_lanjut_complete_abonemen_rp) || 0,
-          tp: Number(r.tidak_lanjut_in_progress_order) || 0,
-          tpa: Number(r.tidak_lanjut_in_progress_abonemen_rp) || 0,
-          k: Number(r.konfirmasi_am_order) || 0,
-          ka: Number(r.konfirmasi_am_abonemen_rp) || 0,
-          k_auto: Number(r.konfirmasi_am_auto_renewal) || 0,
-          k_prog: Number(r.konfirmasi_am_in_progress) || 0,
-          k_auto_a: Number(r.konfirmasi_am_auto_renewal_abonemen_rp) || 0,
-          k_prog_a: Number(r.konfirmasi_am_in_progress_abonemen_rp) || 0,
-          b: Number(r.bukan_witel_solo_jt_order) || 0,
-          ba: Number(r.bukan_witel_solo_jt_abonemen_rp) || 0,
-        }))
-      : modes[mode] || [];
-
-  return list.reduce(
-    (acc, r) => ({
-      lc: acc.lc + (r.lc || 0),
-      la: acc.la + (r.la || 0),
-      lp: acc.lp + (r.lp || 0),
-      lpa: acc.lpa + (r.lpa || 0),
-      tc: acc.tc + (r.tc || 0),
-      ta: acc.ta + (r.ta || 0),
-      tp: acc.tp + (r.tp || 0),
-      tpa: acc.tpa + (r.tpa || 0),
-      k: acc.k + (r.k || 0),
-      ka: acc.ka + (r.ka || 0),
-      k_auto: acc.k_auto + (r.k_auto || 0),
-      k_prog: acc.k_prog + (r.k_prog || 0),
-      k_auto_a: (acc.k_auto_a || 0) + (r.k_auto_a || 0),
-      k_prog_a: (acc.k_prog_a || 0) + (r.k_prog_a || 0),
-      b: acc.b + (r.b || 0),
-      ba: acc.ba + (r.ba || 0),
-      to:
-        acc.to +
-        (r.lc || 0) +
-        (r.lp || 0) +
-        (r.tc || 0) +
-        (r.tp || 0) +
-        (r.k || 0) +
-        (r.b || 0),
-      ta2:
-        acc.ta2 +
-        (r.la || 0) +
-        (r.lpa || 0) +
-        (r.ta || 0) +
-        (r.tpa || 0) +
-        (r.ka || 0) +
-        (r.ba || 0),
-    }),
-    {
-  lc: 0, la: 0, lp: 0, lpa: 0,
-  tc: 0, ta: 0, tp: 0, tpa: 0,
-  k: 0, ka: 0, k_auto: 0, k_prog: 0,
-  k_auto_a: 0, k_prog_a: 0,
-  b: 0, ba: 0, to: 0, ta2: 0,
-}
+  const data = useMemo(
+    () => (isTop10View ? [] : (summary?.rows ?? []).map(toRow)),
+    [summary, isTop10View]
   );
-}, [mode, apiSegmen]);
 
+  const grandTotal = useMemo(() => toRow(summary?.total), [summary]);
 
-  // Groups for Nama AM (with dynamic subtotal recalculation when filters active)
+  // ── Top 10 pelanggan (tab Nama CC) ──
+  const top10List = useMemo(() => {
+    const list = (topQ.data?.rows ?? []).map(toRow);
+    if (sortOrder === 'Nama (A-Z)') return [...list].sort((a, b) => a.l.localeCompare(b.l));
+    if (sortOrder === 'Nama (Z-A)') return [...list].sort((a, b) => b.l.localeCompare(a.l));
+    if (sortOrder === 'Order Terbanyak') return [...list].sort((a, b) => b.to - a.to);
+    return list; // default & "Abonemen Tertinggi" sudah urut dari backend
+  }, [topQ.data, sortOrder]);
+
+  const top10TotalAbonemen = topQ.data?.total_abonemen ?? 0;
+
+  // ── Grup Nama AM + subtotal per segmen ──
   const amGroups = useMemo(() => {
     if (mode !== 'Nama AM') return [];
-    const list = data;
-    const groups = [];
-    const map = new Map();
 
-    list.forEach((item) => {
-      const groupKey = item.subgroup || 'Segmen DGS';
-      if (!map.has(groupKey)) {
-        const groupObj = {
-          name: groupKey,
-          items: []
-        };
-        map.set(groupKey, groupObj);
-        groups.push(groupObj);
-      }
-      map.get(groupKey).items.push(item);
+    const map = new Map();
+    data.forEach((item) => {
+      const name = `Segmen ${item.segmen ?? '(Kosong)'}`;
+      if (!map.has(name)) map.set(name, { name, items: [] });
+      map.get(name).items.push(item);
     });
 
+    const groups = [...map.values()];
     groups.forEach((g) => {
-      if (!hasActiveFilters && AM_GROUP_SUBTOTALS[g.name]) {
-        g.subtotal = AM_GROUP_SUBTOTALS[g.name];
-      } else {
-        const auto_order = g.items.reduce((acc, it) => acc + (it.k_auto || 0), 0);
-        const auto_abon = g.items.reduce((acc, it) => acc + (it.k_auto_a || 0), 0);
-        const inprog_order = g.items.reduce((acc, it) => acc + (it.k_prog || 0), 0);
-        const inprog_abon = g.items.reduce((acc, it) => acc + (it.k_prog_a || 0), 0);
-        g.subtotal = { auto_order, auto_abon, inprog_order, inprog_abon };
-      }
+      if (sortOrder === 'Nama (A-Z)') g.items.sort((a, b) => a.l.localeCompare(b.l));
+      if (sortOrder === 'Nama (Z-A)') g.items.sort((a, b) => b.l.localeCompare(a.l));
+      g.subtotal = {
+        auto_order: sumBy(g.items, 'k_auto'),
+        auto_abon: sumBy(g.items, 'k_auto_a'),
+        inprog_order: sumBy(g.items, 'k_prog'),
+        inprog_abon: sumBy(g.items, 'k_prog_a')
+      };
     });
 
     return groups;
-  }, [mode, data, hasActiveFilters]);
+  }, [mode, data, sortOrder]);
 
-  // Active count for pagination
   const activeCount = isTop10View ? top10List.length : data.length;
-  
+
+  // ── KPI cards dari /edk/cards ──
   const kpiMetrics = useMemo(() => {
-    const currentList = isTop10View ? top10List : data;
-    const totalOrder = currentList.reduce((acc, r) => acc + (r.to || 0), 0);
-    const totalAbonemen = currentList.reduce((acc, r) => acc + (r.ta2 || 0), 0);
-    const inProgress = currentList.reduce(
-      (acc, r) => acc + ((r.lp || 0) + (r.tp || 0) + (r.k_prog || 0)),
-      0
-    );
-    const complete = currentList.reduce(
-      (acc, r) => acc + ((r.lc || 0) + (r.tc || 0) + (r.k_auto || 0)),
-      0
-    );
-
-    const inProgressPercent =
-      totalOrder > 0 ? `${((inProgress / totalOrder) * 100).toFixed(1)}%` : '0%';
-    const completePercent =
-      totalOrder > 0 ? `${((complete / totalOrder) * 100).toFixed(1)}%` : '0%';
-
+    const c = cardsQ.data;
+    const pct = (v) => (v === null || v === undefined ? '0%' : `${v.toFixed(1)}%`);
     return {
-      totalOrder,
-      totalAbonemen,
-      inProgress,
-      inProgressPercent,
-      complete,
-      completePercent
+      totalOrder: c?.total_order?.value ?? 0,
+      totalAbonemen: c?.total_abonemen?.value ?? 0,
+      inProgress: c?.in_progress?.value ?? 0,
+      inProgressPercent: pct(c?.in_progress?.pct_of_total),
+      complete: c?.complete?.value ?? 0,
+      completePercent: pct(c?.complete?.pct_of_total),
+      orderDelta: c?.total_order?.delta_pct ?? null,
+      abonemenDelta: c?.total_abonemen?.delta_pct ?? null
     };
-  }, [hasActiveFilters, mode, isTop10View, top10List, data]);
+  }, [cardsQ.data]);
 
+  // ── Export & link ──
+  const handleExport = () => {
+    edkApi
+      .exportFile(filters, isTop10View ? 'segmen' : tab, 'xlsx')
+      .catch((err) => alert(err.message || 'Gagal export file.'));
+  };
+
+  const getReportLink = () => {
+    const url = new URL(window.location.href);
+    if (summary?.upload_id) url.searchParams.set('upload_id', summary.upload_id);
+    return url.toString();
+  };
   return (
     <div id="edk-main-content" className="space-y-4">
       {/* 1. Page Header */}
@@ -650,19 +508,31 @@ const grandTotal = useMemo(() => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Upload Report Button */}
+          {/* Upload Report Button (khusus admin) */}
+          {canManage && (
+            <button
+              type="button"
+              onClick={() => setShowUpload(true)}
+              className="bg-white hover:bg-slate-50 border border-slate-200/90 text-slate-700 text-xs font-semibold px-3.5 py-2 rounded-lg flex items-center gap-2 shadow-2xs transition-colors cursor-pointer"
+            >
+              <Upload size={14} className="text-slate-500" />
+              <span>Upload Report</span>
+            </button>
+          )}
+
+          {/* Riwayat Upload Button */}
           <button
             type="button"
-            onClick={() => setShowUpload(true)}
+            onClick={() => setShowHistory(true)}
             className="bg-white hover:bg-slate-50 border border-slate-200/90 text-slate-700 text-xs font-semibold px-3.5 py-2 rounded-lg flex items-center gap-2 shadow-2xs transition-colors cursor-pointer"
           >
-            <Upload size={14} className="text-slate-500" />
-            <span>Upload Report</span>
+            <History size={14} className="text-slate-500" />
+            <span>Riwayat Upload</span>
           </button>
 
           {/* Export Dropdown Button */}
           <ExportButton
-            onClick={() => exportCSV(isTop10View ? top10List : data, `EDK_Monitoring_${mode}`)}
+            onClick={handleExport}
             filename={`EDK_Monitoring_${mode}`}
           />
 
@@ -671,9 +541,27 @@ const grandTotal = useMemo(() => {
             buttonLabel="Salin & Bagikan"
             captureSelector="#edk-main-content"
             tableSelector="table"
+            getLink={getReportLink}
           />
         </div>
       </div>
+
+      {/* Banner: tampilan dikunci ke snapshot tertentu */}
+      {filters.upload_id && (
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
+          <span>
+            Tampilan dikunci ke snapshot <b>#{filters.upload_id}</b>
+            {lastUpdate ? <> (laporan {formatLastUpdate(lastUpdate)})</> : null}.
+          </span>
+          <button
+            type="button"
+            onClick={() => setFilter('upload_id', '')}
+            className="font-bold text-amber-900 hover:underline cursor-pointer"
+          >
+            Kembali ke data aktif
+          </button>
+        </div>
+      )}
 
       {/* 2. KPI Cards (Dinamis Bereaksi Terhadap Filter) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -685,10 +573,7 @@ const grandTotal = useMemo(() => {
           <p className="text-[28px] font-bold text-slate-900 tracking-tight mt-1">
             {cellFmt(kpiMetrics.totalOrder)}
           </p>
-          <p className="text-xs mt-1.5 flex items-center gap-1 text-emerald-600 font-semibold">
-            <span>+12%</span>
-            <span className="text-slate-400 font-normal">dari periode sebelumnya</span>
-          </p>
+          <DeltaText value={kpiMetrics.orderDelta} />
         </div>
 
         {/* Total Abonemen */}
@@ -699,10 +584,7 @@ const grandTotal = useMemo(() => {
           <p className="text-[28px] font-extrabold text-slate-900 tracking-tight mt-1">
             Rp {formatRupiah(kpiMetrics.totalAbonemen)}
           </p>
-          <p className="text-xs mt-1.5 flex items-center gap-1 text-emerald-600 font-semibold">
-            <span>+8%</span>
-            <span className="text-slate-400 font-normal">dari periode sebelumnya</span>
-          </p>
+          <DeltaText value={kpiMetrics.abonemenDelta} />
         </div>
 
         {/* In Progress */}
@@ -807,9 +689,17 @@ const grandTotal = useMemo(() => {
           <div className="flex items-center gap-2.5">
             <span className="size-2.5 rounded-full bg-[#2563EB]" />
             <span className="text-slate-500 font-medium">Last Update :</span>
-                      <b className="font-bold text-slate-800">
-                        {lastUpdate ? formatLastUpdate(lastUpdate) : 'Belum ada update'}
-                      </b>
+            <b className="font-bold text-slate-800">
+              {lastUpdate ? formatLastUpdate(lastUpdate) : 'Belum ada update'}
+            </b>
+            {isLoading && <span className="text-slate-400">Memuat data…</span>}
+            {apiError && (
+              <span className="text-rose-600 font-semibold">
+                {apiError.status === 404
+                  ? 'Belum ada data. Silakan upload report EDK.'
+                  : apiError.message}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 bg-slate-100/90 p-1.5 rounded-xl border border-slate-200/80 shrink-0">
@@ -847,7 +737,7 @@ const grandTotal = useMemo(() => {
                     Top 10 Pelanggan – Segmen {activeSegmen}
                   </h2>
                   <p className="text-xs text-white/80 mt-0.5">
-                    Berdasarkan total abonemen terbesar (Rp) dari data EDX Treg3 September 2026
+                    Berdasarkan total abonemen terbesar (Rp) • data update {lastUpdate ? formatLastUpdate(lastUpdate) : '-'}
                   </p>
                 </div>
               </div>
@@ -1965,14 +1855,23 @@ const grandTotal = useMemo(() => {
       </section>
 
       {/* Upload Report Modal */}
-      <UploadModal 
-        setLastUpdate={setLastUpdate}
-        open={showUpload} 
-        onClose={() => setShowUpload(false)} 
-              onSuccess={() => {
-                setRefreshKey((key) => key + 1);
-              }}
-            />
+      <UploadModal
+        open={showUpload}
+        onClose={() => setShowUpload(false)}
+        onUploaded={() => setFilter('upload_id', '')}
+      />
+
+      {showHistory && (
+        <UploadHistoryModal
+          canActivate={canManage}
+          onClose={() => setShowHistory(false)}
+          viewingId={filters.upload_id ? Number(filters.upload_id) : null}
+          onView={(id) => {
+            setFilter('upload_id', id ? String(id) : '');
+            setPageIndex(0);
+          }}
+        />
+      )}
     </div>
   );
 }

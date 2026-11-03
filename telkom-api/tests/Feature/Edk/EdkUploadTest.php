@@ -23,7 +23,7 @@ class EdkUploadTest extends TestCase
     {
         parent::setUp();
         Storage::fake('local');
-        Sanctum::actingAs(User::factory()->create());
+        Sanctum::actingAs(User::factory()->create(['role' => 'admin']));
     }
 
     private function upload(UploadedFile $file, string $date = '2026-11-02')

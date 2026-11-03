@@ -31,7 +31,7 @@ class EdkExportTest extends TestCase
     {
         parent::setUp();
         Storage::fake('local');
-        Sanctum::actingAs(User::factory()->create());
+        Sanctum::actingAs(User::factory()->create(['role' => 'admin']));
 
         $ss = new Spreadsheet();
         $ss->getActiveSheet()->setTitle('DATA_EDK')->fromArray([self::HEADERS, ...self::ROWS]);

@@ -29,7 +29,7 @@ class EdkSummaryTest extends TestCase
     {
         parent::setUp();
         Storage::fake('local');
-        Sanctum::actingAs(User::factory()->create());
+        Sanctum::actingAs(User::factory()->create(['role' => 'admin']));
         $this->uploadRows(self::ROWS, '2026-11-02');
     }
 

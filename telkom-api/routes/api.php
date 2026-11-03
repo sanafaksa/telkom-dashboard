@@ -1,17 +1,27 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\KuadranController;
-use App\Http\Controllers\Api\MomSupportController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Edk\EdkExportController;
 use App\Http\Controllers\Edk\EdkSummaryController;
 use App\Http\Controllers\Edk\EdkUploadController;
 
-Route::prefix('edk')->group(function () {
-    // Upload snapshot
+// ===== Auth =====
+Route::prefix('auth')->group(function () {
+    Route::post('login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('me', [AuthController::class, 'me']);
+        Route::post('logout', [AuthController::class, 'logout']);
+    });
+});
+
+// ===== EDK =====
+Route::prefix('edk')->middleware('auth:sanctum')->group(function () {
+    // Upload snapshot (upload & rollback khusus admin)
     Route::get('uploads', [EdkUploadController::class, 'index']);
-    Route::post('uploads', [EdkUploadController::class, 'store']);
-    Route::post('uploads/{upload}/activate', [EdkUploadController::class, 'activate']);
+    Route::post('uploads', [EdkUploadController::class, 'store'])->middleware('role:admin');
+    Route::post('uploads/{upload}/activate', [EdkUploadController::class, 'activate'])->middleware('role:admin');
     Route::get('template', [EdkUploadController::class, 'template']);
 
     // Query layer
@@ -23,17 +33,4 @@ Route::prefix('edk')->group(function () {
 
     // Export
     Route::get('export', [EdkExportController::class, 'export']);
-});
-
-Route::prefix('kuadran')->group(function () {
-    Route::get('/', [KuadranController::class, 'index']);
-    Route::post('/sync', [KuadranController::class, 'sync']);
-    Route::delete('/{bulan}', [KuadranController::class, 'destroyMonth']);
-});
-
-Route::prefix('mom-support')->group(function () {
-    Route::get('/', [MomSupportController::class, 'index']);
-    Route::post('/sync', [MomSupportController::class, 'sync']);
-    Route::put('/{id}', [MomSupportController::class, 'update']);
-    Route::post('/reset', [MomSupportController::class, 'reset']);
 });

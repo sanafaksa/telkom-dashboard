@@ -28,6 +28,12 @@ function buildHeaders(extra = {}) {
 async function handle(res) {
   if (res.ok) return res.status === 204 ? null : res.json();
 
+  if (res.status === 401) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('telkom_user');
+    if (window.location.pathname !== '/login') window.location.assign('/login');
+  }
+
   let data = null;
   try {
     data = await res.json();

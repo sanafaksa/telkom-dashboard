@@ -1,6 +1,12 @@
 import { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
+import { isLoggedIn } from './features/auth/auth';
+
+function RequireAuth({ children }) {
+  const location = useLocation();
+  return isLoggedIn() ? children : <Navigate to="/login" replace state={{ from: location }} />;
+}
 
 const P = (n) => lazy(() => import(`./pages/${n}.jsx`));
 const Dashboard = P('Dashboard');
@@ -28,7 +34,8 @@ export default function App() {
         <Route
           path="/*"
           element={
-            <Layout>
+            <RequireAuth>
+              <Layout>
               <Routes>
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/dashboard" element={<Dashboard />} />
@@ -40,6 +47,7 @@ export default function App() {
                 <Route path="*" element={<NF />} />
               </Routes>
             </Layout>
+            </RequireAuth>
           }
         />
       </Routes>

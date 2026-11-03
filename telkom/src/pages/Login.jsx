@@ -14,6 +14,7 @@ import {
   Moon
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { login } from '../features/auth/auth';
 
 export default function Login() {
   const { isDark, toggleTheme } = useTheme();
@@ -26,35 +27,19 @@ export default function Login() {
   const [error, setError] = useState('');
   const [forgotModal, setForgotModal] = useState(false);
 
-  const startLoginSequence = (targetEmail, roleTitle = 'Executive Lead') => {
-    setError('');
-    setAuthStatus('verifying');
+  // Animasi pintu setelah backend menyatakan login berhasil
+  const startLoginSequence = () => {
+    setAuthStatus('granted');
 
-    // Tahap 1: Verifikasi cepat kredensial (250ms)
     setTimeout(() => {
-      setAuthStatus('granted');
-      localStorage.setItem(
-        'telkom_user',
-        JSON.stringify({
-          name: 'DU — Dashboard Utama',
-          email: targetEmail,
-          role: roleTitle
-        })
-      );
-
-      // Tahap 2: Animasi Pintu Otomatis Geser Kiri-Kanan (150ms setelah granted)
+      setAuthStatus('opening_up');
       setTimeout(() => {
-        setAuthStatus('opening_up');
-
-        // Tahap 3: Navigasi ke Dashboard di penghujung slide pintu terbuka (750ms)
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 750);
-      }, 150);
-    }, 250);
+        navigate('/dashboard');
+      }, 750);
+    }, 150);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email.trim()) {
       setError('Silakan masukkan email Telkom atau NIK Anda.');
@@ -64,7 +49,25 @@ export default function Login() {
       setError('Silakan masukkan kata sandi.');
       return;
     }
-    startLoginSequence(email);
+
+    setError('');
+    setAuthStatus('verifying');
+
+    try {
+      await login(email.trim(), password, rememberMe);
+      startLoginSequence();
+    } catch (err) {
+      setAuthStatus('idle');
+      if (err?.status === 422) {
+        setError(err.data?.errors?.login?.[0] ?? err.message);
+      } else if (err?.status === 429) {
+        setError('Terlalu banyak percobaan login. Coba lagi dalam 1 menit.');
+      } else if (err?.status) {
+        setError(err.message);
+      } else {
+        setError('Tidak dapat terhubung ke server. Pastikan backend Laravel berjalan.');
+      }
+    }
   };
 
   const isTransitioning = authStatus === 'opening_up';
