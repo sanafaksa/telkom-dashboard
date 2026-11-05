@@ -20,6 +20,7 @@ Route::prefix('auth')->group(function () {
 // ===== EDK =====
 Route::prefix('edk')->middleware('auth:sanctum')->group(function () {
     // Upload snapshot (upload & rollback khusus admin)
+    Route::get('populations', [EdkUploadController::class, 'populations']);
     Route::get('uploads', [EdkUploadController::class, 'index']);
     Route::post('uploads', [EdkUploadController::class, 'store'])->middleware('role:admin');
     Route::post('uploads/{upload}/activate', [EdkUploadController::class, 'activate'])->middleware('role:admin');
@@ -30,6 +31,7 @@ Route::prefix('edk')->middleware('auth:sanctum')->group(function () {
         ->whereIn('by', ['segmen', 'periode', 'am', 'cc']);
     Route::get('cards', [EdkSummaryController::class, 'cards']);
     Route::get('options', [EdkSummaryController::class, 'options']);
+    Route::get('top-customers/detail', [EdkSummaryController::class, 'customerDetails']);
     Route::get('top-customers', [EdkSummaryController::class, 'topCustomers']);
 
     // Export

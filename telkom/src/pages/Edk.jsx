@@ -17,6 +17,7 @@ import {
   ChevronDown,
   Download,
   History
+  ,Eye
 } from 'lucide-react';
 import { useEdkFilters } from '../features/edk/useEdkFilters';
 import {
@@ -24,7 +25,9 @@ import {
   useEdkOptions,
   useEdkSummary,
   useEdkTopCustomers,
-  useUploadEdk
+  useUploadEdk,
+  useEdkPopulations,
+  useEdkCustomerDetails
 } from '../features/edk/queries';
 import { edkApi } from '../features/edk/api';
 import UploadHistoryModal from '../features/edk/UploadHistoryModal';
@@ -62,8 +65,20 @@ const toTitleCase = (str) => {
 
 // ───────────────────────── Konstanta & helper API ─────────────────────────
 
-const MODE_TO_TAB = { Segmen: 'segmen', 'Periode EDK': 'periode', 'Nama AM': 'am', 'Nama CC': 'cc' };
-const TAB_TO_MODE = { segmen: 'Segmen', periode: 'Periode EDK', am: 'Nama AM', cc: 'Nama CC' };
+const MODE_TO_TAB = { Segmen: 'segmen', 'Periode EDK': 'periode', 'Nama AM': 'am', Status: 'cc' };
+const TAB_TO_MODE = { segmen: 'Segmen', periode: 'Periode EDK', am: 'Nama AM', cc: 'Status' };
+const STATUS_TABS = [
+  { value: 'lanjut', label: 'Lanjut' },
+  { value: 'tidak_lanjut', label: 'Tidak Lanjut' },
+  { value: 'konfirmasi_am', label: 'Konfirmasi AM' },
+  { value: 'bukan_witel_solo_jt', label: 'Bukan Witel Solo JT' }
+];
+const STATUS_PROGRESS = {
+  lanjut: [['all', 'All'], ['complete', 'Complete'], ['in_progress', 'In Progress']],
+  tidak_lanjut: [['all', 'All'], ['complete', 'Complete'], ['in_progress', 'In Progress']],
+  konfirmasi_am: [['all', 'All'], ['autorenewal', 'Auto Renewal'], ['in_progress', 'In Progress']],
+  bukan_witel_solo_jt: [['all', 'All'], ['complete', 'Complete'], ['in_progress', 'In Progress']]
+};
 
 const FLAG_LABEL = { NEW: 'Baru', UPDATED: 'Berubah', UNCHANGED: 'Tidak Berubah' };
 const FLAG_KEY = { Baru: 'NEW', Berubah: 'UPDATED', 'Tidak Berubah': 'UNCHANGED' };
@@ -76,6 +91,182 @@ const todayLocal = () => {
   const d = new Date();
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 };
+
+function StatusPanel({
+  status,
+  onStatusChange,
+  progress,
+  onProgressChange,
+  rows,
+  totalAbonemen,
+  isLoading,
+  error,
+  pageIndex,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
+  detailKey,
+  detailQuery,
+  onOpenDetail,
+  onCloseDetail,
+  onDashboardModeChange
+}) {
+  const visibleRows = rows.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  const statusLabel = STATUS_TABS.find((item) => item.value === status)?.label ?? status;
+
+  const formatProgress = (value) => ({
+    COMPLETE: 'Complete',
+    IN_PROGRESS: 'In Progress',
+    AUTO_RENEWAL: 'Auto Renewal'
+  }[value] ?? value);
+
+  return (
+    <section className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+      <div className="px-5 pt-4 flex justify-end">
+        <div className="flex items-center gap-1 bg-slate-100/90 p-1.5 rounded-xl border border-slate-200/80">
+          {['Segmen', 'Periode EDK', 'Nama AM', 'Status'].map((item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => onDashboardModeChange(item)}
+              className={`px-3.5 py-2 text-xs font-semibold rounded-lg cursor-pointer ${item === 'Status' ? 'bg-[#1D4ED8] text-white shadow-xs' : 'text-slate-600 hover:bg-white/70'}`}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="p-5">
+        <div className="bg-gradient-to-r from-[#0F4FC2] via-[#1A54C8] to-[#1E52BF] text-white p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+          <div>
+            <h2 className="text-lg md:text-xl font-bold tracking-tight">Top 10 Pelanggan - Nama CC</h2>
+            <p className="text-xs text-white/80 mt-1">ENTERPRISE SOLO · Distribusi abonemen dan utilisasi layanan per Customer Code</p>
+          </div>
+          <div className="text-left sm:text-right">
+            <p className="text-[11px] font-bold tracking-wider text-white/80 uppercase">TOTAL ABONEMEN (TOP 10)</p>
+            <p className="text-2xl md:text-[26px] font-extrabold tracking-tight mt-0.5">Rp {Number(totalAbonemen || 0).toLocaleString('id-ID')}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-y border-slate-100">
+        <div className="flex items-center gap-1 overflow-x-auto">
+          {STATUS_TABS.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              onClick={() => onStatusChange(item.value)}
+              className={`px-3.5 py-2 text-xs font-semibold rounded-lg whitespace-nowrap cursor-pointer ${status === item.value ? 'bg-[#1D4ED8] text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+        <label className="flex items-center gap-2 text-xs text-slate-500 shrink-0">
+          <span className="font-semibold">Progress</span>
+          <select
+            value={progress}
+            onChange={(e) => onProgressChange(e.target.value)}
+            className="h-8 min-w-[140px] px-2.5 border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:border-[#1D8BCB]"
+          >
+            {STATUS_PROGRESS[status].map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+        </label>
+      </div>
+
+      <div className="px-5 py-3 text-xs text-slate-500 flex items-center gap-2">
+        <span className="size-2 rounded-full bg-[#2563EB]" />
+        <span className="font-semibold text-slate-700">{statusLabel}</span>
+        <span>· Top 10 pelanggan berdasarkan abonemen</span>
+      </div>
+
+      {isLoading ? (
+        <div className="px-5 py-16 text-center text-sm text-slate-400">Memuat data Status…</div>
+      ) : error ? (
+        <div className="px-5 py-16 text-center text-sm text-rose-600">{error.message}</div>
+      ) : rows.length === 0 ? (
+        <div className="px-5 py-16 text-center text-sm text-slate-400">Tidak ada pelanggan pada kombinasi Status dan Progress ini.</div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[760px] text-xs">
+            <thead className="bg-slate-50 text-slate-600">
+              <tr>
+                <th className="px-5 py-3 text-center font-bold w-12">#</th>
+                <th className="px-4 py-3 text-left font-bold">Nama Pelanggan / Akun Entitas</th>
+                <th className="px-4 py-3 text-right font-bold">Order</th>
+                <th className="px-4 py-3 text-right font-bold">Abonemen (Rp)</th>
+                <th className="px-4 py-3 text-left font-bold">Status Progress</th>
+                <th className="px-5 py-3 text-center font-bold">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleRows.map((row, index) => (
+                <tr key={row.customer_key ?? `${row.nama_pelanggan}-${index}`} className="border-t border-slate-100 hover:bg-blue-50/30">
+                  <td className="px-5 py-3 text-center text-slate-500">{pageIndex * pageSize + index + 1}</td>
+                  <td className="px-4 py-3">
+                    <div className="font-semibold text-slate-800">{row.nama_pelanggan || row.l || '(Kosong)'}</div>
+                    <div className="mt-1 text-[11px] text-slate-400">
+                      {[row.segmen && `Segmen ${row.segmen}`, row.nama_am && `AM ${row.nama_am}`].filter(Boolean).join(' · ') || 'Metadata tidak tersedia'}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums font-semibold text-slate-700">{cellFmt(row.total_order ?? row.to)}</td>
+                  <td className="px-4 py-3 text-right tabular-nums font-semibold text-slate-700">{formatRupiah(row.total_abonemen ?? row.ta2)}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {String(row.progress ?? '').split(',').filter(Boolean).map((value) => (
+                        <span
+                          key={value}
+                          className={`px-2 py-1 rounded-full border font-semibold ${value === 'IN_PROGRESS' ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-blue-50 text-blue-700 border-blue-100'}`}
+                        >
+                          {formatProgress(value)}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="px-5 py-3 text-center">
+                    <button type="button" onClick={() => onOpenDetail(row.customer_key ?? row.nama_pelanggan)} className="inline-flex items-center justify-center size-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-blue-50 hover:text-blue-700 cursor-pointer" title="Lihat detail">
+                      <Eye size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-t border-slate-100 text-xs text-slate-500">
+        <span>Menampilkan {rows.length ? pageIndex * pageSize + 1 : 0}–{Math.min((pageIndex + 1) * pageSize, rows.length)} dari {rows.length} pelanggan</span>
+        <div className="flex items-center gap-2">
+          <select value={pageSize} onChange={(e) => onPageSizeChange(Number(e.target.value))} className="h-8 px-2 border border-slate-200 rounded-lg bg-white cursor-pointer">
+            {[5, 10].map((size) => <option key={size} value={size}>{size} baris</option>)}
+          </select>
+          <button type="button" disabled={pageIndex === 0} onClick={() => onPageChange(Math.max(0, pageIndex - 1))} className="size-8 rounded-lg border border-slate-200 disabled:opacity-40 cursor-pointer"><ChevronLeft size={14} className="mx-auto" /></button>
+          <span>{pageIndex + 1}/{totalPages}</span>
+          <button type="button" disabled={pageIndex >= totalPages - 1} onClick={() => onPageChange(Math.min(totalPages - 1, pageIndex + 1))} className="size-8 rounded-lg border border-slate-200 disabled:opacity-40 cursor-pointer"><ChevronRight size={14} className="mx-auto" /></button>
+        </div>
+      </div>
+
+      {detailKey && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={onCloseDetail} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[80vh] overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <div><h3 className="font-bold text-slate-900">Detail Pelanggan</h3><p className="text-xs text-slate-500 mt-1">{detailKey}</p></div>
+              <button type="button" onClick={onCloseDetail} className="size-8 grid place-items-center rounded-lg hover:bg-slate-100 cursor-pointer"><X size={16} /></button>
+            </div>
+            <div className="p-5 overflow-auto max-h-[60vh]">
+              {detailQuery.isFetching ? <p className="py-10 text-center text-sm text-slate-400">Memuat detail…</p> : detailQuery.error ? <p className="py-10 text-center text-sm text-rose-600">{detailQuery.error.message}</p> : detailQuery.data?.rows?.length ? (
+                <table className="w-full text-xs"><thead className="bg-slate-50"><tr><th className="px-3 py-2 text-left">SID</th><th className="px-3 py-2 text-left">Periode</th><th className="px-3 py-2 text-left">Status</th><th className="px-3 py-2 text-right">Order</th><th className="px-3 py-2 text-right">Abonemen</th></tr></thead><tbody>{detailQuery.data.rows.map((item) => <tr key={`${item.sid}-${item.periode_edk}`} className="border-t border-slate-100"><td className="px-3 py-2">{item.sid}</td><td className="px-3 py-2">{item.periode_edk ?? '-'}</td><td className="px-3 py-2">{item.status_utama} · {item.status_detail}</td><td className="px-3 py-2 text-right">{item.order_qty}</td><td className="px-3 py-2 text-right">{formatRupiah(item.abonemen)}</td></tr>)}</tbody></table>
+              ) : <p className="py-10 text-center text-sm text-slate-400">Detail tidak ditemukan.</p>}
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
 
 /** Baris API (snake_case) → bentuk lama yang dipakai JSX tabel (lc, la, lp, ... to, ta2) */
 const toRow = (r) => {
@@ -140,12 +331,26 @@ function UploadModal({ open, onClose, onUploaded }) {
   const [drag, setDrag] = useState(false);
   const [done, setDone] = useState(false);
   const [reportDate, setReportDate] = useState(todayLocal());
+  const [selectedPeriod, setSelectedPeriod] = useState('');
   const [uploadError, setUploadError] = useState(null);
   const fileInputRef = useRef(null);
 
   const uploadMutation = useUploadEdk();
   const uploading = uploadMutation.isPending;
-  const canUpload = files.length > 0 && !!reportDate && !uploading;
+  const periodYear = Number(reportDate.slice(0, 4));
+  const uploadPeriodOptions = Number.isInteger(periodYear)
+    ? [
+        { value: 'old', label: `<${periodYear}` },
+        ...Array.from({ length: 12 }, (_, index) => {
+          const month = String(index + 1).padStart(2, '0');
+          return { value: `${periodYear}${month}`, label: `${periodYear}${month}` };
+        })
+      ]
+    : [];
+  const activeUploadPeriod = uploadPeriodOptions.some((option) => option.value === selectedPeriod)
+    ? selectedPeriod
+    : '';
+  const canUpload = files.length > 0 && !!reportDate && !!activeUploadPeriod && !uploading;
 
   if (!open) return null;
 
@@ -174,7 +379,7 @@ function UploadModal({ open, onClose, onUploaded }) {
 
     try {
       await uploadMutation.mutateAsync({ file: files[0], reportDate });
-      onUploaded?.();
+      onUploaded?.(activeUploadPeriod);
       setDone(true);
       setTimeout(() => {
         setDone(false);
@@ -208,28 +413,33 @@ function UploadModal({ open, onClose, onUploaded }) {
         </div>
 
         <div className="px-6 py-5">
-          <div className="mb-3 flex items-end justify-between gap-3">
-            <div className="flex-1">
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Tanggal Laporan (Last Update)
-              </label>
+          <div className="mb-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="block">
+              <span className="block text-xs font-semibold text-slate-700 mb-1">Tanggal Laporan (Last Update)</span>
               <input
                 type="date"
                 value={reportDate}
                 onChange={(e) => setReportDate(e.target.value)}
                 className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-[#1D8BCB]"
               />
-            </div>
-            <button
-              type="button"
-              onClick={handleTemplate}
-              className="text-xs font-semibold text-[#2563EB] hover:underline flex items-center gap-1 cursor-pointer whitespace-nowrap pb-2"
-            >
-              <Download size={13} /> Download template
-            </button>
+            </label>
+            <label className="block">
+              <span className="block text-xs font-semibold text-slate-700 mb-1">Periode EDK</span>
+              <select
+                aria-label="Periode EDK untuk filter setelah upload"
+                value={activeUploadPeriod}
+                onChange={(e) => setSelectedPeriod(e.target.value)}
+                className="w-full px-3 py-[9px] text-xs border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:border-[#1D8BCB]"
+              >
+                <option value="">Pilih salah satu</option>
+                {uploadPeriodOptions.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </label>
           </div>
           <p className="mb-3 text-[11px] text-slate-400">
-            Periode EDK dibaca dari kolom PERIODE_EDK di file. Upload baru otomatis menjadi data aktif.
+            Gunakan sheet DATA_EDK dan format 9 kolom dari template EDK di bawah. Nilai PERIODE_EDK per baris tetap dibaca dari Excel; pilihan di atas hanya menjadi filter awal setelah upload.
           </p>
 
           {uploadError && (
@@ -301,6 +511,17 @@ function UploadModal({ open, onClose, onUploaded }) {
               ))}
             </div>
           )}
+
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-start gap-3">
+            <span className="text-xs font-semibold text-slate-600">Template EDK</span>
+            <button
+              type="button"
+              onClick={handleTemplate}
+              className="h-[34px] px-3 text-xs font-semibold text-[#2563EB] hover:bg-blue-50 border border-blue-100 rounded-lg flex items-center gap-1 cursor-pointer whitespace-nowrap"
+            >
+              <Download size={13} /> Unduh
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
@@ -339,7 +560,8 @@ function UploadModal({ open, onClose, onUploaded }) {
 export default function Edk() {
   const { filters, tab, setFilter, setTab, resetFilters: resetUrlFilters } = useEdkFilters();
   const mode = TAB_TO_MODE[tab] ?? 'Segmen';
-  const isTop10View = mode === 'Nama CC';
+  const isStatusView = mode === 'Status';
+  const isTop10View = isStatusView;
 
   const [showUpload, setShowUpload] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -347,9 +569,56 @@ export default function Edk() {
   const [pageSize, setPageSize] = useState(25);
   const [pageIndex, setPageIndex] = useState(0);
   const [sortOrder, setSortOrder] = useState('Sort by');
+  const [statusTab, setStatusTab] = useState('lanjut');
+  const [statusProgress, setStatusProgress] = useState({
+    lanjut: 'all',
+    tidak_lanjut: 'all',
+    konfirmasi_am: 'all',
+    bukan_witel_solo_jt: 'all'
+  });
+  const [statusPageSize, setStatusPageSize] = useState(5);
+  const [statusPageIndex, setStatusPageIndex] = useState(0);
+  const [detailKey, setDetailKey] = useState(null);
 
   // ── Opsi dropdown dari /edk/options ──
   const { data: options } = useEdkOptions(filters.upload_id);
+  const { data: populations } = useEdkPopulations();
+
+  const populationOptions = useMemo(
+    () => {
+      const completed = (populations ?? []).filter((upload) => upload.status === 'done');
+      const uploadsPerMonth = completed.reduce((counts, upload) => {
+        const monthKey = upload.report_date?.slice(0, 7) ?? `upload-${upload.id}`;
+        counts.set(monthKey, (counts.get(monthKey) ?? 0) + 1);
+        return counts;
+      }, new Map());
+
+      return completed.map((upload) => {
+        const monthKey = upload.report_date?.slice(0, 7) ?? `upload-${upload.id}`;
+        const date = upload.report_date ? new Date(`${upload.report_date}T00:00:00`) : null;
+        const month = date
+          ? date.toLocaleDateString('id-ID', { month: 'short' })
+          : null;
+        const uploadDate = upload.created_at ? new Date(upload.created_at) : null;
+        const versionLabel = (uploadsPerMonth.get(monthKey) ?? 0) > 1
+          ? upload.is_active
+            ? ' · Aktif'
+            : ` · ${uploadDate ? uploadDate.toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : `#${upload.id}`}`
+          : '';
+        return {
+          value: String(upload.id),
+          label: date
+            ? `${monthKey.replace('-', '')} - ${month}${versionLabel}`
+            : `Populasi ${upload.id}${versionLabel}`,
+          upload
+        };
+      });
+    },
+    [populations]
+  );
+
+  const activePopulationId = populationOptions.find((item) => item.upload.is_active)?.value ?? '';
+  const selectedPopulationId = filters.upload_id ?? activePopulationId;
 
   const filterOptions = useMemo(
     () => ({
@@ -384,6 +653,14 @@ export default function Edk() {
   const applyFilter = (key, values) => {
     setFilter(key, values.join(','));
     setPageIndex(0);
+    setStatusPageIndex(0);
+    setDetailKey(null);
+  };
+  const selectPopulation = (uploadId) => {
+    setFilter('upload_id', uploadId);
+    setPageIndex(0);
+    setStatusPageIndex(0);
+    setDetailKey(null);
   };
   const setSelectedPeriode = (labels) => applyFilter('periode', labels.map((l) => periodeMaps.toValue[l] ?? l));
   const handleSegmenFilterChange = (segs) => applyFilter('segmen', segs);
@@ -396,12 +673,16 @@ export default function Edk() {
     setTab(MODE_TO_TAB[newMode]);
     setSortOrder('Sort by');
     setPageIndex(0);
+    setStatusPageIndex(0);
+    setDetailKey(null);
   };
 
   const resetFilters = () => {
     resetUrlFilters();
     setSortOrder('Sort by');
     setPageIndex(0);
+    setStatusPageIndex(0);
+    setDetailKey(null);
   };
 
   const hasActiveFilters =
@@ -411,7 +692,16 @@ export default function Edk() {
   const summaryTab = isTop10View ? 'segmen' : tab;
   const summaryQ = useEdkSummary(summaryTab, filters);
   const cardsQ = useEdkCards(filters);
-  const topQ = useEdkTopCustomers({ ...filters, segmen: activeSegmen }, { limit: 10, enabled: isTop10View });
+  const activeStatusProgress = statusProgress[statusTab] ?? 'all';
+  const topQ = useEdkTopCustomers(
+    { ...filters, status: statusTab, progress: activeStatusProgress },
+    { limit: 10, enabled: isTop10View }
+  );
+  const detailQ = useEdkCustomerDetails(
+    { ...filters, status: statusTab, progress: activeStatusProgress },
+    detailKey,
+    { enabled: isStatusView }
+  );
 
   // keepPreviousData: abaikan data tab lama selama data tab baru belum datang
   const summary = summaryQ.data?.by === summaryTab ? summaryQ.data : null;
@@ -427,7 +717,7 @@ export default function Edk() {
 
   const grandTotal = useMemo(() => toRow(summary?.total), [summary]);
 
-  // ── Top 10 pelanggan (tab Nama CC) ──
+  // ── Top 10 pelanggan (tab Status) ──
   const top10List = useMemo(() => {
     const list = (topQ.data?.rows ?? []).map(toRow);
     if (sortOrder === 'Nama (A-Z)') return [...list].sort((a, b) => a.l.localeCompare(b.l));
@@ -437,6 +727,18 @@ export default function Edk() {
   }, [topQ.data, sortOrder]);
 
   const top10TotalAbonemen = topQ.data?.total_abonemen ?? 0;
+
+  const handleStatusChange = (nextStatus) => {
+    setStatusTab(nextStatus);
+    setStatusPageIndex(0);
+    setDetailKey(null);
+  };
+
+  const handleStatusProgressChange = (nextProgress) => {
+    setStatusProgress((current) => ({ ...current, [statusTab]: nextProgress }));
+    setStatusPageIndex(0);
+    setDetailKey(null);
+  };
 
   // ── Grup Nama AM + subtotal per segmen ──
   const amGroups = useMemo(() => {
@@ -555,7 +857,7 @@ export default function Edk() {
           </span>
           <button
             type="button"
-            onClick={() => setFilter('upload_id', '')}
+            onClick={() => selectPopulation('')}
             className="font-bold text-amber-900 hover:underline cursor-pointer"
           >
             Kembali ke data aktif
@@ -619,6 +921,24 @@ export default function Edk() {
       {/* 3. Filter Toolbar */}
       <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs">
         <div className="flex flex-wrap items-end gap-3 w-full">
+          <label className="flex-1 min-w-[190px]">
+            <span className="block text-[11px] font-semibold text-slate-500 mb-1">Bulan Populasi EDK</span>
+            <select
+              value={selectedPopulationId}
+              onChange={(e) => selectPopulation(e.target.value)}
+              disabled={populationOptions.length === 0}
+              className="w-full h-[32px] px-2.5 text-xs border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:border-[#1D8BCB] disabled:bg-slate-50 disabled:text-slate-400"
+            >
+              {populationOptions.length === 0 ? (
+                <option value="">Belum ada populasi sukses</option>
+              ) : (
+                populationOptions.map((item) => (
+                  <option key={item.value} value={item.value}>{item.label}</option>
+                ))
+              )}
+            </select>
+          </label>
+
           <FilterDropdown
             label="Periode EDK"
             options={filterOptions.periode}
@@ -653,7 +973,7 @@ export default function Edk() {
           />
 
           {/* Tampilkan Sort / Nama Pelanggan hanya pada mode selain Nama AM */}
-          {mode !== 'Nama AM' && (
+          {mode !== 'Nama AM' && !isStatusView && (
             <FilterDropdown
               label="Nama Pelanggan"
               options={['Sort by', 'Nama (A-Z)', 'Nama (Z-A)', 'Order Terbanyak', 'Abonemen Tertinggi']}
@@ -662,6 +982,24 @@ export default function Edk() {
               isSort
               className="flex-1 min-w-[130px]"
             />
+          )}
+
+          {isStatusView && (
+            <label className="flex-1 min-w-[190px]">
+              <span className="block text-[11px] font-semibold text-slate-500 mb-1">Cari Nama Pelanggan</span>
+              <input
+                type="search"
+                aria-label="Cari Nama Pelanggan"
+                value={filters.q ?? ''}
+                onChange={(e) => {
+                  setFilter('q', e.target.value);
+                  setStatusPageIndex(0);
+                  setDetailKey(null);
+                }}
+                placeholder="Nama pelanggan..."
+                className="w-full h-[32px] px-2.5 text-xs border border-slate-200 rounded-lg bg-white text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-[#1D8BCB]"
+              />
+            </label>
           )}
 
           <button
@@ -683,6 +1021,30 @@ export default function Edk() {
       </div>
 
       {/* 4. Table Card */}
+      {isStatusView ? (
+        <StatusPanel
+          status={statusTab}
+          onStatusChange={handleStatusChange}
+          progress={activeStatusProgress}
+          onProgressChange={handleStatusProgressChange}
+          rows={top10List}
+          totalAbonemen={top10TotalAbonemen}
+          isLoading={topQ.isFetching}
+          error={topQ.error}
+          pageIndex={statusPageIndex}
+          pageSize={statusPageSize}
+          onPageChange={setStatusPageIndex}
+          onPageSizeChange={(size) => {
+            setStatusPageSize(size);
+            setStatusPageIndex(0);
+          }}
+          detailKey={detailKey}
+          detailQuery={detailQ}
+          onOpenDetail={setDetailKey}
+          onCloseDetail={() => setDetailKey(null)}
+          onDashboardModeChange={handleModeChange}
+        />
+      ) : (
       <section className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
         {/* Table Header Status Bar */}
         <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4 text-xs">
@@ -703,7 +1065,7 @@ export default function Edk() {
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 bg-slate-100/90 p-1.5 rounded-xl border border-slate-200/80 shrink-0">
-              {['Segmen', 'Periode EDK', 'Nama AM', 'Nama CC'].map((m) => {
+              {['Segmen', 'Periode EDK', 'Nama AM', 'Status'].map((m) => {
                 const isActive = mode === m;
                 return (
                   <button
@@ -724,7 +1086,7 @@ export default function Edk() {
           </div>
         </div>
 
-        {/* Top 10 Pelanggan Banner Card (Hanya untuk Nama CC sesuai Screenshot 2 & 3) */}
+        {/* Top 10 Pelanggan Banner Card (sementara; akan diganti panel Status) */}
         {isTop10View && (
           <div className="p-5 pb-5">
             <div className="bg-gradient-to-r from-[#0F4FC2] via-[#1A54C8] to-[#1E52BF] text-white p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
@@ -1853,12 +2215,16 @@ export default function Edk() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Upload Report Modal */}
       <UploadModal
         open={showUpload}
         onClose={() => setShowUpload(false)}
-        onUploaded={() => setFilter('upload_id', '')}
+        onUploaded={(period) => {
+          selectPopulation('');
+          setFilter('periode', period ?? '');
+        }}
       />
 
       {showHistory && (
@@ -1867,8 +2233,7 @@ export default function Edk() {
           onClose={() => setShowHistory(false)}
           viewingId={filters.upload_id ? Number(filters.upload_id) : null}
           onView={(id) => {
-            setFilter('upload_id', id ? String(id) : '');
-            setPageIndex(0);
+            selectPopulation(id ? String(id) : '');
           }}
         />
       )}

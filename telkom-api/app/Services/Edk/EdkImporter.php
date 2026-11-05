@@ -32,11 +32,25 @@ class EdkImporter
         'status_utama', 'status_detail', 'order', 'abonemen',
     ];
 
+    private const REQUIRED_SHEET = 'DATA_EDK';
+
     public function import(UploadedFile $file, string $reportDate, ?int $userId): EdkUpload
     {
+        $fileHash = hash_file('sha256', $file->getRealPath());
+
+        if (EdkUpload::where('file_hash', $fileHash)
+            ->whereIn('status', ['processing', 'done'])
+            ->exists()) {
+            throw new EdkImportException([[
+                'row' => 0,
+                'messages' => ['File yang sama sudah pernah diunggah dan tidak diproses ulang.'],
+            ]]);
+        }
+
         $upload = EdkUpload::create([
             'report_date'   => $reportDate,
             'original_name' => $file->getClientOriginalName(),
+            'file_hash'     => $fileHash,
             'file_path'     => $file->store('edk-uploads'),
             'status'        => 'processing',
             'uploaded_by'   => $userId,
@@ -124,7 +138,17 @@ class EdkImporter
     {
         $reader = IOFactory::createReader('Xlsx');
         $reader->setReadDataOnly(true);
-        $ws = $reader->load(Storage::path($path))->getSheet(0);
+        $workbook = $reader->load(Storage::path($path));
+        $sheetNames = $workbook->getSheetNames();
+
+        if (!in_array(self::REQUIRED_SHEET, $sheetNames, true)) {
+            throw new EdkImportException([[
+                'row' => 1,
+                'messages' => ['Sheet wajib tidak ada: ' . self::REQUIRED_SHEET],
+            ]]);
+        }
+
+        $ws = $workbook->getSheetByName(self::REQUIRED_SHEET);
 
         $data = $ws->toArray(null, true, false, false);
 

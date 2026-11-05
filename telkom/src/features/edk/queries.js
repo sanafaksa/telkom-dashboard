@@ -29,10 +29,23 @@ export const useEdkTopCustomers = (filters, { enabled = true, ...opts } = {}) =>
     enabled,
   });
 
+export const useEdkCustomerDetails = (filters, customerKey, { enabled = true } = {}) =>
+  useQuery({
+    queryKey: ['edk', 'customer-detail', filters, customerKey],
+    queryFn: () => edkApi.customerDetails(filters, customerKey),
+    enabled: enabled && Boolean(customerKey),
+  });
+
 export const useEdkUploads = () =>
   useQuery({
     queryKey: ['edk', 'uploads'],
     queryFn: edkApi.uploads,
+  });
+
+export const useEdkPopulations = () =>
+  useQuery({
+    queryKey: ['edk', 'populations'],
+    queryFn: edkApi.populations,
   });
 
 export function useUploadEdk() {
