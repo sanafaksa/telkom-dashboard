@@ -1,0 +1,128 @@
+
+name: Deploy Backend - Laravel
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'telkom-api/**'
+      - '.github/workflows/deploy-backend.yaml'
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and Deploy Laravel
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      # 1. Checkout repository
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      # 2. Setup PHP
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_mysql, openssl, fileinfo, bcmath, xml, ctype, tokenizer
+          coverage: none
+          tools: composer:v2
+
+      # 3. Validate Composer
+      - name: Validate Composer
+        working-directory: telkom-api
+        run: composer validate --no-check-publish
+
+      # 4. Install Laravel Dependencies
+      - name: Install Composer Dependencies
+        working-directory: telkom-api
+        run: |
+          composer install \
+            --no-dev \
+            --prefer-dist \
+            --no-interaction \
+            --no-progress \
+            --optimize-autoloader
+
+      # 5. Prepare Deployment Directory
+      - name: Prepare Laravel Deployment
+        run: |
+          mkdir -p deploy/api
+
+          rsync -a \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            --exclude='.git/' \
+            --exclude='node_modules/' \
+            --exclude='tests/' \
+            --exclude='storage/logs/*.log' \
+            telkom-api/ deploy/api/
+
+      # 6. Create Laravel Security Configuration
+      - name: Create API Root HTACCESS
+        run: |
+          cat > deploy/api/.htaccess <<'EOF'
+          Options -Indexes
+
+          <IfModule mod_rewrite.c>
+              RewriteEngine On
+
+              # Protect Laravel internal directories
+              RewriteRule ^(app|bootstrap|config|database|resources|routes|storage|tests|vendor)(/|$) - [F,L,NC]
+
+              # Protect sensitive files
+              RewriteRule ^(\.env|artisan|composer\.(json|lock)|phpunit\.xml)$ - [F,L,NC]
+
+              # Route requests to Laravel public directory
+              RewriteCond %{REQUEST_FILENAME} !-f
+              RewriteCond %{REQUEST_FILENAME} !-d
+              RewriteRule ^ public/index.php [QSA,L]
+          </IfModule>
+          EOF
+
+      # 7. Validate Deployment Files
+      - name: Validate Laravel Deployment
+        run: |
+          test -f deploy/api/public/index.php
+          test -f deploy/api/vendor/autoload.php
+          test -f deploy/api/bootstrap/app.php
+          test ! -f deploy/api/.env
+
+          echo "Laravel deployment files validated."
+
+      # 8. Deploy Laravel to InfinityFree
+      - name: Deploy Backend via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+
+          protocol: ftp
+          port: 21
+
+          local-dir: deploy/api/
+          server-dir: /htdocs/api/
+
+          state-name: .ftp-backend-sync-state.json
+
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/.env
+            **/.env.*
+            **/*.log
+
+          dangerous-clean-slate: false
+          log-level: standard
