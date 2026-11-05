@@ -19,6 +19,7 @@ class MomSupportController extends Controller
     {
         $rows = MomActionPlan::orderBy('id')->get();
         return response()->json([
+            'success' => true,
             'source' => 'mysql',
             'items'  => $rows->map(fn ($r) => self::toCamelItem($r->toArray()))->all(),
         ]);
@@ -82,6 +83,7 @@ class MomSupportController extends Controller
         $all = MomActionPlan::orderBy('id')->get();
 
         return response()->json([
+            'success'   => true,
             'message'   => 'Data MoM & Support Needed berhasil disimpan ke MySQL.',
             'row_count' => count($records),
             'items'     => $all->map(fn ($r) => self::toCamelItem($r->toArray()))->all(),
@@ -115,6 +117,7 @@ class MomSupportController extends Controller
         ]);
 
         return response()->json([
+            'success' => true,
             'message' => 'Perubahan Action Plan berhasil disimpan ke MySQL.',
             'item'    => self::toCamelItem($plan->fresh()->toArray()),
         ]);
@@ -137,6 +140,7 @@ class MomSupportController extends Controller
 
         $all = MomActionPlan::orderBy('id')->get();
         return response()->json([
+            'success' => true,
             'message' => 'Data MoM & Support Needed dikembalikan ke data awal di MySQL.',
             'items'   => $all->map(fn ($r) => self::toCamelItem($r->toArray()))->all(),
         ]);
