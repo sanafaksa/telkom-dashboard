@@ -148,8 +148,19 @@ export async function captureElementToBlob(targetEl, backgroundColor = '#FFFFFF'
     el.style.width = '100%';
   });
 
+  // Jangan ikut memotret menu dropdown / elemen yang ditandai ignore
+  clone.querySelectorAll('[data-html2canvas-ignore]').forEach((el) => el.remove());
+
   stage.appendChild(clone);
   document.body.appendChild(stage);
+
+  // html2canvas 1.4.1 mengukur baseline font memakai <img> 1x1 (data:image/gif) di dokumen ASLI.
+  // Preflight Tailwind membuat img { display:block }, sehingga baseline salah dan semua teks
+  // tergambar lebih rendah lalu terpotong. Paksa img pengukur itu inline selama capture saja.
+  const metricsFix = document.createElement('style');
+  metricsFix.setAttribute('data-capture-fix', 'true');
+  metricsFix.textContent = 'img[src^="data:image/gif;base64,R0lGOD"]{display:inline !important;}';
+  document.head.appendChild(metricsFix);
 
   try {
     // Allow browser 1 frame to lay out the isolated stage
@@ -199,6 +210,7 @@ export async function captureElementToBlob(targetEl, backgroundColor = '#FFFFFF'
     if (stage.parentNode) {
       stage.parentNode.removeChild(stage);
     }
+    metricsFix.remove();
   }
 }
 
@@ -265,6 +277,8 @@ export default function ShareDropdown({
     setLoading(true);
 
     try {
+      // Tunggu React menutup dropdown (2 frame) sebelum halaman di-clone
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
       let blob = null;
       if (typeof renderBlob === 'function') {
         blob = await renderBlob();
@@ -441,6 +455,7 @@ export default function ShareDropdown({
       {/* Dropdown Menu (Matches Screenshot) */}
       {open && (
         <div
+          data-html2canvas-ignore="true"
           className={`absolute top-full mt-2 w-72 bg-white rounded-2xl border border-slate-100 shadow-[0_12px_36px_-6px_rgba(0,0,0,0.12),0_4px_16px_-2px_rgba(0,0,0,0.06)] z-50 p-2 animate-[fadeIn_0.15s_ease-out] ${
             dropdownAlign === 'left' ? 'left-0' : 'right-0'
           }`}
@@ -475,7 +490,7 @@ export default function ShareDropdown({
 
       {/* Floating Feedback Toast */}
       {feedback && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-2.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-2xl backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+        <div data-html2canvas-ignore="true" className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-2.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-2xl backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
           <Check size={15} className="text-emerald-400 shrink-0" />
           <span>{feedback}</span>
         </div>

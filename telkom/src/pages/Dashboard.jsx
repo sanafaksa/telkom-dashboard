@@ -1,4 +1,5 @@
-import {useState} from 'react';
+import {useState, useEffect, useMemo} from 'react';
+import {useNavigate} from 'react-router-dom';
 import {
   Search,
   ChevronDown,
@@ -10,19 +11,94 @@ import {
 } from 'lucide-react';
 import {flow, witel, uic, activity} from '../data/dashboardData';
 import {exportCSV, ShareDropdown} from '../components/ui';
+import {loadSavedSupportData, fetchSupportFromApi, normalizeStatus} from '../data/supportParser';
+
+const PAGE_SIZE = 6;
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+const STATUS_OPTIONS = ['BELUM FU', 'NEED DISCUSS', 'IN PROGRESS', 'DONE'];
+const STATUS_PROGRESS = {'BELUM FU': 0, 'NEED DISCUSS': 25, 'IN PROGRESS': 50, DONE: 100};
+const STATUS_BADGE = {
+  'BELUM FU': 'bg-red-50 text-red-600',
+  'NEED DISCUSS': 'bg-amber-50 text-amber-700',
+  'IN PROGRESS': 'bg-blue-50 text-[#2563EB]',
+  DONE: 'bg-emerald-50 text-emerald-700'
+};
+
+// "11/09/2026" (DD/MM/YYYY dari Notulensi) -> Date; null kalau format tidak dikenali
+function parseTgl(tgl) {
+  const m = String(tgl || '').trim().match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (!m) return null;
+  const d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function toActivityRow(item) {
+  const status = normalizeStatus(item.status);
+  const date = parseTgl(item.tgl);
+  return {
+    id: item.id,
+    agenda: item.agenda || '-',
+    topic: item.mainTopic || '',
+    unit: item.unitTelda || '-',
+    date,
+    dateLabel: date ? `${date.getDate()} ${MONTHS[date.getMonth()]} ${date.getFullYear()}` : item.tgl || '-',
+    catatan: item.actionPlan || item.notes || '-',
+    uic: item.uic || '-',
+    status,
+    progress: STATUS_PROGRESS[status] ?? 0
+  };
+}
+
+function pageWindow(page, totalPages) {
+  if (totalPages <= 5) return Array.from({length: totalPages}, (_, i) => i + 1);
+  const pages = new Set([1, totalPages, page - 1, page, page + 1]);
+  return [...pages].filter(p => p >= 1 && p <= totalPages).sort((a, b) => a - b);
+}
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [q, setQ] = useState('');
   const [st, setSt] = useState('Semua');
   const [page, setPage] = useState(1);
 
-  const filtered = activity.filter(r => {
-    const matchStatus = st === 'Semua' || r.s.toUpperCase() === st.toUpperCase();
-    const matchQuery = (r.a + ' ' + r.c + ' ' + r.w + ' ' + r.u)
+  // Sumber data sama dengan menu MoM Support: cache localStorage dulu, lalu MySQL via /api/mom-support
+  const [momItems, setMomItems] = useState(() => loadSavedSupportData());
+  useEffect(() => {
+    let active = true;
+    fetchSupportFromApi().then(dbItems => {
+      if (active && Array.isArray(dbItems)) setMomItems(dbItems);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Terbaru dulu: urut tanggal rapat desc, lalu id desc
+  const rows = useMemo(
+    () =>
+      momItems.map(toActivityRow).sort((a, b) => {
+        const diff = (b.date?.getTime() ?? 0) - (a.date?.getTime() ?? 0);
+        return diff || (Number(b.id) || 0) - (Number(a.id) || 0);
+      }),
+    [momItems]
+  );
+
+  const filtered = rows.filter(r => {
+    const matchStatus = st === 'Semua' || r.status === st;
+    const matchQuery = [r.agenda, r.topic, r.catatan, r.unit, r.uic]
+      .join(' ')
       .toLowerCase()
       .includes(q.toLowerCase());
     return matchStatus && matchQuery;
   });
+
+  useEffect(() => setPage(1), [q, st]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageRows = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const firstShown = filtered.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0;
+  const lastShown = Math.min(currentPage * PAGE_SIZE, filtered.length);
 
   return (
     <div className="space-y-5">
@@ -37,7 +113,8 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
+        {/* Tombol aksi tidak ikut difoto saat Copy as Picture */}
+        <div data-html2canvas-ignore="true" className="flex items-center gap-2.5 flex-wrap">
           <ShareDropdown buttonLabel="Salin & Bagikan" />
           <button
             onClick={() => exportCSV(activity, 'executive_summary_regional_3')}
@@ -317,8 +394,9 @@ export default function Dashboard() {
                 className="border border-slate-200 rounded-full px-4 py-1.5 bg-white text-xs text-slate-700 appearance-none pr-8 cursor-pointer font-medium hover:border-slate-300 transition-colors"
               >
                 <option value="Semua">Semua Status</option>
-                <option value="NOT YET">NOT YET</option>
-                <option value="DONE">DONE</option>
+                {STATUS_OPTIONS.map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
               </select>
               <ChevronDown size={13} className="text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
@@ -328,10 +406,7 @@ export default function Dashboard() {
         {/* Action Button: Lihat Semua */}
         <div className="mt-3 mb-4">
           <button
-            onClick={() => {
-              setQ('');
-              setSt('Semua');
-            }}
+            onClick={() => navigate('/support-needed')}
             className="bg-[#2563EB] hover:bg-blue-700 text-white font-semibold text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
           >
             <span>Lihat Semua</span>
@@ -354,25 +429,20 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r, i) => (
-                <tr key={r.a + r.w + i} className="border-b border-slate-100/80 hover:bg-slate-50/50 transition-colors">
-                  <td className="py-3.5 pr-4 font-bold text-slate-800 uppercase tracking-tight">
-                    {r.a}
+              {pageRows.map(r => (
+                <tr key={r.id} className="border-b border-slate-100/80 hover:bg-slate-50/50 transition-colors">
+                  <td className="py-3.5 pr-4">
+                    <span className="block font-bold text-slate-800 uppercase tracking-tight">{r.agenda}</span>
+                    {r.topic && <span className="block text-[11px] text-slate-400 mt-0.5">{r.topic}</span>}
                   </td>
-                  <td className="py-3.5 px-4 font-medium text-slate-700">{r.w}</td>
-                  <td className="py-3.5 px-4 text-slate-500 font-medium">{r.d}</td>
+                  <td className="py-3.5 px-4 font-medium text-slate-700">{r.unit}</td>
+                  <td className="py-3.5 px-4 text-slate-500 font-medium whitespace-nowrap">{r.dateLabel}</td>
                   <td className="py-3.5 px-4 text-slate-600 max-w-sm xl:max-w-md leading-relaxed">
-                    {r.c}
+                    <span className="line-clamp-2" title={r.catatan}>{r.catatan}</span>
                   </td>
                   <td className="py-3.5 px-4 text-center">
-                    <span
-                      className={`inline-block px-3 py-1 rounded-full text-[11px] font-bold ${
-                        r.u === 'ALL WITEL'
-                          ? 'bg-slate-100 text-slate-700 border border-slate-200/50'
-                          : 'bg-blue-50 text-[#2563EB] border border-blue-100'
-                      }`}
-                    >
-                      {r.u}
+                    <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-[#2563EB] border border-blue-100 whitespace-nowrap">
+                      {r.uic}
                     </span>
                   </td>
                   <td className="py-3.5 px-4">
@@ -380,21 +450,19 @@ export default function Dashboard() {
                       <div className="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-[#2563EB] rounded-full"
-                          style={{width: `${r.p}%`}}
+                          style={{width: `${r.progress}%`}}
                         />
                       </div>
-                      <span className="text-xs font-bold text-slate-800">{r.p}%</span>
+                      <span className="text-xs font-bold text-slate-800">{r.progress}%</span>
                     </div>
                   </td>
                   <td className="py-3.5 pl-4 text-center">
                     <span
-                      className={`inline-block px-3 py-1 rounded text-[10px] font-bold tracking-wider ${
-                        r.s === 'DONE'
-                          ? 'bg-blue-50 text-[#2563EB]'
-                          : 'bg-slate-100 text-slate-700'
+                      className={`inline-block px-3 py-1 rounded text-[10px] font-bold tracking-wider whitespace-nowrap ${
+                        STATUS_BADGE[r.status] || 'bg-slate-100 text-slate-700'
                       }`}
                     >
-                      {r.s}
+                      {r.status}
                     </span>
                   </td>
                 </tr>
@@ -412,52 +480,34 @@ export default function Dashboard() {
         {/* Pagination Footer */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-5 mt-2 border-t border-slate-100 text-xs">
           <span className="text-slate-400 font-medium">
-            Menampilkan 1 - {Math.min(filtered.length, 6)} dari 379 agenda
+            Menampilkan {firstShown} - {lastShown} dari {filtered.length} agenda
           </span>
 
           <div className="flex items-center gap-1.5">
             <button
-              onClick={() => setPage(Math.max(1, page - 1))}
-              className="text-slate-400 hover:text-slate-700 px-2 py-1 font-medium transition-colors cursor-pointer"
+              onClick={() => setPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="text-slate-600 hover:text-slate-900 disabled:text-slate-300 disabled:cursor-default px-2 py-1 font-medium transition-colors cursor-pointer"
             >
               &lt; Prev
             </button>
+            {pageWindow(currentPage, totalPages).map((p, i, arr) => (
+              <span key={p} className="flex items-center gap-1.5">
+                {i > 0 && p - arr[i - 1] > 1 && <span className="text-slate-400 px-1">...</span>}
+                <button
+                  onClick={() => setPage(p)}
+                  className={`size-7 rounded-full text-xs font-bold grid place-items-center transition-colors cursor-pointer ${
+                    currentPage === p ? 'bg-[#2563EB] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  {p}
+                </button>
+              </span>
+            ))}
             <button
-              onClick={() => setPage(1)}
-              className={`size-7 rounded-full text-xs font-bold grid place-items-center transition-colors cursor-pointer ${
-                page === 1 ? 'bg-[#2563EB] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              1
-            </button>
-            <button
-              onClick={() => setPage(2)}
-              className={`size-7 rounded-full text-xs font-bold grid place-items-center transition-colors cursor-pointer ${
-                page === 2 ? 'bg-[#2563EB] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              2
-            </button>
-            <button
-              onClick={() => setPage(3)}
-              className={`size-7 rounded-full text-xs font-bold grid place-items-center transition-colors cursor-pointer ${
-                page === 3 ? 'bg-[#2563EB] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              3
-            </button>
-            <span className="text-slate-400 px-1">...</span>
-            <button
-              onClick={() => setPage(64)}
-              className={`size-7 rounded-full text-xs font-bold grid place-items-center transition-colors cursor-pointer ${
-                page === 64 ? 'bg-[#2563EB] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              64
-            </button>
-            <button
-              onClick={() => setPage(Math.min(64, page + 1))}
-              className="text-slate-600 hover:text-slate-900 px-2 py-1 font-medium transition-colors cursor-pointer"
+              onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+              className="text-slate-600 hover:text-slate-900 disabled:text-slate-300 disabled:cursor-default px-2 py-1 font-medium transition-colors cursor-pointer"
             >
               Next &gt;
             </button>

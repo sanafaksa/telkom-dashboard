@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\KuadranController;
+use App\Http\Controllers\Api\MomSupportController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Edk\EdkExportController;
@@ -34,6 +36,21 @@ Route::prefix('edk')->middleware('auth:sanctum')->group(function () {
 
     // Export
     Route::get('export', [EdkExportController::class, 'export']);
+});
+
+// ===== Kuadran =====
+Route::prefix('kuadran')->group(function () {
+    Route::get('/', [KuadranController::class, 'index']);
+    Route::post('/sync', [KuadranController::class, 'sync']);
+    Route::delete('/{bulan}', [KuadranController::class, 'destroyMonth']);
+});
+
+// ===== MoM Support =====
+Route::prefix('mom-support')->group(function () {
+    Route::get('/', [MomSupportController::class, 'index']);
+    Route::post('/sync', [MomSupportController::class, 'sync']);
+    Route::put('/{id}', [MomSupportController::class, 'update']);
+    Route::post('/reset', [MomSupportController::class, 'reset']);
 });
 
 // ===== Audit log (khusus admin) =====
