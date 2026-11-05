@@ -4,7 +4,7 @@ name: Deploy Backend - Laravel
 on:
   push:
     branches:
-      - main
+      - rdp
     paths:
       - 'telkom-api/**'
       - '.github/workflows/deploy-backend.yaml'

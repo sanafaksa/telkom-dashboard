@@ -4,7 +4,7 @@ name: Deploy Frontend - React Vite
 on:
   push:
     branches:
-      - main
+      - rdp
     paths:
       - 'telkom/**'
       - '.github/workflows/deploy-frontend.yaml'
