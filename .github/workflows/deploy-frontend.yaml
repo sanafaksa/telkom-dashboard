@@ -40,22 +40,20 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-          cache-dependency-path: telkom/package-lock.json
+          cache-dependency-path: package-lock.json
 
       # 3. Install dependencies
       - name: Install Dependencies
-        working-directory: telkom
         run: npm ci
 
       # 4. Build React Vite
       - name: Build Production
-        working-directory: telkom
         run: npm run build
 
       # 5. Validate build output
       - name: Validate Build
         run: |
-          test -f telkom/dist/index.html
+          test -f dist/index.html
           echo "Frontend build berhasil."
 
       # 6. Deploy to InfinityFree
@@ -69,7 +67,7 @@ jobs:
           protocol: ftp
           port: 21
 
-          local-dir: telkom/dist/
+          local-dir: dist/
           server-dir: /htdocs/
 
           state-name: .ftp-frontend-sync-state.json
