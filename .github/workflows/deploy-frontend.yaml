@@ -5,13 +5,12 @@ on:
   push:
     branches:
       - solarisapp
+
     paths:
-      - 'src/**'
-      - 'public/**'
       - 'index.html'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'vite.config.*'
+      - 'assets/**'
+      - 'favicon.svg'
+      - 'telkom-brand*.png'
       - '.github/workflows/deploy-frontend.yaml'
 
   workflow_dispatch:
