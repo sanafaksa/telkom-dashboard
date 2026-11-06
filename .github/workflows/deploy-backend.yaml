@@ -4,9 +4,9 @@ name: Deploy Backend - Laravel
 on:
   push:
     branches:
-      - rdp
+      - solarisapp
     paths:
-      - 'telkom-api/**'
+      - 'api/**'
       - '.github/workflows/deploy-backend.yaml'
 
   workflow_dispatch:

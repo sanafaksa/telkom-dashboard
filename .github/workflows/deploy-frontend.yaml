@@ -4,9 +4,14 @@ name: Deploy Frontend - React Vite
 on:
   push:
     branches:
-      - rdp
+      - solarisapp
     paths:
-      - 'telkom/**'
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.*'
       - '.github/workflows/deploy-frontend.yaml'
 
   workflow_dispatch:
