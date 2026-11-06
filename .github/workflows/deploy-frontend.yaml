@@ -5,12 +5,13 @@ on:
   push:
     branches:
       - solarisapp
-
     paths:
       - 'index.html'
       - 'assets/**'
       - 'favicon.svg'
+      - 'pngwing.com.png'
       - 'telkom-brand*.png'
+      - 'telkom-logo.png'
       - '.github/workflows/deploy-frontend.yaml'
 
   workflow_dispatch:
@@ -24,38 +25,37 @@ concurrency:
 
 jobs:
   deploy:
-    name: Build and Deploy React
+    name: Deploy Static React Frontend
     runs-on: ubuntu-latest
-    timeout-minutes: 12000
+    timeout-minutes: 30
 
     steps:
-      # 1. Checkout repository
       - name: Checkout Repository
         uses: actions/checkout@v6
 
-      # 2. Setup Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: package-lock.json
-
-      # 3. Install dependencies
-      - name: Install Dependencies
-        run: npm ci
-
-      # 4. Build React Vite
-      - name: Build Production
-        run: npm run build
-
-      # 5. Validate build output
-      - name: Validate Build
+      - name: Prepare Frontend Deployment
         run: |
-          test -f dist/index.html
-          echo "Frontend build berhasil."
+          mkdir -p deploy/frontend
 
-      # 6. Deploy to InfinityFree
+          test -f index.html
+          test -d assets
+
+          cp index.html deploy/frontend/
+          cp -r assets deploy/frontend/
+
+          [ ! -f favicon.svg ] || cp favicon.svg deploy/frontend/
+          [ ! -f pngwing.com.png ] || cp pngwing.com.png deploy/frontend/
+          [ ! -f telkom-brand-white.png ] || cp telkom-brand-white.png deploy/frontend/
+          [ ! -f telkom-brand.png ] || cp telkom-brand.png deploy/frontend/
+          [ ! -f telkom-logo.png ] || cp telkom-logo.png deploy/frontend/
+
+      - name: Validate Frontend Deployment
+        run: |
+          test -f deploy/frontend/index.html
+          test -d deploy/frontend/assets
+
+          echo "Frontend deployment files validated."
+
       - name: Deploy Frontend via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
@@ -66,7 +66,7 @@ jobs:
           protocol: ftp
           port: 21
 
-          local-dir: dist/
+          local-dir: deploy/frontend/
           server-dir: /htdocs/
 
           state-name: .ftp-frontend-sync-state.json
@@ -74,7 +74,10 @@ jobs:
           exclude: |
             **/.git*
             **/.git*/**
+            **/.env
+            **/.env.*
             **/node_modules/**
+            **/.htaccess
 
           dangerous-clean-slate: false
           log-level: standard
