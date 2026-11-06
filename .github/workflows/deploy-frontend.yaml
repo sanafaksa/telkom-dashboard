@@ -22,7 +22,7 @@ jobs:
   deploy:
     name: Build and Deploy React
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 12000
 
     steps:
       # 1. Checkout repository
