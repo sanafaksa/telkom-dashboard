@@ -785,11 +785,8 @@ export default function Edk() {
   }, [cardsQ.data]);
 
   // ── Export & link ──
-  const handleExport = () => {
-    edkApi
-      .exportFile(filters, isTop10View ? 'segmen' : tab, 'xlsx')
-      .catch((err) => alert(err.message || 'Gagal export file.'));
-  };
+  // Export dari server (data lengkap semua halaman tabel), format sesuai pilihan
+  const exportFromServer = (format) => edkApi.exportFile(filters, isTop10View ? 'segmen' : tab, format);
 
   const getReportLink = () => {
     const url = new URL(window.location.href);
@@ -809,7 +806,8 @@ export default function Edk() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        {/* Tombol aksi tidak ikut di Copy as Picture / Export PDF */}
+        <div data-html2canvas-ignore="true" className="flex flex-wrap items-center gap-2.5">
           {/* Upload Report Button (khusus admin) */}
           {canManage && (
             <button
@@ -834,15 +832,18 @@ export default function Edk() {
 
           {/* Export Dropdown Button */}
           <ExportButton
-            onClick={handleExport}
+            onExportXlsx={() => exportFromServer('xlsx')}
+            onExportCsv={() => exportFromServer('csv')}
             filename={`EDK_Monitoring_${mode}`}
+            title={`EDK Monitoring – ${mode}`}
+            tableSelector="#edk-main-content table"
+            pdfSelector="#edk-main-content"
           />
 
           {/* Salin & Bagikan Dropdown Button */}
           <ShareDropdown
             buttonLabel="Salin & Bagikan"
             captureSelector="#edk-main-content"
-            tableSelector="table"
             getLink={getReportLink}
           />
         </div>

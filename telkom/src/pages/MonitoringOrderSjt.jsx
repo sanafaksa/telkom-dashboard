@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, Fragment } from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal, flushSync } from 'react-dom';
 import {
   AlertTriangle,
   ArrowRight,
@@ -22,7 +22,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { ExportButton, ShareDropdown, exportCSV } from '../components/ui';
+import { ExportButton, ShareDropdown } from '../components/ui';
 import FilterDropdown from '../components/FilterDropdown';
 import { SNAPSHOTS, CATATAN_DASHBOARD } from '../data/monitoringOrderSjtData';
 
@@ -1599,20 +1599,6 @@ export default function MonitoringOrderSjt() {
   const divColHighlight = (div) =>
     selectedDivisi.includes(div) ? 'bg-blue-50/70 font-bold text-[#1D4ED8]' : '';
 
-  const handleExport = () => {
-    const exportRows = currentData.milestonePerDivisi.rows.map((r) => ({
-      PERIODE: snapshotKey,
-      MILESTONE: r.milestone,
-      DGS: r.dgs,
-      RBS: r.rbs,
-      DPS: r.dps,
-      DSS: r.dss,
-      TOTAL: r.total,
-      NILAI_RP_JT: r.nilai,
-    }));
-    exportCSV(exportRows, `Monitoring_Order_SJT_${snapshotKey.replace(/\//g, '-')}`);
-  };
-
   return (
     <div id="sjt-main-content" className="space-y-4">
       {/* ================================================================== */}
@@ -1639,14 +1625,22 @@ export default function MonitoringOrderSjt() {
           </button>
 
           <ExportButton
-            onClick={handleExport}
             filename={`Monitoring_Order_SJT_${snapshotKey.replace(/\//g, '-')}`}
+            title={`Monitoring Order SJT ${snapshotKey}`}
+            prepareExport={() => {
+              // Export DOCX/XLSX/CSV selalu berisi semua tabel, apa pun mode tampilan saat ini
+              const prev = mode;
+              if (prev === 'Semua Tabel') return null;
+              flushSync(() => setMode('Semua Tabel'));
+              return () => setMode(prev);
+            }}
+            tableSelector="#sjt-main-content table"
+            pdfSelector="#sjt-main-content"
           />
 
           <ShareDropdown
             buttonLabel="Salin & Bagikan"
             captureSelector="#sjt-main-content"
-            tableSelector="table"
           />
         </div>
       </div>
