@@ -1,0 +1,173 @@
+{
+    "description": "DO NOT DELETE THIS FILE. This file is used to keep track of which files have been synced in the most recent deployment. If you delete this file a resync will need to be done (which can take a while) - read more: https://github.com/SamKirkland/FTP-Deploy-Action",
+    "version": "1.0.0",
+    "generatedTime": 1793928014736,
+    "data": [
+        {
+            "type": "folder",
+            "name": "assets"
+        },
+        {
+            "type": "file",
+            "name": "favicon.svg",
+            "size": 1113,
+            "hash": "e4abf3b3ba66672f6d363be1c053bab76f0951fde5953ff61ec78cf99a80ee78"
+        },
+        {
+            "type": "file",
+            "name": "index.html",
+            "size": 573,
+            "hash": "45e8a7cf15cddfdcbb0fb41097eccda837c43221c0a950f47fd18bbe1274f84f"
+        },
+        {
+            "type": "file",
+            "name": "pngwing.com.png",
+            "size": 90159,
+            "hash": "f63baff1cccde984a4f7d251c3e0cb9ab559fcf841d12f385d4c819f668a2d1d"
+        },
+        {
+            "type": "file",
+            "name": "telkom-brand-white.png",
+            "size": 55664,
+            "hash": "166a879af3beb393f629ca8053e7e6ff91c2b8ea04f039ef9aeb211b7ee704c5"
+        },
+        {
+            "type": "file",
+            "name": "telkom-brand.png",
+            "size": 89195,
+            "hash": "5438b2b2c6784f3137f2c8cdb837a5021d54d50c36c2ea86ac1e737af243e985"
+        },
+        {
+            "type": "file",
+            "name": "telkom-logo.png",
+            "size": 40826,
+            "hash": "48404e7c4e794b8c49b50220279bcac30689a4ddbdc3f5450989f5abdbab9f15"
+        },
+        {
+            "type": "file",
+            "name": "assets/Dashboard-DIySMvoL.js",
+            "size": 19212,
+            "hash": "971afb5ae5027d2e74fc0dd41a6e72649822cb168e1264eae1696ef733db8da0"
+        },
+        {
+            "type": "file",
+            "name": "assets/Edk-1Hyeb1Cy.js",
+            "size": 98030,
+            "hash": "d304df03f27b652d61ad12730f9fb5cfe73522ea0ea4c88edfe13a802e626bf7"
+        },
+        {
+            "type": "file",
+            "name": "assets/FilterDropdown-DacWZ1AG.js",
+            "size": 3208,
+            "hash": "226207d5528074c1c870a405efaab1d4249142e5b7774c9132f7c2b0eca83cd8"
+        },
+        {
+            "type": "file",
+            "name": "assets/Login-B89dYI2c.js",
+            "size": 18134,
+            "hash": "98ab975b1024f995e454c784b0ae42524774948e8928f504759dd5b23f1afb1d"
+        },
+        {
+            "type": "file",
+            "name": "assets/MonitoringOrderSjt-BvUZiuf9.js",
+            "size": 97760,
+            "hash": "fa9513107ad1752e3b61a9872c5f23152235ed3f180384f33d6c509749ff54f8"
+        },
+        {
+            "type": "file",
+            "name": "assets/Quadrant-kLt1JeGP.js",
+            "size": 49732,
+            "hash": "d5151c6cf8436f746e2d3a3c0ae19c55987902ceb602484b24d211c6bdd63e9c"
+        },
+        {
+            "type": "file",
+            "name": "assets/Support-BU_XDgAK.js",
+            "size": 55322,
+            "hash": "aab2540155e441eee6e157859b40bf155c8575b15300ead9aead04cf49e4ff7b"
+        },
+        {
+            "type": "file",
+            "name": "assets/arrow-down-IZpCEv1C.js",
+            "size": 333,
+            "hash": "7ea6cd9dc7cb65babf2f8e15fc9c81217ef103bd252b08852fb29e7819c16bae"
+        },
+        {
+            "type": "file",
+            "name": "assets/circle-alert-Cus45B0I.js",
+            "size": 418,
+            "hash": "020cf9c2242d159486b8ef67aa347401593c73c71ef4580860afd1e7ab0b4d96"
+        },
+        {
+            "type": "file",
+            "name": "assets/download-DeqX4MFg.js",
+            "size": 431,
+            "hash": "96a9b1760b2c5ed266f2c9e031c3a4cad2a066c2b646a180df23f763c8ab1a91"
+        },
+        {
+            "type": "file",
+            "name": "assets/filter-DQzsQaaY.js",
+            "size": 330,
+            "hash": "9a77c2a0f29769617eaacbaf9d39f819d862e3501cf8257adf0c0619b25a8a48"
+        },
+        {
+            "type": "file",
+            "name": "assets/eye-C0GiUlxw.js",
+            "size": 420,
+            "hash": "b9eb81315089a3c7c5402a9143897191c7a062b962fca1506cd05a47cf032d04"
+        },
+        {
+            "type": "file",
+            "name": "assets/index-BbWFeMt4.js",
+            "size": 328759,
+            "hash": "8ec25038143a789f7e3b2a75bef850684cf0e3551dd18a531a2d1d5517a24ce6"
+        },
+        {
+            "type": "file",
+            "name": "assets/index-a3N1K6bv.css",
+            "size": 91181,
+            "hash": "0ebb7f71401553589c6b3a0f7e55f65cb2acb2f16d2fa48f01e6fd42cbf19ea8"
+        },
+        {
+            "type": "file",
+            "name": "assets/info-RYCsLTI8.js",
+            "size": 368,
+            "hash": "1295e9169ba02512fb9f26925b542a1dbcbc83c798895202e7ac8e7946f88c2f"
+        },
+        {
+            "type": "file",
+            "name": "assets/loader-circle-BWGvycqT.js",
+            "size": 312,
+            "hash": "f5176e553adfa744751fa7a58aa290cce792a7fce57f33a412b533ef42ec9a3e"
+        },
+        {
+            "type": "file",
+            "name": "assets/supportParser-XtD_UXh7.js",
+            "size": 43768,
+            "hash": "2c9e0440c1e4b51c160a27b2918733a6948547670fa8136ab071b4b0d8a9ed9e"
+        },
+        {
+            "type": "file",
+            "name": "assets/ui-CVqXlPzh.js",
+            "size": 216806,
+            "hash": "cd9f718f73325b69534e64ae8908bbb69f898749a2ed67a4dbf0f48572803be5"
+        },
+        {
+            "type": "file",
+            "name": "assets/trash-2-DC-6kCAr.js",
+            "size": 845,
+            "hash": "f6389b899d5cbc4badfba74f43f19908232cd9c7042d24eed61715ed4e674083"
+        },
+        {
+            "type": "file",
+            "name": "assets/upload-Qi1BScdq.js",
+            "size": 426,
+            "hash": "6f38821615e233bda15d31a3443dbcfe40c5d60cba3c627a6b7b1a47aec0d9de"
+        },
+        {
+            "type": "file",
+            "name": "assets/xlsx-D9UGuzH6.js",
+            "size": 500050,
+            "hash": "25cd13befe264621e2bba2f0c08695063ddf6a4428955442298797f8fed4c034"
+        }
+    ]
+}

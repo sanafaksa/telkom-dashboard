@@ -1,0 +1,16 @@
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Protect Laravel internal directories
+    RewriteRule ^(app|bootstrap|config|database|resources|routes|storage|tests|vendor)(/|$) - [F,L,NC]
+
+    # Protect sensitive files
+    RewriteRule ^(\.env|artisan|composer\.(json|lock)|phpunit\.xml)$ - [F,L,NC]
+
+    # Route requests to Laravel public directory
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ public/index.php [QSA,L]
+</IfModule>
