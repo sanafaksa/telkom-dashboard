@@ -84,8 +84,8 @@ class EdkUploadController extends Controller
 
     public function template()
     {
-        $path = base_path('../data/' . self::TEMPLATE);
-        abort_unless(is_file($path), 404, 'File template EDK tidak ditemukan di folder data.');
+        $path = resource_path('templates/' . self::TEMPLATE);
+        abort_unless(is_file($path), 404, 'File template EDK tidak ditemukan.');
 
         return response()->download($path, self::TEMPLATE);
     }

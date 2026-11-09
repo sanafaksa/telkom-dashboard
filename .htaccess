@@ -1,0 +1,16 @@
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Blokir file tersembunyi (.env, .ftp-*-sync-state.json, dll.)
+    RewriteRule (^|/)\.(?!well-known/) - [F,L]
+
+    # Request ke backend Laravel ditangani oleh api/.htaccess
+    RewriteRule ^api(/|$) - [L]
+
+    # Fallback React Router: semua yang bukan file/folder ke index.html
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.html [L]
+</IfModule>

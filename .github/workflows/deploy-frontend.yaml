@@ -12,6 +12,7 @@ on:
       - 'pngwing.com.png'
       - 'telkom-brand*.png'
       - 'telkom-logo.png'
+      - '.htaccess'
       - '.github/workflows/deploy-frontend.yaml'
 
   workflow_dispatch:
@@ -48,6 +49,7 @@ jobs:
           [ ! -f telkom-brand-white.png ] || cp telkom-brand-white.png deploy/frontend/
           [ ! -f telkom-brand.png ] || cp telkom-brand.png deploy/frontend/
           [ ! -f telkom-logo.png ] || cp telkom-logo.png deploy/frontend/
+          [ ! -f .htaccess ] || cp .htaccess deploy/frontend/
 
       - name: Validate Frontend Deployment
         run: |
@@ -77,7 +79,6 @@ jobs:
             **/.env
             **/.env.*
             **/node_modules/**
-            **/.htaccess
 
           dangerous-clean-slate: false
           log-level: standard
