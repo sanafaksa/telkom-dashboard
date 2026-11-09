@@ -109,7 +109,10 @@ export function tableToGrid(table) {
 //   "1.958.186.571" "- 12.081.550" "2.333,5" "4,3" "Rp 7.737.000" "61,8%"
 // Kode/periode tanpa pemisah ribuan (mis. "202611", "2026") sengaja tetap teks.
 export function parseIdNumber(text) {
-  const t = String(text ?? '').replace(/ /g, ' ').trim();
+  let t = String(text ?? '').replace(/ /g, ' ').trim();
+  // Format akuntansi "(925.265.279)" = negatif
+  const paren = /^\(\s*[^()]+\s*\)$/.test(t);
+  if (paren) t = `-${t.slice(1, -1).trim()}`;
   const m = t.match(/^([-−])?\s*(?:Rp\.?\s*)?(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d+))?\s*(%)?$/);
   if (!m) return null;
   const [, neg, intPart, dec, pct] = m;
@@ -118,7 +121,9 @@ export function parseIdNumber(text) {
   if (Number.isNaN(value)) return null;
   if (neg) value = -value;
   if (pct) return { value: value / 100, z: dec ? '0.0%' : '0%' };
-  return { value, z: dec ? `#,##0.${'0'.repeat(Math.min(dec.length, 3))}` : '#,##0' };
+  const base = dec ? `#,##0.${'0'.repeat(Math.min(dec.length, 3))}` : '#,##0';
+  // Angka berformat kurung tetap tampil dalam kurung di Excel (format akuntansi)
+  return { value, z: paren ? `${base};(${base});"-"` : base };
 }
 
 // ---------------------------------------------------------------------------

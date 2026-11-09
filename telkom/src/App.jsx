@@ -12,6 +12,7 @@ const P = (n) => lazy(() => import(`./pages/${n}.jsx`));
 const Dashboard = P('Dashboard');
 const Edk = P('Edk');
 const MonitoringOrderSjt = P('MonitoringOrderSjt');
+const KoreksiJurbalPsak = P('KoreksiJurbalPsak');
 const Quadrant = P('Quadrant');
 const Support = P('Support');
 const Login = P('Login');
@@ -41,6 +42,7 @@ export default function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/edk-monitoring" element={<Edk />} />
                 <Route path="/monitoring-order-sjt" element={<MonitoringOrderSjt />} />
+                <Route path="/koreksi-jurbal-psak" element={<KoreksiJurbalPsak />} />
                 <Route path="/kuadran" element={<Navigate to="/kuadran/moving" replace />} />
                 <Route path="/kuadran/:view" element={<Quadrant />} />
                 <Route path="/support-needed" element={<Support />} />
