@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Share2, ChevronDown, Check, Image, Grid3x3, Link2, Loader2 } from 'lucide-react';
+import { Share2, ChevronDown, Check, Image, Link2, Loader2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 
 /**
@@ -64,7 +64,7 @@ const COLOR_PROPS = [
  * Captures a DOM element cleanly as a PNG blob by mounting an isolated clone at (0,0)
  * so html2canvas bounds are 100% exact and never shifted by other elements on the page.
  */
-export async function captureElementToBlob(targetEl, backgroundColor = '#FFFFFF') {
+export async function captureElementToBlob(targetEl, backgroundColor = '#FFFFFF', { scale = 2 } = {}) {
   if (!targetEl) throw new Error('Target element not found');
 
   const { sanitizeColorString } = createCssColorSanitizer();
@@ -135,6 +135,36 @@ export async function captureElementToBlob(targetEl, backgroundColor = '#FFFFFF'
     cNode.style.transition = 'none';
   });
 
+  // html2canvas menggambar background & border <tr> selebar baris penuh, sehingga menimpa
+  // sel rowSpan dari baris sebelumnya (teks header terpotong / tercoret garis).
+  // Pindahkan warna <tr> ke sel-selnya sendiri, lalu kosongkan background & border <tr>.
+  clonedNodes.forEach((cNode, idx) => {
+    if (cNode.tagName !== 'TR') return;
+    const oNode = origNodes[idx];
+    const trCs = window.getComputedStyle(oNode);
+    const isClear = (c) => !c || c === 'transparent' || c === 'rgba(0, 0, 0, 0)';
+    const trBg = trCs.backgroundColor;
+    const trBorderW = parseFloat(trCs.borderBottomWidth) || 0;
+    const trBorder =
+      trBorderW > 0 && trCs.borderBottomStyle !== 'none'
+        ? `${trCs.borderBottomWidth} ${trCs.borderBottomStyle} ${sanitizeColorString(trCs.borderBottomColor)}`
+        : null;
+
+    Array.from(oNode.children).forEach((oCell, i) => {
+      const cCell = cNode.children[i];
+      if (!cCell) return;
+      const cellCs = window.getComputedStyle(oCell);
+      if (!isClear(trBg) && isClear(cellCs.backgroundColor)) {
+        cCell.style.setProperty('background-color', sanitizeColorString(trBg), 'important');
+      }
+      if (trBorder && !(parseFloat(cellCs.borderBottomWidth) > 0)) {
+        cCell.style.setProperty('border-bottom', trBorder, 'important');
+      }
+    });
+    cNode.style.setProperty('background', 'transparent', 'important');
+    cNode.style.setProperty('border', 'none', 'important');
+  });
+
   clone.style.width = '100%';
   clone.style.maxWidth = 'none';
   clone.style.height = 'auto';
@@ -170,7 +200,7 @@ export async function captureElementToBlob(targetEl, backgroundColor = '#FFFFFF'
 
     const canvas = await html2canvas(stage, {
       backgroundColor,
-      scale: 2,
+      scale,
       useCORS: true,
       logging: false,
       allowTaint: true,
@@ -217,7 +247,6 @@ export async function captureElementToBlob(targetEl, backgroundColor = '#FFFFFF'
 export default function ShareDropdown({
   className = '',
   buttonLabel = 'Salin & Bagikan',
-  tableSelector = 'table',
   captureSelector = '#edk-main-content',
   pictureTargets = null
 }) {
@@ -323,51 +352,7 @@ export default function ShareDropdown({
     }
   };
 
-  // 2. Copy as Table (TSV + HTML format)
-  const handleCopyTable = async () => {
-    setOpen(false);
-    try {
-      const table = document.querySelector(tableSelector);
-      if (!table) {
-        showFeedback('Data tabel tidak ditemukan');
-        return;
-      }
-
-      let tsv = '';
-      const rows = table.querySelectorAll('tr');
-      rows.forEach((row) => {
-        const cells = row.querySelectorAll('th, td');
-        const rowData = [];
-        cells.forEach((cell) => {
-          const text = cell.innerText.replace(/[\t\n]+/g, ' ').trim();
-          rowData.push(text);
-        });
-        if (rowData.length > 0) {
-          tsv += rowData.join('\t') + '\n';
-        }
-      });
-
-      if (navigator.clipboard?.write && window.ClipboardItem) {
-        const blobHtml = new Blob([table.outerHTML], { type: 'text/html' });
-        const blobText = new Blob([tsv], { type: 'text/plain' });
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            'text/html': blobHtml,
-            'text/plain': blobText
-          })
-        ]);
-      } else {
-        await navigator.clipboard.writeText(tsv);
-      }
-
-      showFeedback('Data tabel berhasil disalin (siap paste di Excel)!', 'table');
-    } catch (err) {
-      console.error(err);
-      showFeedback('Gagal menyalin data tabel');
-    }
-  };
-
-  // 3. Copy Report Link
+  // 2. Copy Report Link
   const handleCopyLink = async () => {
     setOpen(false);
     try {
@@ -406,13 +391,6 @@ export default function ShareDropdown({
 
   const menuOptions = [
     ...pictureOptions,
-    {
-      id: 'table',
-      icon: Grid3x3,
-      title: 'Copy as Table',
-      subtitle: 'Salin data tabel (Excel/CSV)',
-      action: handleCopyTable
-    },
     {
       id: 'link',
       icon: Link2,

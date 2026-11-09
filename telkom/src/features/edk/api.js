@@ -1,6 +1,8 @@
 import { apiDownload, apiGet, apiPost } from '../../lib/api';
 
 export const edkApi = {
+  populations: () => apiGet('/edk/populations'),
+
   uploads: () => apiGet('/edk/uploads'),
 
   upload: (file, reportDate) => {
@@ -21,10 +23,17 @@ export const edkApi = {
   topCustomers: (filters, { limit = 10, sort = 'abonemen_desc' } = {}) =>
     apiGet('/edk/top-customers', { ...filters, limit, sort }),
 
+  customerDetails: (filters, customerKey) =>
+    apiGet('/edk/top-customers/detail', { ...filters, customer_key: customerKey }),
+
   exportFile: (filters, by, format = 'xlsx') =>
     apiDownload('/edk/export', { ...filters, by, format }, `EDK_Monitoring_${by}.${format}`),
 
-  template: () => apiDownload('/edk/template', {}, 'Template_Import_EDK_Monitoring.xlsx'),
+  template: () => apiDownload(
+    '/edk/template',
+    {},
+    'Template_Import_EDK_Monitoring_SOLO_JT_Okt2026_9kolom.xlsx'
+  ),
 
   auditLogs: (page = 1) => apiGet('/audit-logs', { page }),
 };

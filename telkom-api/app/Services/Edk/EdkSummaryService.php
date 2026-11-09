@@ -108,8 +108,19 @@ class EdkSummaryService
 
     // ───────────────────────── Top pelanggan ─────────────────────────
 
-    public function topCustomers(EdkUpload $upload, array $f, int $limit = 10, string $sort = 'abonemen_desc'): array
+    public function topCustomers(
+        EdkUpload $upload,
+        array $f,
+        int $limit = 10,
+        string $sort = 'abonemen_desc',
+        ?string $status = null,
+        string $progress = 'all'
+    ): array
     {
+        if ($status !== null) {
+            return $this->topCustomersByStatus($upload, $f, $limit, $sort, $status, $progress);
+        }
+
         $q = $this->metrics(EdkRecord::query()->filter($upload, $f))
             ->addSelect('nama_pelanggan', 'segmen')
             ->groupBy('nama_pelanggan', 'segmen');
@@ -121,6 +132,8 @@ class EdkSummaryService
             default        => $q->orderByDesc('total_abonemen'),
         };
 
+        $totalResults = (clone $q)->reorder()->toBase()->get()->count();
+
         $rows = $q->orderBy('nama_pelanggan')->limit($limit)->toBase()->get()
             ->map(fn ($r) => $this->cast($r))->values();
 
@@ -128,9 +141,118 @@ class EdkSummaryService
             'upload_id'      => $upload->id,
             'last_update'    => $upload->report_date->toDateString(),
             'segmen'         => $f['segmen'] ?? null,
+            'total_results'  => $totalResults,
+            'top_limit'      => $limit,
+            'returned_results' => $rows->count(),
             'total_abonemen' => round($rows->sum('total_abonemen'), 2),
             'rows'           => $rows,
         ];
+    }
+
+    private function topCustomersByStatus(
+        EdkUpload $upload,
+        array $f,
+        int $limit,
+        string $sort,
+        string $status,
+        string $progress
+    ): array {
+        $customerKey = "COALESCE(NULLIF(TRIM(nama_pelanggan), ''), '(Kosong)')";
+        $q = $this->applyStatusProgress(EdkRecord::query()->filter($upload, $f), $status, $progress)
+            ->selectRaw("{$customerKey} AS customer_key")
+            ->selectRaw('MIN(nama_pelanggan) AS nama_pelanggan')
+            ->selectRaw('SUM(order_qty) AS total_order')
+            ->selectRaw('SUM(abonemen) AS total_abonemen')
+            ->selectRaw('GROUP_CONCAT(DISTINCT NULLIF(TRIM(segmen), \'\')) AS segmen')
+            ->selectRaw('GROUP_CONCAT(DISTINCT NULLIF(TRIM(nama_am), \'\')) AS nama_am')
+            ->selectRaw('GROUP_CONCAT(DISTINCT status_detail) AS progress')
+            ->groupBy('customer_key');
+
+        match ($sort) {
+            'abonemen_asc' => $q->orderBy('total_abonemen')->orderBy('customer_key'),
+            'nama_asc'     => $q->orderBy('customer_key'),
+            'order_desc'   => $q->orderByDesc('total_order')->orderBy('customer_key'),
+            default        => $q->orderByDesc('total_abonemen')->orderBy('customer_key'),
+        };
+
+        $totalResults = (clone $q)->reorder()->toBase()->get()->count();
+
+        $rows = $q->limit($limit)->toBase()->get()
+            ->map(fn ($r) => $this->cast($r))->values();
+
+        return [
+            'upload_id'      => $upload->id,
+            'last_update'    => $upload->report_date->toDateString(),
+            'status'         => $status,
+            'progress'       => $progress,
+            'total_results'  => $totalResults,
+            'top_limit'      => $limit,
+            'returned_results' => $rows->count(),
+            'pagination'     => [
+                'top_limit' => $limit,
+                'returned' => $rows->count(),
+                'total_results' => $totalResults,
+            ],
+            'total_abonemen' => round($rows->sum('total_abonemen'), 2),
+            'rows'           => $rows,
+        ];
+    }
+
+    public function customerDetails(
+        EdkUpload $upload,
+        array $f,
+        string $customerKey,
+        ?string $status = null,
+        string $progress = 'all'
+    ): array {
+        $normalized = "COALESCE(NULLIF(TRIM(nama_pelanggan), ''), '(Kosong)')";
+        $rows = $this->applyStatusProgress(EdkRecord::query()->filter($upload, $f), $status, $progress)
+            ->whereRaw("{$normalized} = ?", [$customerKey])
+            ->orderBy('nama_pelanggan')
+            ->orderBy('sid')
+            ->get([
+                'sid', 'no_order', 'nama_pelanggan', 'nama_am', 'segmen', 'witel',
+                'periode_edk', 'status_utama', 'status_detail', 'order_qty', 'abonemen', 'flag',
+            ]);
+
+        return [
+            'upload_id' => $upload->id,
+            'last_update' => $upload->report_date->toDateString(),
+            'customer_key' => $customerKey,
+            'status' => $status,
+            'progress' => $progress,
+            'rows' => $rows,
+        ];
+    }
+
+    private function applyStatusProgress(Builder $q, ?string $status, string $progress): Builder
+    {
+        return $q
+            ->when($status === 'bukan_witel_solo_jt',
+                fn (Builder $q) => $q->where('witel', '<>', 'SOLO JT'),
+                fn (Builder $q) => $q->when($status !== null,
+                    fn (Builder $q) => $q->where('witel', 'SOLO JT')->where('status_utama', $this->statusCode($status))))
+            ->when($progress !== 'all', fn (Builder $q) => $q->where('status_detail', $this->progressCode($progress)));
+    }
+
+    private function statusCode(string $status): string
+    {
+        return match ($status) {
+            'lanjut' => 'LANJUT',
+            'tidak_lanjut' => 'TIDAK_LANJUT',
+            'konfirmasi_am' => 'KONFIRMASI_AM',
+            default => throw new InvalidArgumentException("Status tidak valid: {$status}"),
+        };
+    }
+
+    private function progressCode(string $progress): string
+    {
+        return match ($progress) {
+            'complete' => 'COMPLETE',
+            'in_progress' => 'IN_PROGRESS',
+            'autorenewal' => 'AUTO_RENEWAL',
+            default => throw new InvalidArgumentException("Progress tidak valid: {$progress}"),
+        };
     }
 
     // ───────────────────────── Helper ─────────────────────────

@@ -39,6 +39,7 @@ export function useEdkFilters() {
       (prev) => {
         const next = new URLSearchParams();
         if (prev.get('tab')) next.set('tab', prev.get('tab'));
+        if (prev.get('upload_id')) next.set('upload_id', prev.get('upload_id'));
         return next;
       },
       { replace: true },

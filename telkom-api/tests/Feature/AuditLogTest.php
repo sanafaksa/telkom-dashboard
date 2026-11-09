@@ -53,7 +53,10 @@ class AuditLogTest extends TestCase
 
         $this->assertDatabaseHas('audit_logs', ['action' => 'auth.login', 'user_id' => $admin->id]);
         $this->assertDatabaseHas('audit_logs', ['action' => 'auth.login_failed', 'user_id' => $admin->id]);
-        $this->assertStringNotContainsString('salah', (string) AuditLog::where('action', 'auth.login_failed')->value('meta'));
+        $this->assertStringNotContainsString(
+            'salah',
+            json_encode(AuditLog::where('action', 'auth.login_failed')->value('meta'))
+        );
     }
 
     public function test_upload_dan_aktivasi_tercatat(): void
@@ -64,6 +67,7 @@ class AuditLogTest extends TestCase
 
         $row = ['S1','A','AM1','DGS','202611','LANJUT','COMPLETE',1,1000];
         $this->upload($row, '2026-10-26')->assertCreated();
+        $row[4] = '202612';
         $this->upload($row, '2026-11-02')->assertCreated();
 
         $first = EdkUpload::orderBy('id')->first();

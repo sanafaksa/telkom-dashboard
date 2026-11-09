@@ -2,14 +2,27 @@ import {Filter,Upload,Download,Share2,Lightbulb,Check,X,FileText,FileSpreadsheet
 export const fmt=n=>n.toLocaleString('id-ID');
 export { default as ShareDropdown } from './ShareDropdown';
 import ShareDropdown from './ShareDropdown';
+
+import { collectSheets, exportXlsx, exportCsv, exportDocx, exportPdf } from '../lib/exporters';
 export function ShareButton(props) {
   return <ShareDropdown {...props} />;
 }
 import {createPortal} from 'react-dom';
 
-export function ExportButton({ onClick, onExportData, filename = 'export-report' }) {
+export function ExportButton({
+  filename = 'export-report',
+  title,
+  tableSelector = 'table',
+  pdfSelector,
+  sheets,
+  onExportXlsx,
+  onExportCsv,
+  prepareExport // opsional: () => restoreFn, mis. tampilkan semua tabel dulu sebelum export data
+}) {
   const [open, setOpen] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const docTitle = title || filename.replace(/_/g, ' ');
   const ref = useRef(null);
 
   useEffect(() => {
@@ -23,48 +36,67 @@ export function ExportButton({ onClick, onExportData, filename = 'export-report'
 
   const showFeedback = (msg) => {
     setFeedback(msg);
-    setTimeout(() => setFeedback(null), 2000);
+    setTimeout(() => setFeedback(null), 2500);
   };
 
-  const handleExportCSV = () => {
-    setOpen(false);
-    if (onClick) onClick();
-    showFeedback('Export CSV berhasil');
-  };
+  // Jalankan export dengan status "Memproses..." + pesan sukses/gagal yang seragam
+  const nextFrame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-  const handleExportXLSX = () => {
+  const run = async (label, fn, { usePrepare = true } = {}) => {
     setOpen(false);
-    if (onClick) onClick();
-    showFeedback('Export XLSX berhasil');
-  };
-
-  const handleExportPDF = async () => {
-    setOpen(false);
+    setBusy(true);
+    let restore = null;
     try {
-      window.print();
-      showFeedback('Membuka dialog cetak PDF');
-    } catch {
-      showFeedback('Gagal mengekspor PDF');
+      // Tunggu dropdown tertutup (penting untuk PDF yang memotret halaman)
+      await nextFrame();
+      if (usePrepare && prepareExport) {
+        restore = prepareExport();
+        await nextFrame();
+      }
+      const ok = await fn();
+      showFeedback(ok === false ? 'Data tabel tidak ditemukan' : `Export ${label} berhasil`);
+    } catch (err) {
+      console.error(err);
+      showFeedback(err?.message ? `Gagal export ${label}: ${err.message}` : `Gagal export ${label}`);
+    } finally {
+      if (typeof restore === 'function') restore();
+      setBusy(false);
     }
   };
 
-  const handleExportDOCX = () => {
-    setOpen(false);
-    const tableEl = document.querySelector('table');
-    if (tableEl) {
-      const html = `<html><head><meta charset="utf-8"><title>${filename}</title></head><body><h2>${filename}</h2>${tableEl.outerHTML}</body></html>`;
-      const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${filename}.doc`;
-      a.click();
-      URL.revokeObjectURL(url);
-      showFeedback('Export DOCX berhasil');
-    } else {
-      showFeedback('Data tabel tidak ditemukan');
-    }
-  };
+  // sheets boleh berupa array atau fungsi (dievaluasi saat tombol diklik)
+  const resolveSheets = () => (typeof sheets === 'function' ? sheets() : sheets);
+
+  const handleExportXLSX = () =>
+    run('XLSX', async () => {
+      if (onExportXlsx) return onExportXlsx();
+      const list = collectSheets({ sheets: resolveSheets(), tableSelector });
+      if (!list.length) return false;
+      await exportXlsx(list, filename, docTitle);
+    });
+
+  const handleExportCSV = () =>
+    run('CSV', async () => {
+      if (onExportCsv) return onExportCsv();
+      const list = collectSheets({ sheets: resolveSheets(), tableSelector });
+      if (!list.length) return false;
+      exportCsv(list, filename);
+    });
+
+  const handleExportDOCX = () =>
+    run('DOCX', async () => exportDocx({ sheets: resolveSheets(), tableSelector }, filename, docTitle));
+
+  // PDF = apa yang sedang tampil di layar (tanpa prepareExport)
+  const handleExportPDF = () =>
+    run(
+      'PDF',
+      async () => {
+        const target =
+          (pdfSelector && document.querySelector(pdfSelector)) || document.querySelector('main') || document.body;
+        await exportPdf(target, filename, docTitle);
+      },
+      { usePrepare: false }
+    );
 
   const options = [
     {
@@ -98,9 +130,10 @@ export function ExportButton({ onClick, onExportData, filename = 'export-report'
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-2 shadow-2xs transition-colors cursor-pointer"
+        disabled={busy}
+        className="bg-[#2563EB] hover:bg-blue-700 disabled:opacity-70 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-2 shadow-2xs transition-colors cursor-pointer"
       >
-        <span>Export</span>
+        <span>{busy ? 'Memproses...' : 'Export'}</span>
         <ChevronDown
           size={13}
           className={`transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
@@ -108,7 +141,7 @@ export function ExportButton({ onClick, onExportData, filename = 'export-report'
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl border border-slate-200/90 shadow-xl z-50 py-1.5 animate-[fadeIn_0.15s_ease-out]">
+        <div data-html2canvas-ignore="true" className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl border border-slate-200/90 shadow-xl z-50 py-1.5 animate-[fadeIn_0.15s_ease-out]">
           {options.map((opt) => (
             <button
               key={opt.label}
@@ -124,7 +157,7 @@ export function ExportButton({ onClick, onExportData, filename = 'export-report'
       )}
 
       {feedback && (
-        <div className="absolute right-0 top-full mt-2 px-3 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg shadow-lg z-50 whitespace-nowrap animate-[fadeIn_0.15s_ease-out]">
+        <div data-html2canvas-ignore="true" className="absolute right-0 top-full mt-2 px-3 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg shadow-lg z-50 whitespace-nowrap animate-[fadeIn_0.15s_ease-out]">
           {feedback}
         </div>
       )}

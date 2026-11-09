@@ -118,6 +118,87 @@ class EdkSummaryTest extends TestCase
         $this->assertEquals(1800, $res->json('total_abonemen'));
     }
 
+    public function test_top_customers_mendukung_status_progress_dan_grouping_pelanggan(): void
+    {
+        $res = $this->getJson('/api/edk/top-customers?status=lanjut&progress=all&limit=10')->assertOk();
+
+        $this->assertSame('lanjut', $res->json('status'));
+        $this->assertSame('all', $res->json('progress'));
+        $this->assertSame(['Pemkot A'], array_column($res->json('rows'), 'nama_pelanggan'));
+        $this->assertSame(3, $res->json('rows.0.total_order'));
+        $this->assertEquals(1500, $res->json('rows.0.total_abonemen'));
+        $this->assertSame('DGS', $res->json('rows.0.segmen'));
+        $this->assertSame('AM1', $res->json('rows.0.nama_am'));
+        $this->assertSame(1, $res->json('total_results'));
+        $this->assertSame(10, $res->json('top_limit'));
+        $this->assertSame(1, $res->json('returned_results'));
+        $this->assertSame(1, $res->json('pagination.total_results'));
+        $this->assertSame(1, $res->json('pagination.returned'));
+    }
+
+    public function test_filter_progress_tidak_bocor_ke_status_lain(): void
+    {
+        $res = $this->getJson('/api/edk/top-customers?status=tidak_lanjut&progress=complete')->assertOk();
+
+        $this->assertSame(['RS B'], array_column($res->json('rows'), 'nama_pelanggan'));
+        $this->assertSame(1, $res->json('rows.0.total_order'));
+        $this->assertEquals(-200, $res->json('rows.0.total_abonemen'));
+    }
+
+    public function test_pencarian_pelanggan_diterapkan_sebelum_ranking_top10(): void
+    {
+        $res = $this->getJson('/api/edk/top-customers?status=lanjut&q=Pemkot&limit=10')->assertOk();
+
+        $this->assertSame(['Pemkot A'], array_column($res->json('rows'), 'nama_pelanggan'));
+        $this->assertEquals(1500, $res->json('total_abonemen'));
+    }
+
+    public function test_upload_id_mengisolasi_populasi_yang_dibaca_semua_tab(): void
+    {
+        $september = EdkUpload::active()->first();
+        $rows = self::ROWS;
+        $rows[0][10] = 9000;
+        $this->uploadRows($rows, '2026-11-09');
+        $oktober = EdkUpload::active()->first();
+
+        $this->assertNotSame($september->id, $oktober->id);
+
+        $septemberResponse = $this->getJson("/api/edk/summary/segmen?upload_id={$september->id}")->assertOk();
+        $oktoberResponse = $this->getJson("/api/edk/summary/segmen?upload_id={$oktober->id}")->assertOk();
+
+        $this->assertSame($september->id, $septemberResponse->json('upload_id'));
+        $this->assertSame($oktober->id, $oktoberResponse->json('upload_id'));
+        $this->assertEquals(1600, $septemberResponse->json('total.total_abonemen'));
+        $this->assertEquals(9600, $oktoberResponse->json('total.total_abonemen'));
+    }
+
+    public function test_status_bukan_witel_menggunakan_filter_progress_tersendiri(): void
+    {
+        $rows = self::ROWS;
+        $rows[] = ['S5','Non Solo Customer','AM4','CC4','DGS','SEMARANG','202611','LANJUT','COMPLETE',2,700];
+        $this->uploadRows($rows, '2026-11-09');
+
+        $res = $this->getJson('/api/edk/top-customers?status=bukan_witel_solo_jt&progress=complete')->assertOk();
+
+        $this->assertSame(['Non Solo Customer'], array_column($res->json('rows'), 'nama_pelanggan'));
+        $this->assertSame(2, $res->json('rows.0.total_order'));
+        $this->assertEquals(700, $res->json('rows.0.total_abonemen'));
+    }
+
+    public function test_detail_pelanggan_mengikuti_scope_status_dan_populasi(): void
+    {
+        $res = $this->getJson('/api/edk/top-customers/detail?customer_key=Pemkot%20A&status=lanjut&progress=complete')
+            ->assertOk();
+
+        $this->assertSame('Pemkot A', $res->json('customer_key'));
+        $this->assertCount(1, $res->json('rows'));
+        $this->assertSame('S1', $res->json('rows.0.sid'));
+
+        $this->getJson('/api/edk/top-customers/detail?customer_key=Pemkot%20A&status=tidak_lanjut&progress=complete')
+            ->assertOk()
+            ->assertJsonCount(0, 'rows');
+    }
+
     public function test_options_dan_404_tanpa_snapshot(): void
     {
         $opt = $this->getJson('/api/edk/options')->assertOk();

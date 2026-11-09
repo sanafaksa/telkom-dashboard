@@ -12,6 +12,16 @@ use Illuminate\Support\Facades\DB;
 
 class EdkUploadController extends Controller
 {
+    private const TEMPLATE = 'Template_Import_EDK_Monitoring_SOLO_JT_Okt2026_9kolom.xlsx';
+
+    public function populations()
+    {
+        return EdkUpload::query()
+            ->where('status', 'done')
+            ->orderByDesc('id')
+            ->get(['id', 'report_date', 'original_name', 'status', 'is_active', 'total_rows', 'created_at']);
+    }
+
     public function index()
     {
         return EdkUpload::with(['uploader:id,name', 'activator:id,name'])
@@ -74,9 +84,9 @@ class EdkUploadController extends Controller
 
     public function template()
     {
-        $path = resource_path('templates/Template_Import_EDK_Monitoring.xlsx');
-        abort_unless(is_file($path), 404, 'Template belum tersedia.');
+        $path = base_path('../data/' . self::TEMPLATE);
+        abort_unless(is_file($path), 404, 'File template EDK tidak ditemukan di folder data.');
 
-        return response()->download($path, 'Template_Import_EDK_Monitoring.xlsx');
+        return response()->download($path, self::TEMPLATE);
     }
 }
