@@ -108,7 +108,9 @@ function HistoryTab({ viewingId, canActivate, onView, onClose }) {
       <thead className="bg-slate-50 text-slate-600 sticky top-0">
         <tr>
           <th className="px-4 py-2.5 text-left font-bold">Tanggal Laporan</th>
+          <th className="px-4 py-2.5 text-left font-bold">Periode EDK</th>
           <th className="px-4 py-2.5 text-left font-bold">File</th>
+
           <th className="px-4 py-2.5 text-right font-bold">Baris</th>
           <th className="px-4 py-2.5 text-left font-bold">Status</th>
           <th className="px-4 py-2.5 text-left font-bold">Diupload</th>
@@ -123,8 +125,8 @@ function HistoryTab({ viewingId, canActivate, onView, onClose }) {
             className={`border-t border-slate-100 align-top ${viewingId === u.id ? 'bg-amber-50' : 'hover:bg-slate-50'}`}
           >
             <td className="px-4 py-2.5 font-semibold text-slate-800 whitespace-nowrap">{fmtDate(u.report_date)}</td>
+            <td className="px-4 py-2.5 text-slate-700 font-medium whitespace-nowrap">{u.periode_edk ?? '-'}</td>
             <td className="px-4 py-2.5 text-slate-600 max-w-[180px] truncate" title={u.original_name}>
-              {u.original_name}
             </td>
             <td className="px-4 py-2.5 text-right tabular-nums text-slate-700">
               {u.total_rows?.toLocaleString('id-ID') ?? 0}

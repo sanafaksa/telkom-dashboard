@@ -378,7 +378,7 @@ function UploadModal({ open, onClose, onUploaded }) {
     setUploadError(null);
 
     try {
-      await uploadMutation.mutateAsync({ file: files[0], reportDate });
+      await uploadMutation.mutateAsync({ file: files[0], reportDate, periodeEdk: activeUploadPeriod });
       onUploaded?.(activeUploadPeriod);
       setDone(true);
       setTimeout(() => {
@@ -584,33 +584,27 @@ export default function Edk() {
   const { data: options } = useEdkOptions(filters.upload_id);
   const { data: populations } = useEdkPopulations();
 
-  const populationOptions = useMemo(
+    const populationOptions = useMemo(
     () => {
-      const completed = (populations ?? []).filter((upload) => upload.status === 'done');
-      const uploadsPerMonth = completed.reduce((counts, upload) => {
-        const monthKey = upload.report_date?.slice(0, 7) ?? `upload-${upload.id}`;
-        counts.set(monthKey, (counts.get(monthKey) ?? 0) + 1);
-        return counts;
-      }, new Map());
+      const completed = (populations ?? []).filter((upload) => upload.status === 'done' && upload.periode_edk);
 
-      return completed.map((upload) => {
-        const monthKey = upload.report_date?.slice(0, 7) ?? `upload-${upload.id}`;
-        const date = upload.report_date ? new Date(`${upload.report_date}T00:00:00`) : null;
-        const month = date
-          ? date.toLocaleDateString('id-ID', { month: 'short' })
+      // Kelompokkan per periode_edk, ambil upload terbaru (pertama, karena sudah orderByDesc id)
+      const seen = new Map();
+      for (const upload of completed) {
+        if (!seen.has(upload.periode_edk)) {
+          seen.set(upload.periode_edk, upload);
+        }
+      }
+
+      return [...seen.entries()].map(([periode, upload]) => {
+        const month = periode.length === 6
+          ? new Date(`${periode.slice(0, 4)}-${periode.slice(4, 6)}-01T00:00:00`)
+              .toLocaleDateString('id-ID', { month: 'short' })
           : null;
-        const uploadDate = upload.created_at ? new Date(upload.created_at) : null;
-        const versionLabel = (uploadsPerMonth.get(monthKey) ?? 0) > 1
-          ? upload.is_active
-            ? ' · Aktif'
-            : ` · ${uploadDate ? uploadDate.toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : `#${upload.id}`}`
-          : '';
         return {
           value: String(upload.id),
-          label: date
-            ? `${monthKey.replace('-', '')} - ${month}${versionLabel}`
-            : `Populasi ${upload.id}${versionLabel}`,
-          upload
+          label: month ? `${periode} - ${month}` : periode,
+          upload,
         };
       });
     },

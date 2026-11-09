@@ -5,12 +5,14 @@ export const edkApi = {
 
   uploads: () => apiGet('/edk/uploads'),
 
-  upload: (file, reportDate) => {
+  upload: (file, reportDate, periodeEdk) => {
     const fd = new FormData();
     fd.append('file', file);
     fd.append('report_date', reportDate);
+    fd.append('periode_edk', periodeEdk);
     return apiPost('/edk/uploads', fd);
   },
+
 
   activate: (id) => apiPost(`/edk/uploads/${id}/activate`),
 

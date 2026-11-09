@@ -34,7 +34,7 @@ class EdkImporter
 
     private const REQUIRED_SHEET = 'DATA_EDK';
 
-    public function import(UploadedFile $file, string $reportDate, ?int $userId): EdkUpload
+    public function import(UploadedFile $file, string $reportDate, ?int $userId, ?string $periodeEdk = null): EdkUpload
     {
         $fileHash = hash_file('sha256', $file->getRealPath());
 
@@ -49,6 +49,7 @@ class EdkImporter
 
         $upload = EdkUpload::create([
             'report_date'   => $reportDate,
+            'periode_edk'   => $periodeEdk,
             'original_name' => $file->getClientOriginalName(),
             'file_hash'     => $fileHash,
             'file_path'     => $file->store('edk-uploads'),

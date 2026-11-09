@@ -6,12 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class EdkUpload extends Model
 {
-    protected $fillable = [
-        'report_date', 'original_name', 'file_path', 'status',
+        protected $fillable = [
+        'report_date', 'periode_edk', 'original_name', 'file_path', 'status',
         'file_hash',
         'is_active', 'total_rows', 'errors', 'uploaded_by',
         'activated_by', 'activated_at',
     ];
+
 
     protected $hidden = ['file_path'];
 

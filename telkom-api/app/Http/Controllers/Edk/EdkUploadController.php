@@ -19,7 +19,7 @@ class EdkUploadController extends Controller
         return EdkUpload::query()
             ->where('status', 'done')
             ->orderByDesc('id')
-            ->get(['id', 'report_date', 'original_name', 'status', 'is_active', 'total_rows', 'created_at']);
+            ->get(['id', 'report_date', 'periode_edk', 'original_name', 'status', 'is_active', 'total_rows', 'created_at']);
     }
 
     public function index()
@@ -37,10 +37,12 @@ class EdkUploadController extends Controller
         $data = $request->validate([
             'file'        => 'required|file|mimes:xlsx|max:10240',
             'report_date' => 'required|date',
+            'periode_edk' => 'required|string|max:10',
         ]);
 
         try {
-            $upload = $importer->import($data['file'], $data['report_date'], $request->user()?->id);
+            $upload = $importer->import($data['file'], $data['report_date'], $request->user()?->id, $data['periode_edk']);
+
         } catch (EdkImportException $e) {
             Audit::log('edk.upload_failed', null, [
                 'original_name' => $data['file']->getClientOriginalName(),

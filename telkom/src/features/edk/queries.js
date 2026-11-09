@@ -51,7 +51,7 @@ export const useEdkPopulations = () =>
 export function useUploadEdk() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ file, reportDate }) => edkApi.upload(file, reportDate),
+    mutationFn: ({ file, reportDate, periodeEdk }) => edkApi.upload(file, reportDate, periodeEdk),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['edk'] }),
   });
 }
