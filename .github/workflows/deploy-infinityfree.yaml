@@ -1,3 +1,4 @@
+
 name: Deploy to InfinityFree
 
 on:
@@ -20,14 +21,16 @@ concurrency:
 
 jobs:
   build-and-deploy:
-    name: Build and Deploy Dashboard
+    name: Build and Deploy to InfinityFree
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 12000 #jangan diubah
 
     steps:
+      # 1. Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2. Setup Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -35,14 +38,17 @@ jobs:
           cache: npm
           cache-dependency-path: telkom/package-lock.json
 
+      # 3. Install frontend dependencies
       - name: Install frontend dependencies
         working-directory: telkom
         run: npm ci
 
+      # 4. Build React + Vite
       - name: Build frontend
         working-directory: telkom
-        run: npm run build
+        run: npm run build -- --mode solarisapp
 
+      # 5. Setup PHP
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -51,14 +57,17 @@ jobs:
           coverage: none
           tools: composer:v2
 
+      # 6. Validate Composer
       - name: Validate Composer configuration
         working-directory: telkom-api
         run: composer validate --no-check-publish
 
+      # 7. Install Laravel dependencies
       - name: Install backend dependencies
         working-directory: telkom-api
         run: composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
 
+      # 8. Prepare deployment folders
       - name: Prepare deployment files
         shell: bash
         run: |
@@ -66,8 +75,10 @@ jobs:
 
           mkdir -p deploy/frontend deploy/api
 
+          # React -> htdocs/
           rsync -a telkom/dist/ deploy/frontend/
 
+          # Laravel -> htdocs/api/
           rsync -a \
             --exclude='.env' \
             --exclude='.env.*' \
@@ -77,25 +88,27 @@ jobs:
             --exclude='storage/logs/*.log' \
             telkom-api/ deploy/api/
 
+          # Laravel API entry point
           cat > deploy/api/.htaccess <<'EOF'
           Options -Indexes
 
           <IfModule mod_rewrite.c>
               RewriteEngine On
 
-              # Protect Laravel internal directories.
+              # Protect Laravel internal directories
               RewriteRule ^(app|bootstrap|config|database|resources|routes|storage|tests|vendor)(/|$) - [F,L,NC]
 
-              # Protect sensitive files.
+              # Protect sensitive files
               RewriteRule ^(\.env|artisan|composer\.(json|lock)|phpunit\.xml)$ - [F,L,NC]
 
-              # Route API requests to Laravel's public entry point.
+              # Route requests to Laravel
               RewriteCond %{REQUEST_FILENAME} !-f
               RewriteCond %{REQUEST_FILENAME} !-d
               RewriteRule ^ public/index.php [QSA,L]
           </IfModule>
           EOF
 
+      # 9. Validate deployment files
       - name: Validate deployment files
         shell: bash
         run: |
@@ -109,7 +122,8 @@ jobs:
           test ! -f deploy/api/.env
           test ! -f deploy/api/.env.solarisapp
 
-      - name: Deploy frontend via FTP
+      # 10. Deploy React frontend
+      - name: Deploy frontend to htdocs
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
           server: ${{ secrets.FTP_HOST }}
@@ -129,7 +143,8 @@ jobs:
           dangerous-clean-slate: false
           log-level: standard
 
-      - name: Deploy backend via FTP
+      # 11. Deploy Laravel backend
+      - name: Deploy backend to htdocs/api
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
           server: ${{ secrets.FTP_HOST }}
