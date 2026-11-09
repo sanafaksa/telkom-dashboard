@@ -46,3 +46,5 @@ Thumbs.db
 
 # Large raw Excel files (>25MB)
 data/kuadran/*.xlsx
+
+.claude/

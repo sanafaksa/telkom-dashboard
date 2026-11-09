@@ -709,7 +709,10 @@ export default function Edk() {
 
   const isLoading = summaryQ.isFetching || cardsQ.isFetching || (isTop10View && topQ.isFetching);
   const apiError = summaryQ.error ?? cardsQ.error ?? (isTop10View ? topQ.error : null);
-
+  const apiErrorText = apiError
+    ? (apiError.status === 404 ? 'Belum ada data. Silakan upload report EDK.' : apiError.message)
+    : null;
+  
   const data = useMemo(
     () => (isTop10View ? [] : (summary?.rows ?? []).map(toRow)),
     [summary, isTop10View]
@@ -1055,13 +1058,10 @@ export default function Edk() {
               {lastUpdate ? formatLastUpdate(lastUpdate) : 'Belum ada update'}
             </b>
             {isLoading && <span className="text-slate-400">Memuat data…</span>}
-            {apiError && (
-              <span className="text-rose-600 font-semibold">
-                {apiError.status === 404
-                  ? 'Belum ada data. Silakan upload report EDK.'
-                  : apiError.message}
-              </span>
+            {apiError && mode === 'Status' && (
+              <span className="text-rose-600 font-semibold">{apiErrorText}</span>
             )}
+
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 bg-slate-100/90 p-1.5 rounded-xl border border-slate-200/80 shrink-0">
@@ -1690,6 +1690,9 @@ export default function Edk() {
                   <tr>
                     <td colSpan={17} className="py-12 text-center text-slate-500 text-xs bg-white">
                       Tidak ada Account Manager yang sesuai dengan filter yang dipilih.
+                      {apiErrorText && (
+                        <div className="mt-2 text-rose-600 font-semibold">{apiErrorText}</div>
+                      )}
                       <div className="mt-2">
                         <button
                           type="button"
@@ -1826,6 +1829,9 @@ export default function Edk() {
                   <tr>
                     <td colSpan={17} className="py-12 text-center text-slate-500 text-xs bg-white">
                       Tidak ada data segmen yang sesuai dengan filter yang dipilih.
+                      {apiErrorText && (
+                        <div className="mt-2 text-rose-600 font-semibold">{apiErrorText}</div>
+                      )}
                       <div className="mt-2">
                         <button
                           type="button"
@@ -1991,6 +1997,9 @@ export default function Edk() {
                   <tr>
                     <td colSpan={17} className="py-12 text-center text-slate-500 text-xs bg-white">
                       Tidak ada data periode EDK yang sesuai dengan filter yang dipilih.
+                      {apiErrorText && (
+                        <div className="mt-2 text-rose-600 font-semibold">{apiErrorText}</div>
+                      )}
                       <div className="mt-2">
                         <button
                           type="button"

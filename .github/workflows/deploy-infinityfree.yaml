@@ -1,0 +1,151 @@
+name: Deploy to InfinityFree
+
+on:
+  push:
+    branches:
+      - solarisapp
+    paths:
+      - 'telkom/**'
+      - 'telkom-api/**'
+      - '.github/workflows/deploy-infinityfree.yaml'
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-infinityfree
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy Dashboard
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: telkom/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: telkom
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: telkom
+        run: npm run build
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_mysql, openssl, fileinfo, bcmath, xml, ctype, tokenizer
+          coverage: none
+          tools: composer:v2
+
+      - name: Validate Composer configuration
+        working-directory: telkom-api
+        run: composer validate --no-check-publish
+
+      - name: Install backend dependencies
+        working-directory: telkom-api
+        run: composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
+
+      - name: Prepare deployment files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p deploy/frontend deploy/api
+
+          rsync -a telkom/dist/ deploy/frontend/
+
+          rsync -a \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            --exclude='.git/' \
+            --exclude='node_modules/' \
+            --exclude='tests/' \
+            --exclude='storage/logs/*.log' \
+            telkom-api/ deploy/api/
+
+          cat > deploy/api/.htaccess <<'EOF'
+          Options -Indexes
+
+          <IfModule mod_rewrite.c>
+              RewriteEngine On
+
+              # Protect Laravel internal directories.
+              RewriteRule ^(app|bootstrap|config|database|resources|routes|storage|tests|vendor)(/|$) - [F,L,NC]
+
+              # Protect sensitive files.
+              RewriteRule ^(\.env|artisan|composer\.(json|lock)|phpunit\.xml)$ - [F,L,NC]
+
+              # Route API requests to Laravel's public entry point.
+              RewriteCond %{REQUEST_FILENAME} !-f
+              RewriteCond %{REQUEST_FILENAME} !-d
+              RewriteRule ^ public/index.php [QSA,L]
+          </IfModule>
+          EOF
+
+      - name: Validate deployment files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -f deploy/frontend/index.html
+          test -d deploy/frontend/assets
+          test -f deploy/api/public/index.php
+          test -f deploy/api/vendor/autoload.php
+          test -f deploy/api/bootstrap/app.php
+          test ! -f deploy/api/.env
+          test ! -f deploy/api/.env.solarisapp
+
+      - name: Deploy frontend via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          local-dir: deploy/frontend/
+          server-dir: /htdocs/
+          state-name: .ftp-frontend-sync-state.json
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.env
+            **/.env.*
+            **/node_modules/**
+          dangerous-clean-slate: false
+          log-level: standard
+
+      - name: Deploy backend via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          local-dir: deploy/api/
+          server-dir: /htdocs/api/
+          state-name: .ftp-backend-sync-state.json
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.env
+            **/.env.*
+            **/node_modules/**
+            **/*.log
+          dangerous-clean-slate: false
+          log-level: standard
