@@ -49,6 +49,16 @@ const formatRupiah = (val) => {
   return isNegative ? `-${formatted}` : formatted;
 };
 
+const formatRupiahShort = (val) => {
+  if (val === undefined || val === null || val === '-') return '-';
+  const abs = Math.abs(Number(val));
+  const sign = val < 0 ? '-' : '';
+  if (abs >= 1e12) return `${sign}${(abs / 1e12).toLocaleString('id-ID', { maximumFractionDigits: 1 })} T`;
+  if (abs >= 1e9)  return `${sign}${(abs / 1e9).toLocaleString('id-ID', { maximumFractionDigits: 1 })} M`;
+  if (abs >= 1e6)  return `${sign}${Math.round(abs / 1e6).toLocaleString('id-ID')} jt`;
+  return `${sign}${abs.toLocaleString('id-ID')}`;
+};
+
 const cellFmt = (v) => {
   if (v === undefined || v === null || v === '-') return '-';
   return v.toLocaleString('id-ID');
@@ -144,7 +154,8 @@ function StatusPanel({
             <p className="text-xs text-white/80 mt-1">ENTERPRISE SOLO · Distribusi abonemen dan utilisasi layanan per Customer Code</p>
           </div>
           <div className="text-left sm:text-right">
-            <p className="text-[11px] font-bold tracking-wider text-white/80 uppercase">TOTAL ABONEMEN (TOP 10)</p>
+            <p className="text-2xl md:text-[26px] font-extrabold tracking-tight mt-0.5">Rp {formatRupiahShort(totalAbonemen)}</p>
+
             <p className="text-2xl md:text-[26px] font-extrabold tracking-tight mt-0.5">Rp {Number(totalAbonemen || 0).toLocaleString('id-ID')}</p>
           </div>
         </div>
@@ -782,11 +793,8 @@ export default function Edk() {
   }, [cardsQ.data]);
 
   // ── Export & link ──
-  const handleExport = () => {
-    edkApi
-      .exportFile(filters, isTop10View ? 'segmen' : tab, 'xlsx')
-      .catch((err) => alert(err.message || 'Gagal export file.'));
-  };
+  // Export dari server (data lengkap semua halaman tabel), format sesuai pilihan
+  const exportFromServer = (format) => edkApi.exportFile(filters, isTop10View ? 'segmen' : tab, format);
 
   const getReportLink = () => {
     const url = new URL(window.location.href);
@@ -806,7 +814,8 @@ export default function Edk() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        {/* Tombol aksi tidak ikut di Copy as Picture / Export PDF */}
+        <div data-html2canvas-ignore="true" className="flex flex-wrap items-center gap-2.5">
           {/* Upload Report Button (khusus admin) */}
           {canManage && (
             <button
@@ -831,15 +840,18 @@ export default function Edk() {
 
           {/* Export Dropdown Button */}
           <ExportButton
-            onClick={handleExport}
+            onExportXlsx={() => exportFromServer('xlsx')}
+            onExportCsv={() => exportFromServer('csv')}
             filename={`EDK_Monitoring_${mode}`}
+            title={`EDK Monitoring – ${mode}`}
+            tableSelector="#edk-main-content table"
+            pdfSelector="#edk-main-content"
           />
 
           {/* Salin & Bagikan Dropdown Button */}
           <ShareDropdown
             buttonLabel="Salin & Bagikan"
             captureSelector="#edk-main-content"
-            tableSelector="table"
             getLink={getReportLink}
           />
         </div>
@@ -881,7 +893,7 @@ export default function Edk() {
             TOTAL ABONEMEN
           </p>
           <p className="text-[28px] font-extrabold text-slate-900 tracking-tight mt-1">
-            Rp {formatRupiah(kpiMetrics.totalAbonemen)}
+              Rp {formatRupiahShort(kpiMetrics.totalAbonemen)}
           </p>
           <DeltaText value={kpiMetrics.abonemenDelta} />
         </div>
@@ -1103,7 +1115,8 @@ export default function Edk() {
                   TOTAL ABONEMEN (TOP 10)
                 </p>
                 <p className="text-2xl md:text-[26px] font-extrabold tracking-tight mt-0.5 text-white">
-                  Rp {top10TotalAbonemen.toLocaleString('id-ID')}
+                  Rp {formatRupiahShort(top10TotalAbonemen)}
+
                 </p>
               </div>
             </div>

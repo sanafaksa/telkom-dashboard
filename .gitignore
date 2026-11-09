@@ -6,7 +6,9 @@ vendor/
 git-history-mouren-laravel.md
 EDK Monitoring 1x upload– Handoff Plan, Todo & Roadmap.md
 *.md
+!README.md
 
+.claude/
 
 # Build output
 dist/

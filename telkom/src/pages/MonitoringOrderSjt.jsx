@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, Fragment } from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal, flushSync } from 'react-dom';
 import {
   AlertTriangle,
   ArrowRight,
@@ -22,7 +22,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { ExportButton, ShareDropdown, exportCSV } from '../components/ui';
+import { ExportButton, ShareDropdown } from '../components/ui';
 import FilterDropdown from '../components/FilterDropdown';
 import { SNAPSHOTS, CATATAN_DASHBOARD } from '../data/monitoringOrderSjtData';
 
@@ -37,6 +37,15 @@ const fmtNilai = (val) => {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   });
+};
+
+const formatRupiahShort = (val) => {
+  if (val === undefined || val === null || val === '-') return '-';
+  const abs = Math.abs(Number(val));
+  const sign = val < 0 ? '-' : '';
+  if (abs >= 1e6) return `${sign}${(abs / 1e6).toLocaleString('id-ID', { maximumFractionDigits: 1 })} T`;
+  if (abs >= 1e3) return `${sign}${(abs / 1e3).toLocaleString('id-ID', { maximumFractionDigits: 1 })} M`;
+  return `${sign}${abs.toLocaleString('id-ID', { maximumFractionDigits: 1 })} jt`;
 };
 
 const fmtSelisih = (val) => {
@@ -1599,20 +1608,6 @@ export default function MonitoringOrderSjt() {
   const divColHighlight = (div) =>
     selectedDivisi.includes(div) ? 'bg-blue-50/70 font-bold text-[#1D4ED8]' : '';
 
-  const handleExport = () => {
-    const exportRows = currentData.milestonePerDivisi.rows.map((r) => ({
-      PERIODE: snapshotKey,
-      MILESTONE: r.milestone,
-      DGS: r.dgs,
-      RBS: r.rbs,
-      DPS: r.dps,
-      DSS: r.dss,
-      TOTAL: r.total,
-      NILAI_RP_JT: r.nilai,
-    }));
-    exportCSV(exportRows, `Monitoring_Order_SJT_${snapshotKey.replace(/\//g, '-')}`);
-  };
-
   return (
     <div id="sjt-main-content" className="space-y-4">
       {/* ================================================================== */}
@@ -1639,14 +1634,22 @@ export default function MonitoringOrderSjt() {
           </button>
 
           <ExportButton
-            onClick={handleExport}
             filename={`Monitoring_Order_SJT_${snapshotKey.replace(/\//g, '-')}`}
+            title={`Monitoring Order SJT ${snapshotKey}`}
+            prepareExport={() => {
+              // Export DOCX/XLSX/CSV selalu berisi semua tabel, apa pun mode tampilan saat ini
+              const prev = mode;
+              if (prev === 'Semua Tabel') return null;
+              flushSync(() => setMode('Semua Tabel'));
+              return () => setMode(prev);
+            }}
+            tableSelector="#sjt-main-content table"
+            pdfSelector="#sjt-main-content"
           />
 
           <ShareDropdown
             buttonLabel="Salin & Bagikan"
             captureSelector="#sjt-main-content"
-            tableSelector="table"
           />
         </div>
       </div>
@@ -1669,12 +1672,13 @@ export default function MonitoringOrderSjt() {
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs">
-          <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">
-            TOTAL NILAI (RP JUTA)
+                    <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">
+            TOTAL NILAI
           </p>
           <p className="text-[28px] font-extrabold text-slate-900 tracking-tight mt-1">
-            Rp {fmtNilai(kpiMetrics.totalNilai)} Jt
+            Rp {formatRupiahShort(kpiMetrics.totalNilai)}
           </p>
+
           <p className="text-xs mt-1.5 flex items-center gap-1 text-emerald-600 font-semibold">
             <span>112 hari</span>
             <span className="text-slate-400 font-normal">rata-rata umur order</span>
@@ -2503,7 +2507,8 @@ export default function MonitoringOrderSjt() {
                       </h2>
                       <p className="text-xs text-white/80 mt-0.5">
                         Terdapat <b className="text-white">127 order (&gt; 60 Hari)</b> senilai{' '}
-                        <b className="text-white">Rp 1.945,9 Jt</b> yang memerlukan percepatan eksekusi terutama pada DGS & DSS
+                        <b className="text-white">Rp {formatRupiahShort(1945.9)}</b> yang memerlukan percepatan eksekusi terutama pada DGS & DSS
+
                       </p>
                     </div>
                   </div>
@@ -2511,7 +2516,7 @@ export default function MonitoringOrderSjt() {
                     <p className="text-[10px] font-bold tracking-wider text-white/75 uppercase">
                       NILAI ORDER &gt; 60 HARI
                     </p>
-                    <p className="text-2xl font-extrabold text-white mt-0.5">Rp 1.945,9 Jt</p>
+                    <p className="text-2xl font-extrabold text-white mt-0.5">Rp {formatRupiahShort(1945.9)}</p>
                   </div>
                 </div>
               )}

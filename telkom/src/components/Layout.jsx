@@ -4,6 +4,7 @@ import {
   Home,
   BarChart2,
   ClipboardList,
+  Receipt,
   LayoutGrid,
   Folder,
   ArrowRight,
@@ -150,6 +151,10 @@ function Sidebar({ close, onCollapse }) {
           Monitoring Order SJT
         </SidebarItem>
 
+        <SidebarItem to="/koreksi-jurbal-psak" icon={Receipt}>
+          Koreksi & Jurbal PSAK
+        </SidebarItem>
+
         <SidebarItem
           to="/kuadran"
           icon={LayoutGrid}
@@ -220,6 +225,7 @@ const MINI_NAV = [
   { to: '/dashboard', icon: Home, label: 'Dashboard', end: true },
   { to: '/edk-monitoring', icon: BarChart2, label: 'EDK Monitoring' },
   { to: '/monitoring-order-sjt', icon: ClipboardList, label: 'Monitoring Order SJT' },
+  { to: '/koreksi-jurbal-psak', icon: Receipt, label: 'Koreksi & Jurbal PSAK' },
   { to: '/kuadran', icon: LayoutGrid, label: 'Kuadran SJT', isKuadran: true },
   { to: '/support-needed', icon: FileText, label: 'Catatan MoM & Support' },
 ];
@@ -320,6 +326,7 @@ const SEARCH_INDEX = [
   { type: 'Halaman', label: 'Dashboard', desc: 'Executive Overview', to: '/dashboard' },
   { type: 'Halaman', label: 'EDK Monitoring', desc: 'Evaluasi Data Kinerja', to: '/edk-monitoring' },
   { type: 'Halaman', label: 'Monitoring Order SJT', desc: 'Dashboard Monitoring Order SJT 2026 — Witel Solo Jateng Timur', to: '/monitoring-order-sjt' },
+  { type: 'Halaman', label: 'Koreksi & Jurbal PSAK', desc: 'Reverse, Correction & koreksi per tipe PSAK — Witel Solo JT', to: '/koreksi-jurbal-psak' },
   { type: 'Halaman', label: 'MoM & Support Needed', desc: 'Minutes of Meeting & Support Needed', to: '/support-needed' },
   // Kuadran
   { type: 'Kuadran', label: 'Kuadran Moving', desc: 'Analisis pergerakan kuadran SJT', to: '/kuadran/moving' },

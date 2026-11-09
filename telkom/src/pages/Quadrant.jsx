@@ -4,8 +4,6 @@ import {
   Filter,
   FileDown,
   Upload,
-  Download,
-  ChevronDown,
   Check,
   X,
   FileSpreadsheet,
@@ -14,7 +12,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import * as Q from '../data/quadrantData';
-import { exportCSV, ShareDropdown } from '../components/ui';
+import { ExportButton, ShareDropdown } from '../components/ui';
 import { QuadrantGrid, GrandTotalCard } from '../components/Quadrant';
 import { createPortal } from 'react-dom';
 import {
@@ -370,7 +368,8 @@ export default function Quadrant() {
     reader.readAsText(file);
   };
 
-  const handleExport = () => {
+  // Data mentah untuk ExportButton (XLSX/CSV/DOCX); angka tetap bertipe number
+  const getExportSheets = () => {
     if (isMoving) {
       const exportItems = quadrantData.items.map((it) => {
         let from1 = 0,
@@ -400,20 +399,18 @@ export default function Quadrant() {
           'NEW_MoM (%)': it.newMom || 0
         };
       });
-      exportCSV(exportItems, 'Kuadran_Moving_Dashboard');
-    } else {
-      exportCSV(
-        quadrantData.items.map(({ cells, ...r }) => r),
-        view || 'kuadran'
-      );
+      return [{ name: 'Kuadran Moving', rows: exportItems }];
     }
+    // eslint-disable-next-line no-unused-vars
+    return [{ name: `Kuadran ${view || ''}`.trim(), rows: quadrantData.items.map(({ cells, ...r }) => r) }];
   };
+  const exportFilename = isMoving ? 'Kuadran_Moving_Dashboard' : `Kuadran_${view || 'data'}`;
 
   return (
     <>
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-[fadeIn_0.2s_ease-out]">
+        <div data-html2canvas-ignore="true" className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-[fadeIn_0.2s_ease-out]">
           <Check size={16} className="text-emerald-400" />
           <span>{toast}</span>
         </div>
@@ -430,7 +427,8 @@ export default function Quadrant() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        {/* Tombol aksi tidak ikut di Copy as Picture / Export PDF */}
+        <div data-html2canvas-ignore="true" className="flex flex-wrap items-center gap-2.5">
           <div className="relative" ref={filterRef}>
             <button
               type="button"
@@ -492,15 +490,11 @@ export default function Quadrant() {
             <span>Upload Report</span>
           </button>
 
-          <button
-            type="button"
-            onClick={handleExport}
-            className="flex items-center gap-2 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-xs cursor-pointer"
-          >
-            <Download size={14} />
-            <span>Export</span>
-            <ChevronDown size={12} className="opacity-80" />
-          </button>
+          <ExportButton
+            filename={exportFilename}
+            title={quadrantData.title}
+            sheets={getExportSheets}
+          />
 
           <ShareDropdown className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-2xs cursor-pointer" />
         </div>

@@ -482,7 +482,6 @@ export default function Support() {
           <ShareDropdown
             buttonLabel="Salin &amp; Bagikan"
             captureSelector="#support-detail-card"
-            tableSelector="#support-detail-card table"
             pictureTargets={[
               {
                 id: 'detail_table',
