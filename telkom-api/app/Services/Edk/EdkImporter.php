@@ -133,12 +133,58 @@ class EdkImporter
         return $rows;
     }
 
+        /**
+     * Hapus /xl/tables/* dari xlsx supaya PhpSpreadsheet tidak memanggil
+     * file_exists() dengan path absolut (crash di open_basedir hosting).
+     */
+    private function stripXlsxTables(string $fullPath): void
+    {
+        $zip = new \ZipArchive();
+        if ($zip->open($fullPath) !== true) {
+            return;
+        }
+
+        $removed = false;
+        // Hapus semua file table definition
+        for ($i = $zip->numFiles - 1; $i >= 0; $i--) {
+            $name = $zip->getNameIndex($i);
+            if (str_starts_with($name, 'xl/tables/')) {
+                $zip->deleteIndex($i);
+                $removed = true;
+            }
+        }
+
+        // Hapus referensi table dari sheet rels
+        if ($removed) {
+            for ($s = 1; $s <= 20; $s++) {
+                $relsPath = "xl/worksheets/_rels/sheet{$s}.xml.rels";
+                $rels = $zip->getFromName($relsPath);
+                if ($rels === false) continue;
+
+                $cleaned = preg_replace(
+                    '/<Relationship[^>]*Type="[^"]*\/table"[^>]*\/>\s*/i',
+                    '',
+                    $rels
+                );
+                if ($cleaned !== $rels) {
+                    $zip->addFromString($relsPath, $cleaned);
+                }
+            }
+        }
+
+        $zip->close();
+    }
+
     /** Baca sheet pertama → Collection<int, Collection> dengan key header snake_case. */
     private function readSheet(string $path): Collection
     {
+        $fullPath = Storage::path($path);
+        $this->stripXlsxTables($fullPath);
+
         $reader = IOFactory::createReader('Xlsx');
         $reader->setReadDataOnly(true);
-        $workbook = $reader->load(Storage::path($path));
+        $workbook = $reader->load($fullPath);
+
         $sheetNames = $workbook->getSheetNames();
 
         if (!in_array(self::REQUIRED_SHEET, $sheetNames, true)) {
