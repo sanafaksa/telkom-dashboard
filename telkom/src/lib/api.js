@@ -8,6 +8,24 @@ export class ApiError extends Error {
   }
 }
 
+const CHALLENGE_KEY = 'hosting_challenge_reload';
+
+// InfinityFree membalas challenge anti-bot (HTML, status 200) jika cookie __test kedaluwarsa.
+function isHostingChallenge(res) {
+  const type = res.headers.get('Content-Type') ?? '';
+  return res.ok && type.includes('text/html');
+}
+
+function recoverFromChallenge() {
+  if (!sessionStorage.getItem(CHALLENGE_KEY)) {
+    sessionStorage.setItem(CHALLENGE_KEY, '1');
+    window.location.reload();
+  }
+  throw new ApiError(0, {
+    message: 'Sesi hosting kedaluwarsa. Halaman dimuat ulang, silakan ulangi upload.',
+  });
+}
+
 function buildUrl(path, params) {
   const url = new URL(BASE_URL + path, window.location.origin);
   Object.entries(params ?? {}).forEach(([k, v]) => {
@@ -26,12 +44,10 @@ function buildHeaders(extra = {}) {
 }
 
 async function handle(res) {
-  if (res.ok) return res.status === 204 ? null : res.json();
-
-  if (res.status === 401) {
-    localStorage.removeItem('token');
-    localStorage.removeItem('telkom_user');
-    if (window.location.pathname !== '/login') window.location.assign('/login');
+  if (isHostingChallenge(res)) recoverFromChallenge();
+  if (res.ok) {
+    sessionStorage.removeItem(CHALLENGE_KEY);
+    return res.status === 204 ? null : res.json();
   }
 
   let data = null;
@@ -61,6 +77,7 @@ export async function apiPost(path, body) {
 /** Download file (export / template). Nama file diambil dari header Content-Disposition. */
 export async function apiDownload(path, params, fallbackName = 'download') {
   const res = await fetch(buildUrl(path, params), { headers: buildHeaders({ Accept: '*/*' }) });
+  if (isHostingChallenge(res)) recoverFromChallenge();
   if (!res.ok) await handle(res);
 
   const cd = res.headers.get('Content-Disposition') ?? '';
