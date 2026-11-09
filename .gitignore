@@ -5,6 +5,10 @@ node_modules/
 vendor/
 git-history-mouren-laravel.md
 EDK Monitoring 1x upload– Handoff Plan, Todo & Roadmap.md
+*.md
+!README.md
+
+.claude/
 
 # Build output
 dist/
@@ -17,6 +21,7 @@ build/
 .env
 .env.local
 .env.*.local
+.env.solarisapp
 
 # Logs
 npm-debug.log*
