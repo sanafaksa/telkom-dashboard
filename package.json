@@ -1,0 +1,13 @@
+{
+  "name": "upload-laravel-hosting-free",
+  "version": "1.0.0",
+  "description": "[![Laravel](https://img.shields.io/badge/Laravel-13-red?logo=laravel)](https://laravel.com/)\r [![PHP](https://img.shields.io/badge/PHP-8.3+-777bb4?logo=php)](https://www.php.net/)\r [![MySQL](https://img.shields.io/badge/MySQL-8-4479A1?logo=mysql&logoColor=white)](https://www.mysql.com/)\r [![React](https://img.shields.io/badge/React-19.0.0-blue?logo=react)](https://react.dev/)\r [![Vite](https://img.shields.io/badge/Vite-6.0.0-purple?logo=vite)](https://vitejs.dev/)\r [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-v4-38bdf8?logo=tailwindcss)](https://tailwindcss.com/)\r [![Status](https://img.shields.io/badge/Status-Active_Development-success)]()",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
