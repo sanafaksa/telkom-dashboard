@@ -49,6 +49,16 @@ const formatRupiah = (val) => {
   return isNegative ? `-${formatted}` : formatted;
 };
 
+const formatRupiahShort = (val) => {
+  if (val === undefined || val === null || val === '-') return '-';
+  const abs = Math.abs(Number(val));
+  const sign = val < 0 ? '-' : '';
+  if (abs >= 1e12) return `${sign}${(abs / 1e12).toLocaleString('id-ID', { maximumFractionDigits: 1 })} T`;
+  if (abs >= 1e9)  return `${sign}${(abs / 1e9).toLocaleString('id-ID', { maximumFractionDigits: 1 })} M`;
+  if (abs >= 1e6)  return `${sign}${Math.round(abs / 1e6).toLocaleString('id-ID')} jt`;
+  return `${sign}${abs.toLocaleString('id-ID')}`;
+};
+
 const cellFmt = (v) => {
   if (v === undefined || v === null || v === '-') return '-';
   return v.toLocaleString('id-ID');
@@ -144,7 +154,8 @@ function StatusPanel({
             <p className="text-xs text-white/80 mt-1">ENTERPRISE SOLO · Distribusi abonemen dan utilisasi layanan per Customer Code</p>
           </div>
           <div className="text-left sm:text-right">
-            <p className="text-[11px] font-bold tracking-wider text-white/80 uppercase">TOTAL ABONEMEN (TOP 10)</p>
+            <p className="text-2xl md:text-[26px] font-extrabold tracking-tight mt-0.5">Rp {formatRupiahShort(totalAbonemen)}</p>
+
             <p className="text-2xl md:text-[26px] font-extrabold tracking-tight mt-0.5">Rp {Number(totalAbonemen || 0).toLocaleString('id-ID')}</p>
           </div>
         </div>
@@ -885,7 +896,7 @@ export default function Edk() {
             TOTAL ABONEMEN
           </p>
           <p className="text-[28px] font-extrabold text-slate-900 tracking-tight mt-1">
-            Rp {formatRupiah(kpiMetrics.totalAbonemen)}
+              Rp {formatRupiahShort(kpiMetrics.totalAbonemen)}
           </p>
           <DeltaText value={kpiMetrics.abonemenDelta} />
         </div>
@@ -1110,7 +1121,8 @@ export default function Edk() {
                   TOTAL ABONEMEN (TOP 10)
                 </p>
                 <p className="text-2xl md:text-[26px] font-extrabold tracking-tight mt-0.5 text-white">
-                  Rp {top10TotalAbonemen.toLocaleString('id-ID')}
+                  Rp {formatRupiahShort(top10TotalAbonemen)}
+
                 </p>
               </div>
             </div>
