@@ -1,5 +1,15 @@
 import {Filter,Upload,Download,Share2,Lightbulb,Check,X,FileText,FileSpreadsheet,File,Trash2,Image,Table,Link,ChevronDown} from 'lucide-react';import {useState,useRef,useCallback,useEffect} from 'react';
 export const fmt=n=>n.toLocaleString('id-ID');
+// Ringkas nominal Rupiah: >= 1 miliar → "M", >= 1 juta → "Jt" (contoh: 1,65 M / 571,6 Jt)
+export const fmtRupiahSingkat = (val) => {
+  const num = Number(val);
+  if (val === undefined || val === null || Number.isNaN(num)) return '-';
+  const abs = Math.abs(num);
+  const sign = num < 0 ? '-' : '';
+  if (abs >= 1e9) return `${sign}${(abs / 1e9).toLocaleString('id-ID', { maximumFractionDigits: 2 })} M`;
+  if (abs >= 1e6) return `${sign}${(abs / 1e6).toLocaleString('id-ID', { maximumFractionDigits: 1 })} Jt`;
+  return `${sign}${abs.toLocaleString('id-ID')}`;
+};
 export { default as ShareDropdown } from './ShareDropdown';
 import ShareDropdown from './ShareDropdown';
 export function ShareButton(props) {

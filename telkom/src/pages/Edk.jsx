@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, Fragment, useRef } from 'react';
 import { filterOptions, modes, topPelangganBySegmen, segmenByPeriode } from '../data/edkData';
-import { ExportButton, exportCSV, ShareDropdown } from '../components/ui';
+import { ExportButton, exportCSV, ShareDropdown, fmtRupiahSingkat as formatRupiahSingkat } from '../components/ui';
 import FilterDropdown from '../components/FilterDropdown';
 import { createPortal } from "react-dom";
 import {
@@ -33,6 +33,7 @@ const formatRupiah = (val) => {
   const formatted = abs.toLocaleString('id-ID');
   return isNegative ? `-${formatted}` : formatted;
 };
+
 
 const cellFmt = (v) => {
   if (v === undefined || v === null || v === '-') return '-';
@@ -708,7 +709,9 @@ const grandTotal = useMemo(() => {
             TOTAL ABONEMEN
           </p>
           <p className="text-[28px] font-extrabold text-slate-900 tracking-tight mt-1">
-            Rp {formatRupiah(kpiMetrics.totalAbonemen)}
+            <span title={`Rp ${formatRupiah(kpiMetrics.totalAbonemen)}`}>
+              Rp {formatRupiahSingkat(kpiMetrics.totalAbonemen)}
+            </span>
           </p>
           <p className="text-xs mt-1.5 flex items-center gap-1 text-emerald-600 font-semibold">
             <span>+8%</span>
@@ -868,7 +871,7 @@ const grandTotal = useMemo(() => {
                   TOTAL ABONEMEN (TOP 10)
                 </p>
                 <p className="text-2xl md:text-[26px] font-extrabold tracking-tight mt-0.5 text-white">
-                  Rp {top10TotalAbonemen.toLocaleString('id-ID')}
+                  <span title={`Rp ${top10TotalAbonemen.toLocaleString('id-ID')}`}>Rp {formatRupiahSingkat(top10TotalAbonemen)}</span>
                 </p>
               </div>
             </div>

@@ -44,6 +44,68 @@ const fmtSelisih = (val) => {
   return val > 0 ? `+${val}` : `${val}`;
 };
 
+// Format KPI nilai (Rp juta) dengan 1 desimal, semua pemisah pakai titik.
+// Contoh: Rp 2.333.5 Jt (0 tetap tampil "0.0")
+const fmtNilaiKpi = (val) =>
+  (Number(val) || 0)
+    .toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+    .replace(',', '.');
+
+const DIVISI_KEYS = ['dgs', 'rbs', 'dps', 'dss'];
+
+const STATUS_KEYS = {
+  Pending: 'pending',
+  'In Progress': 'inProgress',
+  Failed: 'failed',
+  'Pending Cancel': 'pendingCancel',
+  Complete: 'complete',
+};
+
+// Pemetaan tahapan alur order (rincian) ke status milestone utama
+const DETAIL_TO_STATUS = {
+  'PROVISION START': 'In Progress',
+  'PROVISION ISSUED': 'In Progress',
+  'PROVISION COMPLETE': 'In Progress',
+  'BASO STARTED': 'In Progress',
+  'BILLING APPROVAL STARTED': 'In Progress',
+  'TSQ FAILED': 'Failed',
+  'PROVISION FAILED': 'Failed',
+  'FULFILL BILLING FAILED': 'Failed',
+  'FULFILL BILLING COMPLETE': 'Complete',
+  Abandoned: 'Pending Cancel',
+};
+
+const round1 = (n) => Math.round(n * 10) / 10;
+
+const sumRows = (rows, keys) =>
+  keys.reduce((acc, k) => {
+    acc[k] = round1(rows.reduce((s, r) => s + (Number(r[k]) || 0), 0));
+    return acc;
+  }, {});
+
+// Hanya hitung kolom divisi terpilih; Total dihitung ulang, Nilai diproporsikan
+const applyDivisi = (row, activeDivs) => {
+  if (activeDivs.length === DIVISI_KEYS.length) return row;
+  const next = { ...row };
+  DIVISI_KEYS.forEach((d) => {
+    if (!activeDivs.includes(d)) next[d] = 0;
+  });
+  next.total = activeDivs.reduce((s, d) => s + (Number(row[d]) || 0), 0);
+  next.nilai = row.total > 0 ? round1((Number(row.nilai) || 0) * (next.total / row.total)) : 0;
+  return next;
+};
+
+// Hanya hitung kolom status terpilih pada tabel AM; Total dihitung ulang, Nilai diproporsikan
+const applyAmStatus = (row, selectedStatuses) => {
+  const next = { ...row };
+  Object.entries(STATUS_KEYS).forEach(([label, key]) => {
+    if (!selectedStatuses.includes(label)) next[key] = 0;
+  });
+  next.total = Object.values(STATUS_KEYS).reduce((s, k) => s + (Number(next[k]) || 0), 0);
+  next.nilai = row.total > 0 ? round1((Number(row.nilai) || 0) * (next.total / row.total)) : 0;
+  return next;
+};
+
 const DIVISI_COLORS = {
   DGS: { bg: 'bg-[#0F172A]', label: 'DGS', badge: 'bg-slate-900 text-white' },
   RBS: { bg: 'bg-[#2563EB]', label: 'RBS', badge: 'bg-blue-600 text-white' },
@@ -1482,119 +1544,232 @@ export default function MonitoringOrderSjt() {
   };
 
   // Filtered datasets
+  // Catatan: data sumber berupa rekap (agregat). Filter Divisi menghitung ulang Total
+  // dari kolom divisi terpilih; Nilai ikut diproporsikan. Filter Milestone menyaring
+  // baris status / kolom status, dan baris TOTAL selalu dihitung ulang dari hasil filter.
+  const activeDivs = useMemo(
+    () =>
+      selectedDivisi.length > 0
+        ? DIVISI_KEYS.filter((d) => selectedDivisi.includes(d.toUpperCase()))
+        : DIVISI_KEYS,
+    [selectedDivisi]
+  );
+  const isDivFiltered = selectedDivisi.length > 0;
+  const isMsFiltered = selectedMilestone.length > 0;
+
   const filteredMilestoneRows = useMemo(() => {
-    let rows = currentData.milestonePerDivisi.rows;
-    if (selectedMilestone.length > 0) {
+    let rows = currentData.milestonePerDivisi.rows.map((r) => applyDivisi(r, activeDivs));
+    if (isMsFiltered) {
       rows = rows.filter((r) => selectedMilestone.includes(r.milestone));
     }
     return applySort(rows, 'milestone', 'total', 'nilai');
-  }, [currentData, selectedMilestone, sortOrder]);
+  }, [currentData, activeDivs, selectedMilestone, sortOrder]);
+
+  const milestoneTotal = useMemo(
+    () =>
+      !isDivFiltered && !isMsFiltered
+        ? currentData.milestonePerDivisi.total
+        : sumRows(filteredMilestoneRows, [...DIVISI_KEYS, 'total', 'nilai']),
+    [currentData, filteredMilestoneRows, isDivFiltered, isMsFiltered]
+  );
 
   const filteredPergerakanRows = useMemo(() => {
     let rows = currentData.pergerakanStatus.rows;
-    if (selectedMilestone.length > 0) {
+    if (isMsFiltered) {
       rows = rows.filter((r) => selectedMilestone.includes(r.milestone));
     }
     return applySort(rows, 'milestone', 'after', 'porsiAfter');
   }, [currentData, selectedMilestone, sortOrder]);
 
-  const filteredAmRbs = useMemo(() => {
-    let rows = currentData.amRbs.rows;
-    if (selectedNamaAm.length > 0) {
-      rows = rows.filter((r) => selectedNamaAm.includes(r.nama));
-    }
-    return applySort(rows, 'nama', 'total', 'nilai');
-  }, [currentData, selectedNamaAm, sortOrder]);
+  const pergerakanTotal = useMemo(
+    () =>
+      !isMsFiltered
+        ? currentData.pergerakanStatus.total
+        : sumRows(filteredPergerakanRows, ['before', 'after', 'selisih', 'porsiAfter']),
+    [currentData, filteredPergerakanRows, isMsFiltered]
+  );
 
-  const filteredAmLegs = useMemo(() => {
-    let rows = currentData.amLegs.rows;
+  const filteredDetailRows = useMemo(() => {
+    let rows = currentData.milestoneDetailPerDivisi.rows.map((r) => applyDivisi(r, activeDivs));
+    if (isMsFiltered) {
+      rows = rows.filter((r) => selectedMilestone.includes(DETAIL_TO_STATUS[r.milestone]));
+    }
+    return rows;
+  }, [currentData, activeDivs, selectedMilestone]);
+
+  const detailTotal = useMemo(
+    () =>
+      !isDivFiltered && !isMsFiltered
+        ? currentData.milestoneDetailPerDivisi.total
+        : sumRows(filteredDetailRows, [...DIVISI_KEYS, 'total', 'nilai']),
+    [currentData, filteredDetailRows, isDivFiltered, isMsFiltered]
+  );
+
+  const filterAmRows = (list) => {
+    let rows = list;
     if (selectedNamaAm.length > 0) {
       rows = rows.filter((r) => selectedNamaAm.includes(r.nama));
     }
+    if (isMsFiltered) {
+      rows = rows.map((r) => applyAmStatus(r, selectedMilestone)).filter((r) => r.total > 0);
+    }
     return applySort(rows, 'nama', 'total', 'nilai');
-  }, [currentData, selectedNamaAm, sortOrder]);
+  };
+
+  const filteredAmRbs = useMemo(
+    () => filterAmRows(currentData.amRbs.rows),
+    [currentData, selectedNamaAm, selectedMilestone, sortOrder]
+  );
+  const filteredAmLegs = useMemo(
+    () => filterAmRows(currentData.amLegs.rows),
+    [currentData, selectedNamaAm, selectedMilestone, sortOrder]
+  );
+
+  const AM_TOTAL_KEYS = [...Object.values(STATUS_KEYS), 'total', 'nilai'];
+  const amRbsTotal = useMemo(
+    () =>
+      selectedNamaAm.length === 0 && !isMsFiltered
+        ? currentData.amRbs.total
+        : sumRows(filteredAmRbs, AM_TOTAL_KEYS),
+    [currentData, filteredAmRbs, selectedNamaAm, isMsFiltered]
+  );
+  const amLegsTotal = useMemo(
+    () =>
+      selectedNamaAm.length === 0 && !isMsFiltered
+        ? currentData.amLegs.total
+        : sumRows(filteredAmLegs, AM_TOTAL_KEYS),
+    [currentData, filteredAmLegs, selectedNamaAm, isMsFiltered]
+  );
+
+  const filteredUmurRows = useMemo(
+    () => currentData.umurOrderPerDivisi.rows.map((r) => applyDivisi(r, activeDivs)),
+    [currentData, activeDivs]
+  );
+  const umurTotal = useMemo(
+    () =>
+      !isDivFiltered
+        ? currentData.umurOrderPerDivisi.total
+        : sumRows(filteredUmurRows, [...DIVISI_KEYS, 'total', 'nilai']),
+    [currentData, filteredUmurRows, isDivFiltered]
+  );
 
   const filteredJenisOrder = useMemo(() => {
     return applySort(currentData.jenisOrder.rows, 'subtype', 'jumlah', 'nilai');
   }, [currentData, sortOrder]);
 
   const filteredProduk = useMemo(() => {
-    return applySort(currentData.produkPerDivisi.rows, 'produk', 'total', 'nilai');
-  }, [currentData, sortOrder]);
+    const rows = currentData.produkPerDivisi.rows
+      .map((r) => applyDivisi(r, activeDivs))
+      .filter((r) => !isDivFiltered || r.total > 0);
+    return applySort(rows, 'produk', 'total', 'nilai');
+  }, [currentData, activeDivs, sortOrder]);
+
+  const produkTotal = useMemo(
+    () =>
+      !isDivFiltered
+        ? currentData.produkPerDivisi.total
+        : sumRows(filteredProduk, [...DIVISI_KEYS, 'total', 'nilai']),
+    [currentData, filteredProduk, isDivFiltered]
+  );
 
   const filteredOrderBergerak = useMemo(() => {
     let rows = currentData.daftarOrderBergerak.rows;
-    if (selectedDivisi.length > 0) {
+    if (isDivFiltered) {
       rows = rows.filter((r) => selectedDivisi.includes(r.divisi));
     }
-    if (selectedMilestone.length > 0) {
-      rows = rows.filter(
-        (r) =>
-          selectedMilestone.includes(r.statusBefore) ||
-          selectedMilestone.includes(r.statusAfter)
-      );
+    if (isMsFiltered) {
+      // Ikut status CURRENT (after), konsisten dengan tabel posisi milestone
+      rows = rows.filter((r) => selectedMilestone.includes(r.statusAfter));
     }
     return rows;
   }, [currentData, selectedDivisi, selectedMilestone]);
 
-  // Dynamic KPI Metrics
+  // Dynamic KPI Metrics — mengikuti SEMUA filter (Divisi, Milestone, Nama AM)
   const kpiMetrics = useMemo(() => {
-    const activeDivs =
-      selectedDivisi.length > 0
-        ? selectedDivisi.map((d) => d.toLowerCase())
-        : ['dgs', 'rbs', 'dps', 'dss'];
+    const useAm = selectedNamaAm.length > 0;
+    const grandTotal = milestoneTotal.total || 0;
 
-    const sumByActiveDivs = (row) =>
-      activeDivs.reduce((acc, d) => acc + (Number(row[d]) || 0), 0);
+    let totalOrder;
+    let totalNilai;
+    let countStatus;
 
-    const msRows = filteredMilestoneRows;
-    const totalOrder = msRows.reduce((acc, r) => acc + sumByActiveDivs(r), 0);
+    if (useAm) {
+      const amRows = [...filteredAmRbs, ...filteredAmLegs];
+      totalOrder = amRows.reduce((s, r) => s + (Number(r.total) || 0), 0);
+      totalNilai = amRows.reduce((s, r) => s + (Number(r.nilai) || 0), 0);
+      countStatus = (label) =>
+        amRows.reduce((s, r) => s + (Number(r[STATUS_KEYS[label]]) || 0), 0);
+    } else {
+      totalOrder = Number(milestoneTotal.total) || 0;
+      totalNilai = Number(milestoneTotal.nilai) || 0;
+      countStatus = (label) => {
+        const row = filteredMilestoneRows.find((r) => r.milestone === label);
+        return row ? Number(row.total) || 0 : 0;
+      };
+    }
 
-    const fullTotal = currentData.milestonePerDivisi.total.total || 1;
-    const fullNilai = currentData.milestonePerDivisi.total.nilai || 0;
-    const totalNilai =
-      selectedDivisi.length === 0 && selectedMilestone.length === 0
-        ? fullNilai
-        : msRows.reduce((acc, r) => {
-            const rowShare = r.total > 0 ? sumByActiveDivs(r) / r.total : 0;
-            return acc + r.nilai * rowShare;
-          }, 0);
+    const inProgress = countStatus('In Progress');
+    const complete = countStatus('Complete');
+    const failed = countStatus('Failed');
 
-    const inProgRow = currentData.milestonePerDivisi.rows.find(
-      (r) => r.milestone === 'In Progress'
-    );
-    const completeRow = currentData.milestonePerDivisi.rows.find(
-      (r) => r.milestone === 'Complete'
-    );
-    const failedRow = currentData.milestonePerDivisi.rows.find(
-      (r) => r.milestone === 'Failed'
-    );
-    const gt60Row = currentData.umurOrderPerDivisi.rows.find(
-      (r) => r.range === '> 60 Hari'
-    );
+    // Data umur tidak dirinci per status / per AM, jadi >60 hari hanya tersedia
+    // bila filter yang aktif sebatas Periode / Divisi.
+    let gt60 = null;
+    if (!useAm && !isMsFiltered) {
+      const gt60Row = filteredUmurRows.find((r) => r.range === '> 60 Hari');
+      gt60 = gt60Row ? Number(gt60Row.total) || 0 : 0;
+    }
 
-    const inProgress = inProgRow ? sumByActiveDivs(inProgRow) : 0;
-    const complete = completeRow ? sumByActiveDivs(completeRow) : 0;
-    const failed = failedRow ? sumByActiveDivs(failedRow) : 0;
-    const gt60 = gt60Row ? sumByActiveDivs(gt60Row) : 0;
-
-    const denom = totalOrder > 0 ? totalOrder : fullTotal;
-    const inProgressPct = `${((inProgress / denom) * 100).toFixed(1)}%`;
-    const completePct = `${((complete / denom) * 100).toFixed(1)}%`;
-    const gt60Pct = `${((gt60 / denom) * 100).toFixed(1)}%`;
+    const pct = (n) => `${(totalOrder > 0 ? (n / totalOrder) * 100 : 0).toFixed(1)}%`;
 
     return {
       totalOrder,
       totalNilai,
+      grandTotal,
+      totalPct: `${(grandTotal > 0 ? (totalOrder / grandTotal) * 100 : 0).toFixed(1)}%`,
       inProgress,
-      inProgressPct,
+      inProgressPct: pct(inProgress),
       complete,
-      completePct,
+      completePct: pct(complete),
       failed,
       gt60,
-      gt60Pct,
+      gt60Pct: gt60 === null ? null : pct(gt60),
     };
-  }, [currentData, selectedDivisi, selectedMilestone, filteredMilestoneRows]);
+  }, [
+    currentData,
+    selectedNamaAm,
+    isMsFiltered,
+    milestoneTotal,
+    filteredMilestoneRows,
+    filteredAmRbs,
+    filteredAmLegs,
+    filteredUmurRows,
+  ]);
+
+  // Filter yang tidak bisa diterapkan pada tabel tertentu (data sumber tidak dirinci)
+  const filterScopeNotes = useMemo(() => {
+    const notes = [];
+    const showMs = mode === 'Milestone & Status' || mode === 'Semua Tabel';
+    const showAm = mode === 'Performa AM' || mode === 'Semua Tabel';
+    const showUmur = mode === 'Umur & Jenis' || mode === 'Semua Tabel';
+    const showProduk = mode === 'Produk & Move' || mode === 'Semua Tabel';
+    if (selectedNamaAm.length > 0 && (showMs || showUmur || showProduk)) {
+      notes.push('Nama AM hanya berlaku untuk tabel Performa AM & kartu KPI (tabel lain tidak dirinci per AM).');
+    }
+    if (isDivFiltered && showAm) {
+      notes.push('Segmen / Divisi tidak berlaku untuk tabel AM (sudah dipisah per segmen RBS & LEGS).');
+    }
+    if (isDivFiltered && showUmur) {
+      notes.push('Segmen / Divisi tidak berlaku untuk tabel Jenis Order (tidak dirinci per divisi).');
+    }
+    if (isMsFiltered && (showUmur || showProduk)) {
+      notes.push('Status Milestone tidak berlaku untuk tabel Umur Order, Jenis Order, dan Produk (data tidak dirinci per status).');
+    }
+    if (isDivFiltered) {
+      notes.push('Saat filter Divisi aktif, Nilai (Rp Jt) per baris dihitung proporsional terhadap jumlah order divisi terpilih.');
+    }
+    return notes;
+  }, [mode, selectedNamaAm, isDivFiltered, isMsFiltered]);
 
   const divColHighlight = (div) =>
     selectedDivisi.includes(div) ? 'bg-blue-50/70 font-bold text-[#1D4ED8]' : '';
@@ -1660,12 +1835,21 @@ export default function MonitoringOrderSjt() {
             TOTAL ORDER
           </p>
           <p className="text-[28px] font-bold text-slate-900 tracking-tight mt-1">
-            {fmtNum(kpiMetrics.totalOrder)}
+            {kpiMetrics.totalOrder.toLocaleString('id-ID')}
           </p>
-          <p className="text-xs mt-1.5 flex items-center gap-1 text-emerald-600 font-semibold">
-            <span>{kpiMetrics.gt60} order (&gt;60 hari)</span>
-            <span className="text-slate-400 font-normal">• {kpiMetrics.gt60Pct} dari total</span>
-          </p>
+          {kpiMetrics.gt60 !== null ? (
+            <p className="text-xs mt-1.5 flex items-center gap-1 text-red-600 font-semibold">
+              <span>{kpiMetrics.gt60.toLocaleString('id-ID')} order (&gt;60 hari)</span>
+              <span className="text-slate-400 font-normal">• {kpiMetrics.gt60Pct} dari total</span>
+            </p>
+          ) : (
+            <p className="text-xs mt-1.5 flex items-center gap-1 text-slate-500">
+              <span className="font-bold text-slate-800">{kpiMetrics.totalPct}</span>
+              <span className="text-slate-400 font-normal">
+                dari {kpiMetrics.grandTotal.toLocaleString('id-ID')} total order
+              </span>
+            </p>
+          )}
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs">
@@ -1673,7 +1857,12 @@ export default function MonitoringOrderSjt() {
             TOTAL NILAI (RP JUTA)
           </p>
           <p className="text-[28px] font-extrabold text-slate-900 tracking-tight mt-1">
-            Rp {fmtNilai(kpiMetrics.totalNilai)} Jt
+            <span
+              className="cursor-help"
+              title={`Rp ${Math.round((Number(kpiMetrics.totalNilai) || 0) * 1e6).toLocaleString('id-ID')}`}
+            >
+              Rp {fmtNilaiKpi(kpiMetrics.totalNilai)} Jt
+            </span>
           </p>
           <p className="text-xs mt-1.5 flex items-center gap-1 text-emerald-600 font-semibold">
             <span>112 hari</span>
@@ -1686,7 +1875,7 @@ export default function MonitoringOrderSjt() {
             IN PROGRESS
           </p>
           <p className="text-[28px] font-extrabold text-slate-900 tracking-tight mt-1">
-            {fmtNum(kpiMetrics.inProgress)}
+            {kpiMetrics.inProgress.toLocaleString('id-ID')}
           </p>
           <p className="text-xs mt-1.5 text-slate-500">
             <span className="font-bold text-slate-800">{kpiMetrics.inProgressPct}</span>{' '}
@@ -1701,7 +1890,7 @@ export default function MonitoringOrderSjt() {
             COMPLETE
           </p>
           <p className="text-[28px] font-extrabold text-slate-900 tracking-tight mt-1">
-            {fmtNum(kpiMetrics.complete)}
+            {kpiMetrics.complete.toLocaleString('id-ID')}
           </p>
           <p className="text-xs mt-1.5 text-slate-500">
             <span className="font-bold text-slate-800">{kpiMetrics.completePct}</span>{' '}
@@ -1822,6 +2011,16 @@ export default function MonitoringOrderSjt() {
 
         {/* Workspace Content Area */}
         <div className="p-5 md:p-6 space-y-6 bg-slate-50/30">
+          {filterScopeNotes.length > 0 && (
+            <div className="bg-amber-50 border border-amber-200/80 text-amber-800 rounded-xl px-4 py-3 text-[11.5px] leading-relaxed">
+              <p className="font-bold mb-1">Catatan filter</p>
+              <ul className="list-disc pl-4 space-y-0.5">
+                {filterScopeNotes.map((n) => (
+                  <li key={n}>{n}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           {/* ============================================================== */}
           {/* VIEW 1: MILESTONE & STATUS (DEFAULT)                           */}
           {/* ============================================================== */}
@@ -1959,22 +2158,22 @@ export default function MonitoringOrderSjt() {
                         <tr className="bg-[#EFF6FF] border-t-2 border-slate-300 font-extrabold text-slate-900">
                           <td className="py-3 px-3.5">TOTAL</td>
                           <td className="py-3 px-2.5 text-right tabular-nums">
-                            {fmtNum(currentData.milestonePerDivisi.total.dgs)}
+                            {fmtNum(milestoneTotal.dgs)}
                           </td>
                           <td className="py-3 px-2.5 text-right tabular-nums">
-                            {fmtNum(currentData.milestonePerDivisi.total.rbs)}
+                            {fmtNum(milestoneTotal.rbs)}
                           </td>
                           <td className="py-3 px-2.5 text-right tabular-nums">
-                            {fmtNum(currentData.milestonePerDivisi.total.dps)}
+                            {fmtNum(milestoneTotal.dps)}
                           </td>
                           <td className="py-3 px-2.5 text-right tabular-nums">
-                            {fmtNum(currentData.milestonePerDivisi.total.dss)}
+                            {fmtNum(milestoneTotal.dss)}
                           </td>
                           <td className="py-3 px-3 text-right text-[#1D4ED8] tabular-nums">
-                            {fmtNum(currentData.milestonePerDivisi.total.total)}
+                            {fmtNum(milestoneTotal.total)}
                           </td>
                           <td className="py-3 px-3.5 text-right text-[#1D4ED8] tabular-nums">
-                            {fmtNilai(currentData.milestonePerDivisi.total.nilai)}
+                            {fmtNilai(milestoneTotal.nilai)}
                           </td>
                         </tr>
                       </tfoot>
@@ -2068,14 +2267,14 @@ export default function MonitoringOrderSjt() {
                         <tr className="bg-[#EFF6FF] border-t-2 border-slate-300 font-extrabold text-slate-900">
                           <td className="py-3 px-3.5">TOTAL</td>
                           <td className="py-3 px-3 text-right tabular-nums">
-                            {fmtNum(currentData.pergerakanStatus.total.before)}
+                            {fmtNum(pergerakanTotal.before)}
                           </td>
                           <td className="py-3 px-3 text-right text-[#1D4ED8] tabular-nums">
-                            {fmtNum(currentData.pergerakanStatus.total.after)}
+                            {fmtNum(pergerakanTotal.after)}
                           </td>
                           <td className="py-3 px-3 text-right tabular-nums">-</td>
                           <td className="py-3 px-3.5 text-right text-[#1D4ED8] tabular-nums">
-                            {currentData.pergerakanStatus.total.porsiAfter.toFixed(1)}%
+                            {pergerakanTotal.porsiAfter.toFixed(1)}%
                           </td>
                         </tr>
                       </tfoot>
@@ -2097,7 +2296,7 @@ export default function MonitoringOrderSjt() {
                 }
                 chartElement={
                   <ChartDetailMilestone
-                    data={currentData.milestoneDetailPerDivisi}
+                    data={{ ...currentData.milestoneDetailPerDivisi, rows: filteredDetailRows }}
                     selectedRow={selectedRows.milestoneDetail}
                     onSelectRow={(r) => handleSelectRow('milestoneDetail', r)}
                   />
@@ -2119,7 +2318,7 @@ export default function MonitoringOrderSjt() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200/70">
-                      {currentData.milestoneDetailPerDivisi.rows.map((r) => {
+                      {filteredDetailRows.map((r) => {
                         const isSelected = selectedRows.milestoneDetail === r.milestone;
                         const isFailed = r.milestone.includes('FAILED');
                         return (
@@ -2187,22 +2386,22 @@ export default function MonitoringOrderSjt() {
                       <tr className="bg-[#EFF6FF] border-t-2 border-slate-300 font-extrabold text-slate-900">
                         <td className="py-3 px-4">TOTAL</td>
                         <td className="py-3 px-3 text-right tabular-nums">
-                          {fmtNum(currentData.milestoneDetailPerDivisi.total.dgs)}
+                          {fmtNum(detailTotal.dgs)}
                         </td>
                         <td className="py-3 px-3 text-right tabular-nums">
-                          {fmtNum(currentData.milestoneDetailPerDivisi.total.rbs)}
+                          {fmtNum(detailTotal.rbs)}
                         </td>
                         <td className="py-3 px-3 text-right tabular-nums">
-                          {fmtNum(currentData.milestoneDetailPerDivisi.total.dps)}
+                          {fmtNum(detailTotal.dps)}
                         </td>
                         <td className="py-3 px-3 text-right tabular-nums">
-                          {fmtNum(currentData.milestoneDetailPerDivisi.total.dss)}
+                          {fmtNum(detailTotal.dss)}
                         </td>
                         <td className="py-3 px-3 text-right text-[#1D4ED8] tabular-nums">
-                          {fmtNum(currentData.milestoneDetailPerDivisi.total.total)}
+                          {fmtNum(detailTotal.total)}
                         </td>
                         <td className="py-3 px-4 text-right text-[#1D4ED8] tabular-nums">
-                          {fmtNilai(currentData.milestoneDetailPerDivisi.total.nilai)}
+                          {fmtNilai(detailTotal.nilai)}
                         </td>
                       </tr>
                     </tfoot>
@@ -2343,25 +2542,25 @@ export default function MonitoringOrderSjt() {
                           <tr className="bg-[#EFF6FF] border-t-2 border-slate-300 font-extrabold text-slate-900">
                             <td className="py-3 px-3.5">SUBTOTAL AM RBS</td>
                             <td className="py-3 px-2 text-right tabular-nums">
-                              {fmtNum(currentData.amRbs.total.pending)}
+                              {fmtNum(amRbsTotal.pending)}
                             </td>
                             <td className="py-3 px-2 text-right tabular-nums">
-                              {fmtNum(currentData.amRbs.total.inProgress)}
+                              {fmtNum(amRbsTotal.inProgress)}
                             </td>
                             <td className="py-3 px-2 text-right tabular-nums text-red-600">
-                              {fmtNum(currentData.amRbs.total.failed)}
+                              {fmtNum(amRbsTotal.failed)}
                             </td>
                             <td className="py-3 px-2 text-right tabular-nums">
-                              {fmtNum(currentData.amRbs.total.pendingCancel)}
+                              {fmtNum(amRbsTotal.pendingCancel)}
                             </td>
                             <td className="py-3 px-2 text-right tabular-nums text-emerald-700">
-                              {fmtNum(currentData.amRbs.total.complete)}
+                              {fmtNum(amRbsTotal.complete)}
                             </td>
                             <td className="py-3 px-2.5 text-right text-[#1D4ED8] tabular-nums">
-                              {fmtNum(currentData.amRbs.total.total)}
+                              {fmtNum(amRbsTotal.total)}
                             </td>
                             <td className="py-3 px-3.5 text-right text-[#1D4ED8] tabular-nums">
-                              {fmtNum(currentData.amRbs.total.nilai)}
+                              {fmtNilai(amRbsTotal.nilai)}
                             </td>
                           </tr>
                         </tfoot>
@@ -2456,25 +2655,25 @@ export default function MonitoringOrderSjt() {
                           <tr className="bg-[#EFF6FF] border-t-2 border-slate-300 font-extrabold text-slate-900">
                             <td className="py-3 px-3.5">SUBTOTAL AM LEGS</td>
                             <td className="py-3 px-2 text-right tabular-nums">
-                              {fmtNum(currentData.amLegs.total.pending)}
+                              {fmtNum(amLegsTotal.pending)}
                             </td>
                             <td className="py-3 px-2 text-right tabular-nums">
-                              {fmtNum(currentData.amLegs.total.inProgress)}
+                              {fmtNum(amLegsTotal.inProgress)}
                             </td>
                             <td className="py-3 px-2 text-right tabular-nums text-red-600">
-                              {fmtNum(currentData.amLegs.total.failed)}
+                              {fmtNum(amLegsTotal.failed)}
                             </td>
                             <td className="py-3 px-2 text-right tabular-nums">
-                              {fmtNum(currentData.amLegs.total.pendingCancel)}
+                              {fmtNum(amLegsTotal.pendingCancel)}
                             </td>
                             <td className="py-3 px-2 text-right tabular-nums text-emerald-700">
-                              {fmtNum(currentData.amLegs.total.complete)}
+                              {fmtNum(amLegsTotal.complete)}
                             </td>
                             <td className="py-3 px-2.5 text-right text-[#1D4ED8] tabular-nums">
-                              {fmtNum(currentData.amLegs.total.total)}
+                              {fmtNum(amLegsTotal.total)}
                             </td>
                             <td className="py-3 px-3.5 text-right text-[#1D4ED8] tabular-nums">
-                              {fmtNum(currentData.amLegs.total.nilai)}
+                              {fmtNilai(amLegsTotal.nilai)}
                             </td>
                           </tr>
                         </tfoot>
@@ -2530,7 +2729,7 @@ export default function MonitoringOrderSjt() {
                   }
                   chartElement={
                     <ChartUmurOrderPerDivisi
-                      data={currentData.umurOrderPerDivisi}
+                      data={{ ...currentData.umurOrderPerDivisi, rows: filteredUmurRows }}
                       selectedRow={selectedRows.umurOrder}
                       onSelectRow={(r) => handleSelectRow('umurOrder', r)}
                     />
@@ -2550,7 +2749,7 @@ export default function MonitoringOrderSjt() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200/70">
-                        {currentData.umurOrderPerDivisi.rows.map((r) => {
+                        {filteredUmurRows.map((r) => {
                           const isSelected = selectedRows.umurOrder === r.range;
                           return (
                             <tr
@@ -2624,22 +2823,22 @@ export default function MonitoringOrderSjt() {
                         <tr className="bg-[#EFF6FF] border-t-2 border-slate-300 font-extrabold text-slate-900">
                           <td className="py-3 px-3.5">TOTAL</td>
                           <td className="py-3 px-2.5 text-right tabular-nums">
-                            {fmtNum(currentData.umurOrderPerDivisi.total.dgs)}
+                            {fmtNum(umurTotal.dgs)}
                           </td>
                           <td className="py-3 px-2.5 text-right tabular-nums">
-                            {fmtNum(currentData.umurOrderPerDivisi.total.rbs)}
+                            {fmtNum(umurTotal.rbs)}
                           </td>
                           <td className="py-3 px-2.5 text-right tabular-nums">
-                            {fmtNum(currentData.umurOrderPerDivisi.total.dps)}
+                            {fmtNum(umurTotal.dps)}
                           </td>
                           <td className="py-3 px-2.5 text-right tabular-nums">
-                            {fmtNum(currentData.umurOrderPerDivisi.total.dss)}
+                            {fmtNum(umurTotal.dss)}
                           </td>
                           <td className="py-3 px-3 text-right text-[#1D4ED8] tabular-nums">
-                            {fmtNum(currentData.umurOrderPerDivisi.total.total)}
+                            {fmtNum(umurTotal.total)}
                           </td>
                           <td className="py-3 px-3.5 text-right text-[#1D4ED8] tabular-nums">
-                            {fmtNilai(currentData.umurOrderPerDivisi.total.nilai)}
+                            {fmtNilai(umurTotal.nilai)}
                           </td>
                         </tr>
                       </tfoot>
@@ -2867,22 +3066,22 @@ export default function MonitoringOrderSjt() {
                         <tr className="bg-[#EFF6FF] border-t-2 border-slate-300 font-extrabold text-slate-900">
                           <td className="py-3 px-3.5">TOTAL</td>
                           <td className="py-3 px-2.5 text-right tabular-nums">
-                            {fmtNum(currentData.produkPerDivisi.total.dgs)}
+                            {fmtNum(produkTotal.dgs)}
                           </td>
                           <td className="py-3 px-2.5 text-right tabular-nums">
-                            {fmtNum(currentData.produkPerDivisi.total.rbs)}
+                            {fmtNum(produkTotal.rbs)}
                           </td>
                           <td className="py-3 px-2.5 text-right tabular-nums">
-                            {fmtNum(currentData.produkPerDivisi.total.dps)}
+                            {fmtNum(produkTotal.dps)}
                           </td>
                           <td className="py-3 px-2.5 text-right tabular-nums">
-                            {fmtNum(currentData.produkPerDivisi.total.dss)}
+                            {fmtNum(produkTotal.dss)}
                           </td>
                           <td className="py-3 px-3 text-right text-[#1D4ED8] tabular-nums">
-                            {fmtNum(currentData.produkPerDivisi.total.total)}
+                            {fmtNum(produkTotal.total)}
                           </td>
                           <td className="py-3 px-3.5 text-right text-[#1D4ED8] tabular-nums">
-                            {fmtNilai(currentData.produkPerDivisi.total.nilai)}
+                            {fmtNilai(produkTotal.nilai)}
                           </td>
                         </tr>
                       </tfoot>
