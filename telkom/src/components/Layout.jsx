@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import DotGlow from './DotGlow';
 import {
   Home,
   BarChart2,
@@ -107,13 +108,23 @@ function Sidebar({ close, onCollapse }) {
   return (
     <nav
       aria-label="Utama"
-      className="h-full flex flex-col p-4 pt-5 pb-5 select-none bg-gradient-to-b from-[#06246A] to-[#235CE5] text-white shadow-2xl rounded-[28px] overflow-hidden"
+      className="relative isolate h-full flex flex-col p-4 pt-5 pb-5 select-none bg-gradient-to-b from-[#061438] via-[#0A266E] to-[#1242B5] text-white shadow-2xl rounded-[28px] overflow-hidden"
       style={{
         borderRadius: '28px',
         background: 'linear-gradient(180deg, #06246A 0%, #235CE5 100%)'
       }}
       onClick={close}
     >
+
+    <DotGlow
+      className="absolute inset-0 -z-10"
+      spacing={24}
+      radius={0.8}
+      glowRadius={120}
+      glowStrength={0.5}
+      baseAlpha={0.14}
+    />
+
       {/* Brand Header */}
       <div className="flex items-center justify-between px-2 pt-1 pb-4 mb-1">
         <NavLink to="/dashboard" className="flex items-center gap-2 group select-none py-1">

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import DotGlow from '../components/DotGlow';
 import {
   Mail,
   Lock,
@@ -158,7 +159,7 @@ export default function Login() {
             }`}
           />
           {/* Subtle Background Tech Grid */}
-          <div className="absolute inset-0 login-grid-pattern opacity-40 pointer-events-none" />
+          <DotGlow className="absolute inset-0" rgb="56,189,248" baseAlpha={0.18} />
 
           {/* Ambient Lighting Orbs */}
           <div
