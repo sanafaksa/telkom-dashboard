@@ -29,3 +29,10 @@ jobs:
           port: 22
           script: bash /home/usersolo/deploy.sh
           command_timeout: 25m
+
+      - name: Verifikasi situs
+        run: |
+          html=$(curl -fsS https://solaris-solo.tech/)
+          js=$(echo "$html" | grep -o '/assets/[^"]*\.js' | head -1)
+          test -n "$js"
+          curl -fsSI "https://solaris-solo.tech$js" | grep -qi 'content-type:.*javascript'
