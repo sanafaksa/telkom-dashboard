@@ -213,7 +213,7 @@ function Sidebar({ close, onCollapse }) {
         </button>
         <span className="flex items-center gap-1.5 font-medium text-white/90">
           <span className="size-1.5 rounded-full bg-emerald-400 shadow-xs" />
-          Active
+          Created By NRF
         </span>
       </div>
     </nav>

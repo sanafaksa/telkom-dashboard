@@ -199,7 +199,7 @@ export default function Login() {
             </div>
             <div className="flex items-center gap-2 text-[11px]">
               <span className="size-1.5 rounded-full bg-emerald-400" />
-              <span className="text-slate-300">created by (magang teams)</span>
+              <span className="text-slate-300">created by NRF</span>
             </div>
           </div>
         </div>
