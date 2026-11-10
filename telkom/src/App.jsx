@@ -1,11 +1,18 @@
 import { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
+import { isLoggedIn } from './features/auth/auth';
+
+function RequireAuth({ children }) {
+  const location = useLocation();
+  return isLoggedIn() ? children : <Navigate to="/login" replace state={{ from: location }} />;
+}
 
 const P = (n) => lazy(() => import(`./pages/${n}.jsx`));
 const Dashboard = P('Dashboard');
 const Edk = P('Edk');
 const MonitoringOrderSjt = P('MonitoringOrderSjt');
+const KoreksiJurbalPsak = P('KoreksiJurbalPsak');
 const Quadrant = P('Quadrant');
 const Support = P('Support');
 const Login = P('Login');
@@ -28,18 +35,21 @@ export default function App() {
         <Route
           path="/*"
           element={
-            <Layout>
+            <RequireAuth>
+              <Layout>
               <Routes>
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/edk-monitoring" element={<Edk />} />
                 <Route path="/monitoring-order-sjt" element={<MonitoringOrderSjt />} />
+                <Route path="/koreksi-jurbal-psak" element={<KoreksiJurbalPsak />} />
                 <Route path="/kuadran" element={<Navigate to="/kuadran/moving" replace />} />
                 <Route path="/kuadran/:view" element={<Quadrant />} />
                 <Route path="/support-needed" element={<Support />} />
                 <Route path="*" element={<NF />} />
               </Routes>
             </Layout>
+            </RequireAuth>
           }
         />
       </Routes>

@@ -27,15 +27,26 @@ import {
   resetSupportData,
   parseSupportCSV,
   parseSupportExcel,
+  listSupportExcelSheets,
   computeSupportMetrics,
   normalizeStatus,
-  DEFAULT_SUPPORT_CSV
+  DEFAULT_SUPPORT_CSV,
+  fetchSupportFromApi,
+  syncSupportToApi,
+  updateSupportItemApi,
+  resetSupportApi,
+  exportSupportExcel
 } from '../data/supportParser';
+import {
+  renderAgendaTableToBlob,
+  renderDetailTableToBlob,
+  renderFullSupportPageToBlob
+} from '../data/supportImageRenderer';
 import { exportCSV, ShareDropdown } from '../components/ui';
 import { createPortal } from "react-dom";
 
 export default function Support() {
-  // Action plans data state (loaded from LocalStorage or default CSV)
+  // Action plans data state (loaded from LocalStorage or default CSV, then synced with MySQL)
   const [actionPlans, setActionPlans] = useState(() => {
     const loaded = loadSavedSupportData();
     return loaded.map((item, idx) => ({
@@ -56,6 +67,9 @@ export default function Support() {
   // Modals state
   const [showUpload, setShowUpload] = useState(false);
   const [uploadFiles, setUploadFiles] = useState([]);
+  const [excelSheets, setExcelSheets] = useState([]);
+  const [selectedSheet, setSelectedSheet] = useState('');
+  const [uploadMode, setUploadMode] = useState('replace');
   const [uploadLoading, setUploadLoading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [uploadSuccess, setUploadSuccess] = useState('');
@@ -64,6 +78,19 @@ export default function Support() {
   const [detailItem, setDetailItem] = useState(null);
   const [editFormData, setEditFormData] = useState({});
   const [editSuccessMsg, setEditSuccessMsg] = useState('');
+
+  // Load latest data from MySQL Backend on mount
+  useEffect(() => {
+    let active = true;
+    fetchSupportFromApi().then((dbItems) => {
+      if (active && Array.isArray(dbItems) && dbItems.length > 0) {
+        setActionPlans(dbItems);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Recalculate metrics & persist whenever actionPlans change
   useEffect(() => {
@@ -94,8 +121,8 @@ export default function Support() {
     }));
   };
 
-  // Save changes to item, close modal, and update list + localStorage
-  const handleSaveAll = () => {
+  // Save changes to item, close modal, and update list + localStorage + MySQL
+  const handleSaveAll = async () => {
     if (!detailItem) return;
 
     const updatedData = {
@@ -119,6 +146,9 @@ export default function Support() {
         return isMatch ? updatedData : item;
       })
     );
+
+    // Sync single edited row to MySQL database
+    updateSupportItemApi(updatedData);
 
     setDetailItem(null);
     setEditFormData({});
@@ -192,7 +222,30 @@ export default function Support() {
     return filteredPlans.slice(start, start + pageSize);
   }, [filteredPlans, page]);
 
-  // Handle file upload (CSV or XLSX)
+  // Handle file selection and inspect Excel sheets if applicable
+  const handleFileSelect = async (files) => {
+    const fileList = Array.from(files);
+    setUploadFiles(fileList);
+    setUploadError('');
+    setExcelSheets([]);
+    setSelectedSheet('');
+
+    if (fileList.length > 0) {
+      const f = fileList[0];
+      const lower = f.name.toLowerCase();
+      if (lower.endsWith('.xlsx') || lower.endsWith('.xls')) {
+        try {
+          const info = await listSupportExcelSheets(f);
+          setExcelSheets(info.sheetNames || []);
+          setSelectedSheet(info.defaultSheet || info.sheetNames?.[0] || '');
+        } catch {
+          // Ignore sheet inspection error; will be handled on submit
+        }
+      }
+    }
+  };
+
+  // Handle file upload (CSV or XLSX) + Sync to MySQL Database
   const handleUploadSubmit = async () => {
     if (!uploadFiles.length) return;
     const file = uploadFiles[0];
@@ -208,21 +261,42 @@ export default function Support() {
         const text = await file.text();
         parsed = parseSupportCSV(text);
       } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-        parsed = await parseSupportExcel(file);
+        parsed = await parseSupportExcel(file, selectedSheet);
       } else {
         throw new Error('Format file tidak didukung. Harap unggah file .csv atau .xlsx / .xls');
       }
 
       if (!parsed || parsed.length === 0) {
-        throw new Error('File tidak memiliki baris action plan yang dapat dibaca. Pastikan terdapat kolom ACTION PLAN atau STATUS.');
+        throw new Error('File/Sheet tidak memiliki baris action plan yang dapat dibaca. Pastikan memilih sheet yang berisi data notulensi atau tracker.');
       }
 
-      setActionPlans(parsed);
-      setUploadSuccess(`Berhasil memuat ${parsed.length} butir Action Plan dari file "${file.name}"!`);
+      // Sync to MySQL database via Laravel API
+      const syncRes = await syncSupportToApi(
+        parsed,
+        file.name,
+        selectedSheet || 'Notulensi Tracker',
+        uploadMode
+      );
+
+      if (syncRes && syncRes.success && Array.isArray(syncRes.items)) {
+        setActionPlans(syncRes.items);
+        setUploadSuccess(
+          `Berhasil menyinkronkan ${parsed.length} butir Action Plan dari "${file.name}" ke Database MySQL!`
+        );
+      } else {
+        const nextPlans =
+          uploadMode === 'append'
+            ? [...actionPlans, ...parsed.map((it, idx) => ({ ...it, id: actionPlans.length + idx + 1 }))]
+            : parsed;
+        setActionPlans(nextPlans);
+        setUploadSuccess(`Berhasil memuat ${parsed.length} butir Action Plan dari file "${file.name}"!`);
+      }
+
       setTimeout(() => {
         setShowUpload(false);
         setUploadSuccess('');
         setUploadFiles([]);
+        setExcelSheets([]);
       }, 1500);
     } catch (err) {
       console.error(err);
@@ -232,18 +306,27 @@ export default function Support() {
     }
   };
 
-  // Reset to default sample CSV
-  const handleResetDefault = () => {
+  // Reset to default sample CSV & reset MySQL database
+  const handleResetDefault = async () => {
     if (confirm('Kembalikan ke data default template MoM & Support Needed?')) {
-      const def = resetSupportData();
-      setActionPlans(def);
+      const dbReset = await resetSupportApi();
+      if (dbReset && dbReset.length > 0) {
+        setActionPlans(dbReset);
+      } else {
+        const def = resetSupportData();
+        setActionPlans(def);
+      }
     }
   };
 
-  // Export data
-  const handleExport = () => {
+  const [showExportMenu, setShowExportMenu] = useState(false);
+
+  // Export data as clean CSV (with sep=, for Excel)
+  const handleExportCSV = () => {
+    setShowExportMenu(false);
     const exportData = actionPlans.map((r, i) => ({
-      'NO': r.no || i + 1,
+      'NO': i + 1,
+      'NO RAPAT': r.no || i + 1,
       'TGL': r.tgl,
       'AGENDA': r.agenda,
       'MAIN TOPIC': r.mainTopic,
@@ -260,33 +343,43 @@ export default function Support() {
     exportCSV(exportData, `Report_Support_Needed_${new Date().toISOString().slice(0, 10)}`);
   };
 
+  // Export data as neatly formatted Excel (.xlsx) with wide columns + summary sheet
+  const handleExportExcel = () => {
+    setShowExportMenu(false);
+    exportSupportExcel(
+      actionPlans,
+      metrics,
+      `Report_Support_Needed_${new Date().toISOString().slice(0, 10)}`
+    );
+  };
+
   const getStatusBadge = (status) => {
     switch (status) {
       case 'DONE':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
-            <span className="size-1.5 rounded-full bg-emerald-500" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold whitespace-nowrap">
+            <span className="size-1.5 rounded-full bg-emerald-500 shrink-0" />
             DONE
           </span>
         );
       case 'IN PROGRESS':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-bold">
-            <span className="size-1.5 rounded-full bg-blue-500 animate-pulse" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-bold whitespace-nowrap">
+            <span className="size-1.5 rounded-full bg-blue-500 animate-pulse shrink-0" />
             IN PROGRESS
           </span>
         );
       case 'NEED DISCUSS':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold">
-            <span className="size-1.5 rounded-full bg-amber-500" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold whitespace-nowrap">
+            <span className="size-1.5 rounded-full bg-amber-500 shrink-0" />
             NEED DISCUSS
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-bold">
-            <span className="size-1.5 rounded-full bg-rose-500" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-bold whitespace-nowrap">
+            <span className="size-1.5 rounded-full bg-rose-500 shrink-0" />
             BELUM FU
           </span>
         );
@@ -335,15 +428,45 @@ export default function Support() {
             <span>Upload CSV / Excel</span>
           </button>
 
-          {/* Export Button */}
-          <button
-            type="button"
-            onClick={handleExport}
-            className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-2xs cursor-pointer"
-          >
-            <Download size={14} className="text-slate-500" />
-            <span>Export CSV</span>
-          </button>
+          {/* Export Button with Excel (.xlsx) & CSV options */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowExportMenu((v) => !v)}
+              className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-2xs cursor-pointer"
+            >
+              <Download size={14} className="text-slate-500" />
+              <span>Export CSV / Excel</span>
+              <ChevronDown size={13} className={`text-slate-400 transition-transform ${showExportMenu ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showExportMenu && (
+              <div className="absolute right-0 top-full mt-1.5 w-56 bg-white rounded-xl border border-slate-200 shadow-xl z-50 py-1.5 animate-[fadeIn_0.15s_ease-out]">
+                <button
+                  type="button"
+                  onClick={handleExportExcel}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-slate-50 text-left text-xs font-semibold text-slate-800 cursor-pointer"
+                >
+                  <FileSpreadsheet size={15} className="text-emerald-600 shrink-0" />
+                  <div>
+                    <div className="font-bold text-slate-900">Export Excel (.xlsx)</div>
+                    <div className="text-[10px] text-slate-400 font-normal">Kolom rapi + Sheet Rekap</div>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExportCSV}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-slate-50 text-left text-xs font-semibold text-slate-700 cursor-pointer border-t border-slate-100"
+                >
+                  <FileText size={15} className="text-blue-600 shrink-0" />
+                  <div>
+                    <div className="font-bold text-slate-800">Export CSV (.csv)</div>
+                    <div className="text-[10px] text-slate-400 font-normal">Format koma terpisah otomatis</div>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Reset Button */}
           <button
@@ -355,17 +478,45 @@ export default function Support() {
             <RefreshCw size={14} />
           </button>
 
-          {/* Full Page Share & Copy as Picture */}
+          {/* Full Page & Table Specific Share / Copy as Picture */}
           <ShareDropdown
             buttonLabel="Salin &amp; Bagikan"
-            captureSelector="#support-main-content"
-            tableSelector="table"
+            captureSelector="#support-detail-card"
+            pictureTargets={[
+              {
+                id: 'detail_table',
+                title: 'Copy Gambar Tabel Detail',
+                subtitle: 'Tabel Daftar Detail Action Plan (Utuh & Rapi)',
+                selector: '#support-detail-card',
+                label: 'Tabel Detail Action Plan',
+                bg: '#FFFFFF',
+                renderBlob: () => renderDetailTableToBlob(filteredPlans, actionPlans.length)
+              },
+              {
+                id: 'agenda_table',
+                title: 'Copy Gambar Tabel Agenda',
+                subtitle: 'Tabel Report Follow Up By Agenda (Rapi)',
+                selector: '#support-agenda-card',
+                label: 'Tabel Rekap Agenda',
+                bg: '#FFFFFF',
+                renderBlob: () => renderAgendaTableToBlob(metrics)
+              },
+              {
+                id: 'full_page',
+                title: 'Copy as Picture (Full Page)',
+                subtitle: 'Seluruh laporan MoM & Support Needed',
+                selector: '#support-main-content',
+                label: 'Seluruh Halaman MoM',
+                bg: '#F6F8FC',
+                renderBlob: () => renderFullSupportPageToBlob(metrics, filteredPlans, actionPlans.length)
+              }
+            ]}
           />
         </div>
       </header>
 
       {/* 2. Card 1: Report Follow Up Support Needed — By Agenda */}
-      <section className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
+      <section id="support-agenda-card" className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
         {/* Navy Blue Header Bar */}
         <div className="bg-[#0B1E48] px-5 py-4 text-white flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -565,7 +716,7 @@ export default function Support() {
       </section>
 
       {/* 5. Card 3: Interactive Detail Action Plans & Support Needed */}
-      <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs">
+      <section id="support-detail-card" className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
           <div>
             <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
@@ -663,14 +814,14 @@ export default function Support() {
             <thead>
               <tr className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 text-left">
                 <th className="py-3.5 px-3 text-center w-12">#</th>
-                <th className="py-3.5 px-3 w-36">Agenda &amp; Tgl</th>
+                <th className="py-3.5 px-3 w-38 whitespace-nowrap">Agenda &amp; Tgl</th>
                 <th className="py-3.5 px-4 w-48">Main Topic</th>
-                <th className="py-3.5 px-4 min-w-[240px]">Rencana Aksi (Action Plan)</th>
-                <th className="py-3.5 px-3 w-36">UIC &rarr; Destinasi</th>
-                <th className="py-3.5 px-4 min-w-[280px]">Support Needed</th>
-                <th className="py-3.5 px-3 w-28 text-center">Deadline</th>
-                <th className="py-3.5 px-3 w-28 text-center">Status</th>
-                <th className="py-3.5 px-2 w-16 text-center">Aksi</th>
+                <th className="py-3.5 px-4 min-w-[260px]">Rencana Aksi (Action Plan)</th>
+                <th className="py-3.5 px-3 w-42 whitespace-nowrap">UIC &rarr; Destinasi</th>
+                <th className="py-3.5 px-4 min-w-[260px]">Support Needed</th>
+                <th className="py-3.5 px-3 w-28 text-center whitespace-nowrap">Deadline</th>
+                <th className="py-3.5 px-3 w-32 text-center whitespace-nowrap">Status</th>
+                <th className="py-3.5 px-2 w-16 text-center whitespace-nowrap">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -860,33 +1011,73 @@ export default function Support() {
                   className="hidden"
                   onChange={(e) => {
                     if (e.target.files?.length) {
-                      setUploadFiles(Array.from(e.target.files));
-                      setUploadError('');
+                      handleFileSelect(e.target.files);
                     }
                   }}
                 />
               </label>
 
               {uploadFiles.length > 0 && (
-                <div className="mt-4 p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <FileCheck2 size={18} className="text-emerald-600 shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-slate-800 truncate">
-                        {uploadFiles[0].name}
-                      </p>
-                      <p className="text-[11px] text-slate-400">
-                        {(uploadFiles[0].size / 1024).toFixed(1)} KB
-                      </p>
+                <div className="mt-4 space-y-3">
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <FileCheck2 size={18} className="text-emerald-600 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-slate-800 truncate">
+                          {uploadFiles[0].name}
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          {(uploadFiles[0].size / 1024).toFixed(1)} KB
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUploadFiles([]);
+                        setExcelSheets([]);
+                        setSelectedSheet('');
+                      }}
+                      className="text-slate-400 hover:text-rose-500 text-xs p-1"
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
+
+                  {/* Sheet & Sync Mode selectors */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {excelSheets.length > 0 && (
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                          Pilih Sheet Excel
+                        </label>
+                        <select
+                          value={selectedSheet}
+                          onChange={(e) => setSelectedSheet(e.target.value)}
+                          className="w-full text-xs border border-slate-200 rounded-xl px-3 py-2 bg-white text-slate-800 font-semibold focus:outline-none focus:border-blue-500"
+                        >
+                          {excelSheets.map((sh) => (
+                            <option key={sh} value={sh}>
+                              {sh}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    <div className={excelSheets.length > 0 ? '' : 'sm:col-span-2'}>
+                      <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                        Mode Sinkronisasi Database
+                      </label>
+                      <select
+                        value={uploadMode}
+                        onChange={(e) => setUploadMode(e.target.value)}
+                        className="w-full text-xs border border-slate-200 rounded-xl px-3 py-2 bg-white text-slate-800 font-semibold focus:outline-none focus:border-blue-500"
+                      >
+                        <option value="replace">Ganti Semua Data (Replace)</option>
+                        <option value="append">Tambahkan ke Data Saat Ini (Append)</option>
+                      </select>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setUploadFiles([])}
-                    className="text-slate-400 hover:text-rose-500 text-xs p-1"
-                  >
-                    <X size={15} />
-                  </button>
                 </div>
               )}
 
@@ -905,9 +1096,14 @@ export default function Support() {
             <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
               <button
                 type="button"
-                onClick={() => {
-                  const parsed = parseSupportCSV(DEFAULT_SUPPORT_CSV);
-                  setActionPlans(parsed);
+                onClick={async () => {
+                  const dbReset = await resetSupportApi();
+                  if (dbReset && dbReset.length > 0) {
+                    setActionPlans(dbReset);
+                  } else {
+                    const parsed = parseSupportCSV(DEFAULT_SUPPORT_CSV);
+                    setActionPlans(parsed);
+                  }
                   setUploadSuccess('Berhasil memuat template contoh data MoM & Support Needed!');
                   setTimeout(() => {
                     setShowUpload(false);

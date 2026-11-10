@@ -1,0 +1,6059 @@
+[
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 269
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 147
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 13
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 1234
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BLORA",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 43
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BLORA",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 71
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BLORA",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 14
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BLORA",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 167
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BLORA",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 57
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BLORA",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 97
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BLORA",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 10
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BLORA",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 223
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BOYOLALI",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 113
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BOYOLALI",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 153
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BOYOLALI",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BOYOLALI",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 693
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BOYOLALI",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 32
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BOYOLALI",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 45
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BOYOLALI",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BOYOLALI",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 82
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BOYOLALI",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 39
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BOYOLALI",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 83
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BOYOLALI",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "BOYOLALI",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 130
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 979
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 1882
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 36
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 5812
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 420
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 1107
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 40
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 1029
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 230
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 404
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 73
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 759
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "JEPARA",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 326
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "JEPARA",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 344
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "JEPARA",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 12
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "JEPARA",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 1618
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "JEPARA",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 20
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "JEPARA",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 50
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "JEPARA",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 7
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "JEPARA",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 122
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "JEPARA",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 81
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "JEPARA",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 62
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "JEPARA",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 46
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "JEPARA",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 155
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KLATEN",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 184
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KLATEN",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 228
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KLATEN",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 6
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KLATEN",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 1153
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KLATEN",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 42
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KLATEN",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 119
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KLATEN",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 18
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KLATEN",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 154
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KLATEN",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 43
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KLATEN",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 93
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KLATEN",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KLATEN",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 140
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KUDUS",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 370
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KUDUS",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 398
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KUDUS",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 11
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KUDUS",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 2387
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KUDUS",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 84
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KUDUS",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 255
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KUDUS",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 14
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KUDUS",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 355
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KUDUS",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 73
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KUDUS",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 167
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KUDUS",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 17
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "KUDUS",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 358
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PATI",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 405
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PATI",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 240
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PATI",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 14
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PATI",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 1815
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PATI",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 31
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PATI",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 94
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PATI",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 6
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PATI",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 132
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PATI",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 73
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PATI",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 92
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PATI",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 33
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PATI",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 84
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PURWODADI",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 222
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PURWODADI",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 120
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PURWODADI",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 7
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PURWODADI",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 1362
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PURWODADI",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 22
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PURWODADI",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 66
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PURWODADI",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 15
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PURWODADI",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 124
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PURWODADI",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 43
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PURWODADI",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 67
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PURWODADI",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 5
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "PURWODADI",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 237
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "REMBANG",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 109
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "REMBANG",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 116
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "REMBANG",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 12
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "REMBANG",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 754
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "REMBANG",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 18
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "REMBANG",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 48
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "REMBANG",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "REMBANG",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 84
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "REMBANG",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 21
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "REMBANG",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 65
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "REMBANG",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 10
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "REMBANG",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 135
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 203
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 163
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 20
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 1518
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "SRAGEN",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 67
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "SRAGEN",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 89
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "SRAGEN",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 7
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "SRAGEN",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 147
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "SRAGEN",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 72
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "SRAGEN",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 117
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "SRAGEN",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 15
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "SRAGEN",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 225
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "WONOGIRI",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 103
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "WONOGIRI",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 100
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "WONOGIRI",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 6
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "WONOGIRI",
+    "unit": "Business",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 788
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "WONOGIRI",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 19
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "WONOGIRI",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 52
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "WONOGIRI",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 21
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "WONOGIRI",
+    "unit": "Enterprise",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 136
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "WONOGIRI",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 1,
+    "jumlah": 50
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "WONOGIRI",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 2,
+    "jumlah": 59
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "WONOGIRI",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 3,
+    "jumlah": 5
+  },
+  {
+    "bulan": "Jul",
+    "period": "202607",
+    "telda": "WONOGIRI",
+    "unit": "Government",
+    "kw_awal": "",
+    "kw_akhir": 4,
+    "jumlah": 163
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 266
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 3,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 4,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 126
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 1,
+    "jumlah": 11
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 7
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 10
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 1,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 2,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 1067
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 1,
+    "jumlah": 7
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 145
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "NEW",
+    "kw_akhir": 2,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 32
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 43
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 67
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 10
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 4,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 164
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 2,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 3,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 13
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 57
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 91
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 8
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 1,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 214
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 6
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 2,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 5
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 113
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 143
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 1,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 7
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 633
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 51
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Business",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 11
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 32
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 43
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 4,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 79
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 1,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 2,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 3,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 10
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 39
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 76
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 1,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 123
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 974
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 2,
+    "jumlah": 5
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 1742
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 1,
+    "jumlah": 16
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 110
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 24
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 1,
+    "jumlah": 5
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 4,
+    "jumlah": 7
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 5167
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 1,
+    "jumlah": 16
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 583
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 6
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Business",
+    "kw_awal": "NEW",
+    "kw_akhir": 2,
+    "jumlah": 8
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Business",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 68
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 417
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 2,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 4,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 1035
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 69
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 34
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 4,
+    "jumlah": 6
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 962
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 58
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 1,
+    "jumlah": 7
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 2,
+    "jumlah": 31
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 3,
+    "jumlah": 8
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 75
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 225
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 2,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 4,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 369
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 1,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 29
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 70
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 4,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 719
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 25
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 14
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 2,
+    "jumlah": 6
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 12
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 321
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 2,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 4,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 319
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 1,
+    "jumlah": 9
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 13
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 5
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 1,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 4,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 1526
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 1,
+    "jumlah": 7
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 76
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 5
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Business",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 33
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 18
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 3,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 4,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 46
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 7
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 117
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 2,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 3,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 8
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 81
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 60
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 1,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 4,
+    "jumlah": 42
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 152
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 2,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 5
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 182
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 3,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 4,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 209
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 1,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 15
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 5
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 1087
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 56
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Business",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 33
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 42
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 115
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 14
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 4,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 150
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 2,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 3,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 15
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 43
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 88
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 5
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 135
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 2,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 365
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 3,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 4,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 361
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 1,
+    "jumlah": 11
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 22
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 9
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 1,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 2278
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 1,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 92
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Business",
+    "kw_awal": "NEW",
+    "kw_akhir": 2,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Business",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 13
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 82
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 2,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 236
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 16
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 12
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 4,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 338
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 15
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 2,
+    "jumlah": 7
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 3,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 35
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 73
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 160
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 6
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 15
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 1,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 337
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 18
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 403
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 2,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 222
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 1,
+    "jumlah": 6
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 11
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 8
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 1,
+    "jumlah": 6
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 1712
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 1,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 88
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Business",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 21
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 31
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 86
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 1,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 5
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 4,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 127
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 1,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 3,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 19
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 73
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 89
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 31
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 1,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 78
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 5
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 2,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 221
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 3,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 110
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 1,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 6
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 1,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 4,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 1296
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 1,
+    "jumlah": 6
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 45
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Business",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 45
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 22
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 63
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 14
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 4,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 117
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 1,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 2,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 3,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 9
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 42
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 2,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 60
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 1,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 231
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 2,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 8
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 108
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 4,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 107
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 1,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 5
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 8
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 1,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 739
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 9
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Business",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 6
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 18
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 48
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 81
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 2,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 20
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 60
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 5
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 9
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 129
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 2,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 200
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 2,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 3,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 4,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 149
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 1,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 10
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 7
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 4,
+    "jumlah": 11
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 1429
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 1,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 79
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 18
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 67
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 84
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 5
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 6
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 4,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 143
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 1,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 2,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 3,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 14
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 72
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 106
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 1,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 9
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 9
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 1,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 4,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 219
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 2,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 6
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 100
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 2,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 93
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 7
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 4,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 754
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 19
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Business",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 18
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 19
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 50
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 20
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 4,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 130
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 5
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 3,
+    "jumlah": 2
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Enterprise",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 11
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 50
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 56
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 5
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 155
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 2,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 3,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 1,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 2,
+    "jumlah": 1
+  },
+  {
+    "bulan": "Aug",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Government",
+    "kw_awal": "NEW",
+    "kw_akhir": 4,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 286
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 144
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 129
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 15
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 1107
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 44
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 70
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 12
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 185
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 61
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 98
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 9
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BLORA",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 223
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 117
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 148
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 46
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 651
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 34
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 46
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 92
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 42
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 79
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 5
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "BOYOLALI",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 125
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 1011
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 1861
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 477
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 30
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 5352
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 425
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 1125
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 44
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 1114
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 231
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 404
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 84
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "INNER - SOLO JATENG TIMUR",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 763
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 340
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 343
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 56
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 10
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 1577
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 18
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 54
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 10
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 130
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 83
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 65
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 4
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "JEPARA",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 201
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 186
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 218
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 47
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 6
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 1136
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 44
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 122
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 16
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 172
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 45
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 93
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 3
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KLATEN",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 142
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 380
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 391
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 63
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 14
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 2315
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 85
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 260
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 13
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 390
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 76
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 178
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 18
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "KUDUS",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 346
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 418
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 246
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 66
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 12
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 1744
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 39
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 87
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 8
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 150
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 75
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 95
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 32
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PATI",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 83
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 234
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 128
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 27
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 5
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 1348
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 24
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 69
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 16
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 130
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 47
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 67
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 6
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "PURWODADI",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 243
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 116
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 111
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 5
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 9
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 751
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 18
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 50
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 5
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 83
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 22
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 65
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 11
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "REMBANG",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 136
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 207
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 163
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 66
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 10
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 1469
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 71
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 88
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 7
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 163
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 78
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 110
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 12
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "SRAGEN",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 237
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Business",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 102
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 98
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Business",
+    "kw_awal": "2",
+    "kw_akhir": 4,
+    "jumlah": 15
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Business",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 6
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Business",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 780
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Enterprise",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 20
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Enterprise",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 55
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Enterprise",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 22
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Enterprise",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 143
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Government",
+    "kw_awal": "1",
+    "kw_akhir": 1,
+    "jumlah": 51
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Government",
+    "kw_awal": "2",
+    "kw_akhir": 2,
+    "jumlah": 61
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Government",
+    "kw_awal": "3",
+    "kw_akhir": 3,
+    "jumlah": 8
+  },
+  {
+    "bulan": "Sep",
+    "period": "202608",
+    "telda": "WONOGIRI",
+    "unit": "Government",
+    "kw_awal": "4",
+    "kw_akhir": 4,
+    "jumlah": 161
+  }
+]

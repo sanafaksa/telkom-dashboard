@@ -1,0 +1,166 @@
+
+name: Deploy to InfinityFree
+
+on:
+  push:
+    branches:
+      - rdp
+    paths:
+      - 'telkom/**'
+      - 'telkom-api/**'
+      - '.github/workflows/deploy-infinityfree.yaml'
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-infinityfree
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy to InfinityFree
+    runs-on: ubuntu-latest
+    timeout-minutes: 12000 #jangan diubah
+
+    steps:
+      # 1. Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Setup Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: telkom/package-lock.json
+
+      # 3. Install frontend dependencies
+      - name: Install frontend dependencies
+        working-directory: telkom
+        run: npm ci
+
+      # 4. Build React + Vite
+      - name: Build frontend
+        working-directory: telkom
+        run: npm run build -- --mode solarisapp
+
+      # 5. Setup PHP
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_mysql, openssl, fileinfo, bcmath, xml, ctype, tokenizer
+          coverage: none
+          tools: composer:v2
+
+      # 6. Validate Composer
+      - name: Validate Composer configuration
+        working-directory: telkom-api
+        run: composer validate --no-check-publish
+
+      # 7. Install Laravel dependencies
+      - name: Install backend dependencies
+        working-directory: telkom-api
+        run: composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
+
+      # 8. Prepare deployment folders
+      - name: Prepare deployment files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p deploy/frontend deploy/api
+
+          # React -> htdocs/
+          rsync -a telkom/dist/ deploy/frontend/
+
+          # Laravel -> htdocs/api/
+          rsync -a \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            --exclude='.git/' \
+            --exclude='node_modules/' \
+            --exclude='tests/' \
+            --exclude='storage/logs/*.log' \
+            telkom-api/ deploy/api/
+
+          # Laravel API entry point
+          cat > deploy/api/.htaccess <<'EOF'
+          Options -Indexes
+
+          <IfModule mod_rewrite.c>
+              RewriteEngine On
+
+              # Protect Laravel internal directories
+              RewriteRule ^(app|bootstrap|config|database|resources|routes|storage|tests|vendor)(/|$) - [F,L,NC]
+
+              # Protect sensitive files
+              RewriteRule ^(\.env|artisan|composer\.(json|lock)|phpunit\.xml)$ - [F,L,NC]
+
+              # Route requests to Laravel
+              RewriteCond %{REQUEST_FILENAME} !-f
+              RewriteCond %{REQUEST_FILENAME} !-d
+              RewriteRule ^ public/index.php [QSA,L]
+          </IfModule>
+          EOF
+
+      # 9. Validate deployment files
+      - name: Validate deployment files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -f deploy/frontend/index.html
+          test -d deploy/frontend/assets
+          test -f deploy/api/public/index.php
+          test -f deploy/api/vendor/autoload.php
+          test -f deploy/api/bootstrap/app.php
+          test ! -f deploy/api/.env
+          test ! -f deploy/api/.env.solarisapp
+
+      # 10. Deploy React frontend
+      - name: Deploy frontend to htdocs
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          local-dir: deploy/frontend/
+          server-dir: /htdocs/
+          state-name: .ftp-frontend-sync-state.json
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.env
+            **/.env.*
+            **/node_modules/**
+          dangerous-clean-slate: false
+          log-level: standard
+
+      # 11. Deploy Laravel backend
+      - name: Deploy backend to htdocs/api
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          local-dir: deploy/api/
+          server-dir: /htdocs/api/
+          state-name: .ftp-backend-sync-state.json
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.env
+            **/.env.*
+            **/node_modules/**
+            **/*.log
+          dangerous-clean-slate: false
+          log-level: standard

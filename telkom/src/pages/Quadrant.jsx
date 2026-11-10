@@ -1,40 +1,151 @@
-import {useState, useEffect} from 'react';
-import {useParams} from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useParams } from 'react-router-dom';
 import {
   Filter,
   FileDown,
   Upload,
-  Download,
-  Share2,
-  ChevronDown,
   Check,
   X,
   FileSpreadsheet,
   Lightbulb,
-  AlertCircle
+  AlertCircle,
+  Sparkles
 } from 'lucide-react';
 import * as Q from '../data/quadrantData';
-import {exportCSV, ShareDropdown} from '../components/ui';
-import {QuadrantGrid, GrandTotalCard} from '../components/Quadrant';
-import {createPortal} from 'react-dom';
+import { ExportButton, ShareDropdown } from '../components/ui';
+import { QuadrantGrid, GrandTotalCard } from '../components/Quadrant';
+import { createPortal } from 'react-dom';
+import {
+  aggregateMasterData,
+  buildQuadrantData,
+  getFilterOptions,
+  downloadSummaryTemplate,
+  fetchAggFromApi,
+  syncAggToApi,
+  DEFAULT_QUADRANT_AGG
+} from '../data/quadrantXlsx';
+import FilterDropdown from '../components/FilterDropdown';
+
+const STORAGE_KEY = 'telkom_quadrant_agg_v2';
+
+function loadInitialAgg() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.months?.length) return parsed;
+    }
+  } catch {
+    /* ignore */
+  }
+  return DEFAULT_QUADRANT_AGG;
+}
+
+let cachedAgg = loadInitialAgg();
 
 export default function Quadrant() {
-  const {view} = useParams();
+  const { view } = useParams();
   const defaultData = Q[view];
 
-  const [quadrantData, setQuadrantData] = useState(defaultData);
-  const [copied, setCopied] = useState(false);
+  // Filters per view: witel & moving -> Bulan; telda -> Region + Bulan; segment -> Segment + Bulan.
+  const isTeldaView = view === 'telda';
+  const isSegmentView = view === 'segment';
+  const isMoving = view === 'moving';
+
+  const defaultFilters = (v, opts, prevMonth) => {
+    const pickMonth =
+      prevMonth && opts.month.includes(prevMonth)
+        ? [prevMonth]
+        : opts.month.includes('Aug')
+          ? ['Aug']
+          : opts.month.length
+            ? [opts.month[opts.month.length - 1]]
+            : ['Aug'];
+    if (v === 'telda') {
+      return {
+        telda: [opts.telda.includes('BLORA') ? 'BLORA' : opts.telda[0]].filter(Boolean),
+        unit: [],
+        month: pickMonth
+      };
+    }
+    if (v === 'segment') {
+      return {
+        telda: [],
+        unit: [opts.unit.find((u) => u.toLowerCase() === 'business') || opts.unit[0]].filter(Boolean),
+        month: pickMonth
+      };
+    }
+    return { telda: [], unit: [], month: pickMonth };
+  };
+
+  const [aggData, setAggData] = useState(() => cachedAgg);
+  const [filters, setFilters] = useState(() =>
+    defaultFilters(view, getFilterOptions(cachedAgg, view))
+  );
+  const [quadrantData, setQuadrantData] = useState(() =>
+    defaultData ? buildQuadrantData(view, cachedAgg, defaultData, defaultFilters(view, getFilterOptions(cachedAgg, view))) : null
+  );
   const [showUpload, setShowUpload] = useState(false);
   const [uploadFiles, setUploadFiles] = useState([]);
   const [uploadError, setUploadError] = useState(null);
+  const [autoDownloadTemplate, setAutoDownloadTemplate] = useState(true);
   const [toast, setToast] = useState(null);
+  const [processing, setProcessing] = useState(null);
+  const [showFilter, setShowFilter] = useState(false);
+  const filterRef = useRef(null);
 
-  // Re-sync default data when view parameter changes
+  // Re-sync view data when view parameter changes while keeping uploaded/aggregated data intact
   useEffect(() => {
-    if (Q[view]) {
-      setQuadrantData(Q[view]);
-    }
+    if (!Q[view]) return;
+    const opts = getFilterOptions(aggData, view);
+    const nextFilters = defaultFilters(view, opts, filters.month?.[0]);
+    setFilters(nextFilters);
+    setQuadrantData(buildQuadrantData(view, aggData, Q[view], nextFilters));
   }, [view]);
+
+  // Fetch latest data from Laravel MySQL API when available
+  useEffect(() => {
+    let active = true;
+    fetchAggFromApi()
+      .then((remoteAgg) => {
+        if (!active || !remoteAgg?.months?.length) return;
+        cachedAgg = remoteAgg;
+        setAggData(remoteAgg);
+        const opts = getFilterOptions(remoteAgg, view);
+        const nextFilters = defaultFilters(view, opts, filters.month?.[0]);
+        setFilters(nextFilters);
+        if (Q[view]) {
+          setQuadrantData(buildQuadrantData(view, remoteAgg, Q[view], nextFilters));
+        }
+      })
+      .catch(() => {
+        /* fallback to local/default data when backend is offline */
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Close filter panel when clicking outside
+  useEffect(() => {
+    if (!showFilter) return;
+    const handler = (e) => {
+      if (filterRef.current && !filterRef.current.contains(e.target)) setShowFilter(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showFilter]);
+
+  const filterOptions = getFilterOptions(aggData, view);
+
+  const applyFilters = (next) => {
+    setFilters(next);
+    try {
+      setQuadrantData(buildQuadrantData(view, aggData, defaultData, next));
+    } catch (err) {
+      showNotification(err.message);
+    }
+  };
 
   if (!quadrantData) {
     return <p className="p-8 text-slate-500">Tampilan tidak ditemukan.</p>;
@@ -42,72 +153,98 @@ export default function Quadrant() {
 
   const showNotification = (msg) => {
     setToast(msg);
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 3500);
   };
 
-  const handleCopy = () => {
-    navigator.clipboard?.writeText(window.location.href);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+  const persistAgg = (nextAgg) => {
+    cachedAgg = nextAgg;
+    setAggData(nextAgg);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ months: nextAgg.months }));
+    } catch {
+      /* ignore storage quota */
+    }
   };
 
-  const isMoving = view === 'moving';
+  // 1. Download Template Ringkas (.xlsx) containing all months, regions, segments & movements
+  const handleDownloadTemplate = async () => {
+    try {
+      const rowCount = await downloadSummaryTemplate(aggData, 'Template_Kuadran_Ringkas_SJT.xlsx');
+      showNotification(`Template Ringkas Excel (${rowCount} baris) berhasil diunduh!`);
+    } catch {
+      showNotification('Gagal mengunduh template.');
+    }
+  };
 
-  // 1. Download Template function (adapted for moving vs regular kuadran)
-  const handleDownloadTemplate = () => {
-    let templateContent;
-    let filename;
+  // 2. Upload and Parse (Master Data Excel, Template Ringkas Excel/CSV, or Legacy CSV)
+  const processStructuredFile = async (file, shouldExportTemplate = false) => {
+    setUploadError(null);
+    setProcessing(0);
+    try {
+      const agg = await aggregateMasterData(file, setProcessing);
+      persistAgg(agg);
+      const opts = getFilterOptions(agg, view);
+      const nextFilters = defaultFilters(view, opts, filters.month?.[0]);
+      const next = buildQuadrantData(view, agg, defaultData, nextFilters);
+      setFilters(nextFilters);
+      setQuadrantData(next);
 
-    if (isMoving) {
-      templateContent = [
-        'KODE_KUADRAN,NAMA_KUADRAN,DESKRIPSI,LAST_MONTH,REAL,DARI_KW1,DARI_KW2,DARI_KW3,DARI_KW4,NEW',
-        'KW1,Kuadran 1,Tanpa Tagihan & Tanpa Usage,4863,5030,4819,89,45,49,28',
-        'KW2,Kuadran 2,Dengan Tagihan & Tanpa Usage,7193,8189,21,6669,1,1414,84',
-        'KW3,Kuadran 3,Tanpa Tagihan & Dengan Usage,511,470,8,0,373,69,20',
-        'KW4,Kuadran 4,Dengan Tagihan & Dengan Usage,24275,23642,11,394,91,22588,558'
-      ].join('\r\n');
-      filename = 'Template_Kuadran_moving.csv';
-    } else {
-      templateContent = [
-        'KODE_KUADRAN,NAMA_KUADRAN,DESKRIPSI,LAST_MONTH,REAL',
-        'KW1,Kuadran 1,Tanpa Tagihan & Tanpa Usage,4863,5030',
-        'KW2,Kuadran 2,Dengan Tagihan & Tanpa Usage,7193,8189',
-        'KW3,Kuadran 3,Tanpa Tagihan & Dengan Usage,511,470',
-        'KW4,Kuadran 4,Dengan Tagihan & Dengan Usage,24275,23642'
-      ].join('\r\n');
-      filename = `Template_Kuadran_${view || 'Witel'}.csv`;
+      let extraMsg = '';
+      try {
+        const synced = await syncAggToApi(agg, file.name);
+        if (synced?.months?.length) {
+          persistAgg({ ...agg, months: synced.months });
+        }
+        extraMsg += ` • Tersimpan di MySQL (${synced.rowCount} baris)`;
+      } catch {
+        /* backend offline, local state already updated */
+      }
+      if (shouldExportTemplate && !agg.template) {
+        const count = await downloadSummaryTemplate(agg, 'Template_Kuadran_Ringkas_SJT.xlsx');
+        extraMsg += ` • Template (${count} baris) diunduh`;
+      }
+
+      setShowUpload(false);
+      setUploadFiles([]);
+      const monthNames = agg.months.map((m) => m.bulan).join(', ');
+      showNotification(
+        `Data (${monthNames}) berhasil diterapkan${extraMsg}!`
+      );
+    } catch (err) {
+      setUploadError(err.message || 'Gagal memproses file.');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const parseUploadedFile = (file, shouldExportTemplate = false) => {
+    if (/\.xls[xm]$/i.test(file.name)) {
+      processStructuredFile(file, shouldExportTemplate);
+      return;
     }
 
-    const blob = new Blob(['\uFEFF' + templateContent], {type: 'text/csv;charset=utf-8;'});
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    showNotification(`Template ${isMoving ? 'Kuadran Moving' : 'Kuadran'} berhasil diunduh!`);
-  };
-
-  // 2. Upload and Parse Template function
-  const parseUploadedFile = (file) => {
+    // Check if CSV is the new Summary Template (BULAN, ..., KW_AKHIR, JUMLAH) or legacy CSV
     setUploadError(null);
     const reader = new FileReader();
 
     reader.onload = (e) => {
       try {
         const text = e.target.result;
-        const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== '');
-
+        const lines = text.split(/\r\n|\n/).filter((line) => line.trim() !== '');
         if (lines.length < 2) {
           throw new Error('File template kosong atau format tidak valid.');
         }
 
-        // Determine delimiter (comma or semicolon)
         const headerLine = lines[0];
         const delimiter = headerLine.includes(';') ? ';' : ',';
-        const headers = headerLine.split(delimiter).map(h => h.trim().toUpperCase().replace(/^["']|["']$/g, ''));
+        const headers = headerLine
+          .split(delimiter)
+          .map((h) => h.trim().toUpperCase().replace(/^["']|["']$/g, ''));
+
+        if (headers.includes('BULAN') && (headers.includes('KW_AKHIR') || headers.includes('KW_IH'))) {
+          processStructuredFile(file, shouldExportTemplate);
+          return;
+        }
 
         const cleanNum = (str) => {
           if (str === undefined || str === null || str === '') return 0;
@@ -115,16 +252,17 @@ export default function Quadrant() {
           return Number(normalized) || 0;
         };
 
-        const isMovingFormat = isMoving || headers.some(h => 
-          h.includes('DARI_KW') || h.includes('PINDAH') || h === 'NEW' || h === 'NEW_VAL'
-        );
+        const isMovingFormat =
+          isMoving ||
+          headers.some(
+            (h) => h.includes('DARI_KW') || h.includes('PINDAH') || h === 'NEW' || h === 'NEW_VAL'
+          );
 
         const parsedItems = [];
         for (let i = 1; i < lines.length; i++) {
-          const cols = lines[i].split(delimiter).map(c => c.trim().replace(/^["']|["']$/g, ''));
+          const cols = lines[i].split(delimiter).map((c) => c.trim().replace(/^["']|["']$/g, ''));
           if (cols.length < 3) continue;
 
-          // Map headers to column values
           const rowMap = {};
           headers.forEach((h, idx) => {
             rowMap[h] = cols[idx] !== undefined ? cols[idx] : '';
@@ -133,8 +271,9 @@ export default function Quadrant() {
           const code = rowMap['KODE_KUADRAN'] || cols[0] || `KW${i}`;
           const name = rowMap['NAMA_KUADRAN'] || cols[1] || `Kuadran ${i}`;
           const desc = rowMap['DESKRIPSI'] || cols[2] || '';
-          
-          let last = rowMap['LAST_MONTH'] !== undefined ? cleanNum(rowMap['LAST_MONTH']) : cleanNum(cols[3]);
+
+          const last =
+            rowMap['LAST_MONTH'] !== undefined ? cleanNum(rowMap['LAST_MONTH']) : cleanNum(cols[3]);
           let val = rowMap['REAL'] !== undefined ? cleanNum(rowMap['REAL']) : cleanNum(cols[4]);
 
           const mom = last > 0 ? Number((((val - last) / last) * 100).toFixed(1)) : 0;
@@ -161,14 +300,14 @@ export default function Quadrant() {
               cells = [['1', from1], ['2', from2], ['3', from3], ['4', from4]];
             }
 
-            // Auto calculate real if only cells were specified
             if (!val && (from1 || from2 || from3 || from4 || newVal)) {
               val = from1 + from2 + from3 + from4 + newVal;
             }
 
-            const prevItem = defaultData?.items?.find(it => it.code === code);
+            const prevItem = defaultData?.items?.find((it) => it.code === code);
             const prevNew = prevItem?.newVal || 0;
-            const newMom = prevNew > 0 ? Number((((newVal - prevNew) / prevNew) * 100).toFixed(1)) : (mom || 0);
+            const newMom =
+              prevNew > 0 ? Number((((newVal - prevNew) / prevNew) * 100).toFixed(1)) : mom || 0;
 
             parsedItems.push({
               code,
@@ -197,13 +336,12 @@ export default function Quadrant() {
           throw new Error('Tidak ada data valid yang dapat dibaca dari template.');
         }
 
-        // Compute Grand Total
         const totalLast = parsedItems.reduce((acc, it) => acc + (it.last || 0), 0);
         const totalReal = parsedItems.reduce((acc, it) => acc + (it.value || 0), 0);
-        const totalMom = totalLast > 0 ? Number((((totalReal - totalLast) / totalLast) * 100).toFixed(1)) : 0;
+        const totalMom =
+          totalLast > 0 ? Number((((totalReal - totalLast) / totalLast) * 100).toFixed(1)) : 0;
 
-        // Update state
-        setQuadrantData(prev => ({
+        setQuadrantData((prev) => ({
           ...prev,
           items: parsedItems,
           total: {
@@ -215,7 +353,9 @@ export default function Quadrant() {
 
         setShowUpload(false);
         setUploadFiles([]);
-        showNotification(`Data ${isMoving ? 'kuadran moving' : 'kuadran'} berhasil diperbarui dari template!`);
+        showNotification(
+          `Data ${isMoving ? 'kuadran moving' : 'kuadran'} berhasil diperbarui dari template!`
+        );
       } catch (err) {
         setUploadError(err.message || 'Gagal memproses file template.');
       }
@@ -228,10 +368,14 @@ export default function Quadrant() {
     reader.readAsText(file);
   };
 
-  const handleExport = () => {
+  // Data mentah untuk ExportButton (XLSX/CSV/DOCX); angka tetap bertipe number
+  const getExportSheets = () => {
     if (isMoving) {
-      const exportItems = quadrantData.items.map(it => {
-        let from1 = 0, from2 = 0, from3 = 0, from4 = 0;
+      const exportItems = quadrantData.items.map((it) => {
+        let from1 = 0,
+          from2 = 0,
+          from3 = 0,
+          from4 = 0;
         if (it.cells) {
           it.cells.forEach(([k, v]) => {
             if (k === '1' || k === '1-2' || k === '1-3' || k === '1-4') from1 = v;
@@ -241,31 +385,32 @@ export default function Quadrant() {
           });
         }
         return {
-          'KODE_KUADRAN': it.code,
-          'NAMA_KUADRAN': it.name,
-          'DESKRIPSI': it.desc,
-          'LAST_MONTH': it.last,
-          'REAL': it.value,
+          KODE_KUADRAN: it.code,
+          NAMA_KUADRAN: it.name,
+          DESKRIPSI: it.desc,
+          LAST_MONTH: it.last,
+          REAL: it.value,
           'MoM (%)': it.mom,
-          'DARI_KW1': from1,
-          'DARI_KW2': from2,
-          'DARI_KW3': from3,
-          'DARI_KW4': from4,
-          'NEW': it.newVal || 0,
+          DARI_KW1: from1,
+          DARI_KW2: from2,
+          DARI_KW3: from3,
+          DARI_KW4: from4,
+          NEW: it.newVal || 0,
           'NEW_MoM (%)': it.newMom || 0
         };
       });
-      exportCSV(exportItems, 'Kuadran_Moving_Dashboard');
-    } else {
-      exportCSV(quadrantData.items.map(({cells, ...r}) => r), view || 'kuadran');
+      return [{ name: 'Kuadran Moving', rows: exportItems }];
     }
+    // eslint-disable-next-line no-unused-vars
+    return [{ name: `Kuadran ${view || ''}`.trim(), rows: quadrantData.items.map(({ cells, ...r }) => r) }];
   };
+  const exportFilename = isMoving ? 'Kuadran_Moving_Dashboard' : `Kuadran_${view || 'data'}`;
 
   return (
     <>
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-[fadeIn_0.2s_ease-out]">
+        <div data-html2canvas-ignore="true" className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-[fadeIn_0.2s_ease-out]">
           <Check size={16} className="text-emerald-400" />
           <span>{toast}</span>
         </div>
@@ -282,21 +427,55 @@ export default function Quadrant() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            type="button"
-            className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-2xs cursor-pointer"
-          >
-            <Filter size={14} className="text-slate-500" />
-            <span>Filter</span>
-          </button>
+        {/* Tombol aksi tidak ikut di Copy as Picture / Export PDF */}
+        <div data-html2canvas-ignore="true" className="flex flex-wrap items-center gap-2.5">
+          <div className="relative" ref={filterRef}>
+            <button
+              type="button"
+              onClick={() => setShowFilter((v) => !v)}
+              className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-2xs cursor-pointer"
+            >
+              <Filter size={14} className="text-slate-500" />
+              <span>Filter</span>
+            </button>
+
+            {showFilter && (
+              <div className="absolute right-0 top-full mt-2 z-40 w-[300px] bg-white rounded-xl shadow-xl border border-slate-200/90 p-3.5 space-y-3 animate-[fadeIn_0.15s_ease-out]">
+                {isTeldaView && (
+                  <FilterDropdown
+                    label="Region"
+                    options={filterOptions.telda}
+                    selected={filters.telda}
+                    isSort
+                    onChange={(telda) => applyFilters({ ...filters, telda })}
+                  />
+                )}
+                {isSegmentView && (
+                  <FilterDropdown
+                    label="Segment"
+                    options={filterOptions.unit}
+                    selected={filters.unit}
+                    isSort
+                    onChange={(unit) => applyFilters({ ...filters, unit })}
+                  />
+                )}
+                <FilterDropdown
+                  label="Bulan"
+                  options={filterOptions.month}
+                  selected={filters.month}
+                  isSort
+                  onChange={(month) => applyFilters({ ...filters, month })}
+                />
+              </div>
+            )}
+          </div>
 
           {/* Dedicated Download Template Button */}
           <button
             type="button"
             onClick={handleDownloadTemplate}
             className="flex items-center gap-2 bg-white border border-blue-200 hover:bg-blue-50/50 text-[#2563EB] text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-2xs cursor-pointer"
-            title={`Download Template Format ${isMoving ? 'Kuadran Moving' : 'Kuadran'} CSV`}
+            title="Download Template Ringkas Kuadran SJT (.xlsx)"
           >
             <FileDown size={14} className="text-[#2563EB]" />
             <span>Download Template</span>
@@ -311,19 +490,13 @@ export default function Quadrant() {
             <span>Upload Report</span>
           </button>
 
-          <button
-            type="button"
-            onClick={handleExport}
-            className="flex items-center gap-2 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-xs cursor-pointer"
-          >
-            <Download size={14} />
-            <span>Export</span>
-            <ChevronDown size={12} className="opacity-80" />
-          </button>
-
-          <ShareDropdown
-            className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-2xs cursor-pointer"
+          <ExportButton
+            filename={exportFilename}
+            title={quadrantData.title}
+            sheets={getExportSheets}
           />
+
+          <ShareDropdown className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-2xs cursor-pointer" />
         </div>
       </header>
 
@@ -339,9 +512,7 @@ export default function Quadrant() {
           </div>
           <div>
             <h4 className="text-xs sm:text-sm font-bold text-slate-900">Key Insight</h4>
-            <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-              {Q.insight}
-            </p>
+            <p className="text-xs text-slate-600 mt-1 leading-relaxed">{Q.insight}</p>
           </div>
         </div>
 
@@ -372,115 +543,148 @@ export default function Quadrant() {
       {/* Grand Total Performance Card */}
       {quadrantData.total && <GrandTotalCard t={quadrantData.total} />}
 
-      {/* Upload Modal */}
-      {showUpload && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-[fadeIn_0.2s_ease-out]">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-              <div>
-                <h3 className="font-bold text-slate-900 text-base">
-                  Upload Data {isMoving ? 'Kuadran Moving' : 'Kuadran'}
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  {isMoving
-                    ? 'Unggah CSV template pergerakan kuadran (moving matrix & pelanggan baru)'
-                    : 'Unggah CSV template kuadran untuk auto-update data'}
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setShowUpload(false);
-                  setUploadFiles([]);
-                  setUploadError(null);
-                }}
-                className="text-slate-400 hover:text-slate-600 cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="p-6">
-              {uploadError && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2 text-xs text-red-600">
-                  <AlertCircle size={15} className="shrink-0 mt-0.5" />
-                  <span>{uploadError}</span>
+      {/* Upload Modal with Automatic Master-Data-to-Template Summarizer */}
+      {showUpload &&
+        createPortal(
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-[fadeIn_0.2s_ease-out]">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">
+                    Upload & Ringkas Data Kuadran SJT
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Unggah Master Data Excel (otomatis diringkas ke template) atau Template Ringkas
+                  </p>
                 </div>
-              )}
+                <button
+                  onClick={() => {
+                    setShowUpload(false);
+                    setUploadFiles([]);
+                    setUploadError(null);
+                  }}
+                  className="text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
 
-              <label className="border-2 border-dashed border-slate-200 rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/20 transition-colors">
-                <Upload size={28} className="text-slate-400 mb-2" />
-                <span className="text-xs font-semibold text-slate-700">Pilih file CSV Template</span>
-                <span className="text-[11px] text-slate-400 mt-1">
-                  {isMoving
-                    ? 'Format: CSV (KODE_KUADRAN, LAST_MONTH, REAL, DARI_KW1..4, NEW)'
-                    : 'Format: CSV (KODE_KUADRAN, LAST_MONTH, REAL)'}
-                </span>
-                <input
-                  type="file"
-                  accept=".csv,.txt"
-                  className="hidden"
-                  onChange={e => {
-                    if (e.target.files.length) {
-                      setUploadFiles(Array.from(e.target.files));
+              <div className="p-6">
+                {uploadError && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2 text-xs text-red-600">
+                    <AlertCircle size={15} className="shrink-0 mt-0.5" />
+                    <span>{uploadError}</span>
+                  </div>
+                )}
+
+                <label className="border-2 border-dashed border-slate-200 rounded-xl p-7 flex flex-col items-center justify-center text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/20 transition-colors">
+                  <Upload size={28} className="text-slate-400 mb-2" />
+                  <span className="text-xs font-semibold text-slate-700">
+                    Pilih File Master Data (.xlsx) atau Template Ringkas (.xlsx / .csv)
+                  </span>
+                  <span className="text-[11px] text-slate-400 mt-1">
+                    Mendukung Master Data 100rb+ baris (Jul, Aug, Sep, Oct, Nov, Dec) & Template Ringkas
+                  </span>
+                  <input
+                    type="file"
+                    accept=".csv,.txt,.xlsx,.xlsm"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files.length) {
+                        setUploadFiles(Array.from(e.target.files));
+                        setUploadError(null);
+                      }
+                    }}
+                  />
+                </label>
+
+                {uploadFiles.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {uploadFiles.map((f, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between gap-2 p-2.5 bg-slate-50 rounded-lg text-xs"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileSpreadsheet size={16} className="text-emerald-600 shrink-0" />
+                          <span className="truncate font-medium text-slate-700">{f.name}</span>
+                        </div>
+                        <span className="text-[11px] text-slate-400 shrink-0">
+                          {(f.size / (1024 * 1024)).toFixed(2)} MB
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Auto-summarize Master Data into lightweight Template option */}
+                <label className="mt-4 p-3 rounded-xl bg-blue-50/70 border border-blue-200/80 flex items-start gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={autoDownloadTemplate}
+                    onChange={(e) => setAutoDownloadTemplate(e.target.checked)}
+                    className="mt-0.5 accent-[#2563EB] cursor-pointer"
+                  />
+                  <div className="text-xs">
+                    <span className="font-semibold text-slate-800 flex items-center gap-1">
+                      <Sparkles size={13} className="text-[#2563EB]" />
+                      Ringkas otomatis Master Data menjadi file Template (.xlsx)
+                    </span>
+                    <span className="text-[11px] text-slate-500 block mt-0.5 leading-relaxed">
+                      Saat mengunggah Master Data besar, sistem otomatis mengunduh hasil ringkasannya (~25 KB) agar ke depannya karyawan cukup memakai file ringkas tersebut.
+                    </span>
+                  </div>
+                </label>
+
+                {/* Link to download template directly */}
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span className="text-slate-400">Butuh template siap pakai?</span>
+                  <button
+                    type="button"
+                    onClick={handleDownloadTemplate}
+                    className="text-[#2563EB] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                  >
+                    <FileDown size={13} />
+                    <span>Unduh Template Ringkas (.xlsx)</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+                <button
+                  onClick={() => {
+                    setShowUpload(false);
+                    setUploadFiles([]);
+                    setUploadError(null);
+                  }}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-lg cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  disabled={!uploadFiles.length || processing !== null}
+                  onClick={() => {
+                    if (uploadFiles.length > 0) {
+                      parseUploadedFile(uploadFiles[0], autoDownloadTemplate);
                     }
                   }}
-                />
-              </label>
-
-              {uploadFiles.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  {uploadFiles.map((f, i) => (
-                    <div key={i} className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg text-xs">
-                      <FileSpreadsheet size={16} className="text-emerald-600 shrink-0" />
-                      <span className="truncate flex-1 font-medium text-slate-700">{f.name}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Link to download template */}
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                <span className="text-slate-400">Belum punya format?</span>
-                <button
-                  type="button"
-                  onClick={handleDownloadTemplate}
-                  className="text-[#2563EB] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                  className={`px-4 py-2 text-xs font-semibold rounded-lg text-white transition-all cursor-pointer ${
+                    uploadFiles.length && processing === null
+                      ? 'bg-[#2563EB] hover:bg-blue-700'
+                      : 'bg-slate-300 cursor-not-allowed'
+                  }`}
                 >
-                  <FileDown size={13} />
-                  <span>Unduh Template CSV {isMoving ? 'Kuadran Moving' : ''}</span>
+                  {processing !== null
+                    ? `Memproses… ${processing}%`
+                    : autoDownloadTemplate
+                      ? 'Terapkan & Ringkas Template'
+                      : 'Terapkan Data'}
                 </button>
               </div>
             </div>
-
-            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
-              <button
-                onClick={() => {
-                  setShowUpload(false);
-                  setUploadFiles([]);
-                  setUploadError(null);
-                }}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-lg cursor-pointer"
-              >
-                Batal
-              </button>
-              <button
-                disabled={!uploadFiles.length}
-                onClick={() => {
-                  if (uploadFiles.length > 0) {
-                    parseUploadedFile(uploadFiles[0]);
-                  }
-                }}
-                className={`px-4 py-2 text-xs font-semibold rounded-lg text-white transition-all cursor-pointer ${
-                  uploadFiles.length ? 'bg-[#2563EB] hover:bg-blue-700' : 'bg-slate-300 cursor-not-allowed'
-                }`}
-              >
-                Terapkan Data
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+          </div>,
+          document.body
+        )}
     </>
   );
 }

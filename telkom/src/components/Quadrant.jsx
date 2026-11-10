@@ -191,8 +191,12 @@ export function GrandTotalCard({t}) {
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
             MoM
           </p>
-          <div className="bg-slate-100 rounded-lg py-2.5 font-bold text-sm text-emerald-600">
-            +{t.mom}%
+          <div
+            className={`bg-slate-100 rounded-lg py-2.5 font-bold text-sm ${
+              t.mom >= 0 ? 'text-emerald-600' : 'text-red-600'
+            }`}
+          >
+            {t.mom > 0 ? `+${t.mom}%` : `${t.mom}%`}
           </div>
         </div>
       </div>
