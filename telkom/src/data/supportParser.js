@@ -617,10 +617,19 @@ export function resetSupportData() {
 // =========================================================================
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
+function authHeaders(extra = {}) {
+  const token = localStorage.getItem('token');
+  return {
+    Accept: 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...extra
+  };
+}
+
 export async function fetchSupportFromApi() {
   try {
     const res = await fetch(`${API_BASE}/mom-support`, {
-      headers: { Accept: 'application/json' }
+      headers: authHeaders()
     });
     if (!res.ok) return null;
     const json = await res.json();
@@ -638,10 +647,7 @@ export async function syncSupportToApi(items, filename = 'Notulensi Rapat GM.xls
   try {
     const res = await fetch(`${API_BASE}/mom-support/sync`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json'
-      },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({
         filename,
         sheet_name: sheetName,
@@ -661,28 +667,27 @@ export async function syncSupportToApi(items, filename = 'Notulensi Rapat GM.xls
 }
 
 export async function updateSupportItemApi(item) {
-  if (!item || item.id === undefined) return null;
-  try {
-    const res = await fetch(`${API_BASE}/mom-support/${item.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json'
-      },
-      body: JSON.stringify(item)
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
+  if (!item || item.id === undefined) {
+    throw new Error('Data tidak memiliki id.');
   }
+  const res = await fetch(`${API_BASE}/mom-support/${item.id}`, {
+    method: 'PUT',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(item)
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.message ?? `Gagal menyimpan ke server (${res.status}).`);
+  }
+  return res.json();
 }
+
 
 export async function resetSupportApi() {
   try {
     const res = await fetch(`${API_BASE}/mom-support/reset`, {
       method: 'POST',
-      headers: { Accept: 'application/json' }
+      headers: authHeaders()
     });
     if (!res.ok) return null;
     const json = await res.json();

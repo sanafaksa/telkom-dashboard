@@ -148,7 +148,10 @@ export default function Support() {
     );
 
     // Sync single edited row to MySQL database
-    updateSupportItemApi(updatedData);
+    updateSupportItemApi(updatedData).catch((err) => {
+      alert(`Perubahan hanya tersimpan di browser ini, belum di database.\n${err.message}`);
+    });
+
 
     setDetailItem(null);
     setEditFormData({});
