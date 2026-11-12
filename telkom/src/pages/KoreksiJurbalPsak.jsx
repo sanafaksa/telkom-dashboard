@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Upload, X, FileSpreadsheet, RotateCcw, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { ExportButton, ShareDropdown } from '../components/ui';
@@ -6,10 +6,9 @@ import {
   PSAK_TYPES,
   computePsakTotal,
   loadPsakData,
-  savePsakData,
   resetPsakData,
-  parsePsakFile
 } from '../data/psakData';
+import { koreksiJurbalApi } from '../features/koreksiJurbal/api';
 
 const fmtDateTime = (iso) =>
   new Date(iso).toLocaleString('id-ID', {
@@ -20,9 +19,25 @@ const fmtDateTime = (iso) =>
     minute: '2-digit'
   });
 
-// Modal upload Excel: file dibaca di browser, belum dikirim ke backend
-function UploadPsakModal({ open, onClose, onLoaded }) {
-  const [file, setFile] = useState(null);
+// Modal upload Excel: beberapa file sekaligus (satu file per segmen), dikirim satu per satu
+// ke backend (POST /koreksi-jurbal/uploads). Segmen tiap file dikenali otomatis di server.
+const MAX_MB = 200;
+
+const fmtSize = (bytes) =>
+  bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${(bytes / 1024).toFixed(1)} KB`;
+
+// 422 import / validasi: ambil pesan pertama yang bermasalah
+const uploadError = (err) => {
+  const first = err.data?.errors?.[0];
+  const detail = Array.isArray(first?.messages)
+    ? `${first.row ? `Baris ${first.row}: ` : ''}${first.messages.join(', ')}`
+    : Object.values(err.data?.errors ?? {})[0]?.[0];
+  return detail || err.message || 'Upload gagal.';
+};
+
+function UploadPsakModal({ open, onClose, onUploaded }) {
+  // items: [{ id, file, status: 'pending' | 'uploading' | 'done' | 'error', message }]
+  const [items, setItems] = useState([]);
   const [drag, setDrag] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -30,36 +45,72 @@ function UploadPsakModal({ open, onClose, onLoaded }) {
 
   if (!open) return null;
 
-  const pick = (f) => {
-    if (!f) return;
-    if (!/\.(xlsx|xls|csv)$/i.test(f.name)) {
-      setError('Format file harus .xlsx, .xls, atau .csv');
-      return;
-    }
-    setError('');
-    setFile(f);
+  const pick = (fileList) => {
+    const files = Array.from(fileList ?? []);
+    if (!files.length) return;
+
+    const rejected = [];
+    const accepted = [];
+    files.forEach((f) => {
+      if (!/\.xlsx$/i.test(f.name)) rejected.push(`${f.name}: format harus .xlsx`);
+      // Di atas batas server, PHP membuang request tanpa pesan jelas: tolak lebih awal
+      else if (f.size > MAX_MB * 1024 * 1024) rejected.push(`${f.name}: ${fmtSize(f.size)} melebihi batas ${MAX_MB} MB`);
+      else accepted.push(f);
+    });
+
+    setItems((prev) => {
+      // Item yang sudah selesai/gagal dari percobaan sebelumnya dibuang saat memilih file baru
+      const keep = prev.filter((it) => it.status === 'pending');
+      const known = new Set(keep.map((it) => `${it.file.name}|${it.file.size}`));
+      const added = accepted
+        .filter((f) => !known.has(`${f.name}|${f.size}`))
+        .map((f) => ({ id: `${f.name}|${f.size}|${f.lastModified}`, file: f, status: 'pending', message: '' }));
+      return [...keep, ...added];
+    });
+    setError(rejected.join(' · '));
   };
 
+  const remove = (id) => setItems((prev) => prev.filter((it) => it.id !== id));
+
   const close = () => {
-    setFile(null);
+    if (loading) return;
+    setItems([]);
     setError('');
-    setLoading(false);
     onClose();
   };
 
+  const update = (id, patch) => setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+
   const submit = async () => {
-    if (!file) return;
+    const queue = items.filter((it) => it.status === 'pending');
+    if (!queue.length) return;
     setLoading(true);
     setError('');
-    try {
-      const parsed = await parsePsakFile(file);
-      onLoaded({ ...parsed, source: { filename: file.name, uploadedAt: new Date().toISOString() } });
-      close();
-    } catch (err) {
-      setError(err.message || 'Gagal membaca file.');
-      setLoading(false);
+
+    // Satu per satu: tiap file bisa ratusan MB, batas server per request
+    const uploads = [];
+    let failed = 0;
+    for (const it of queue) {
+      update(it.id, { status: 'uploading', message: '' });
+      try {
+        const res = await koreksiJurbalApi.upload(it.file);
+        uploads.push(res.data);
+        update(it.id, { status: 'done', message: 'Diterima, diproses di server' });
+      } catch (err) {
+        failed++;
+        update(it.id, { status: 'error', message: uploadError(err) });
+      }
+    }
+
+    setLoading(false);
+    if (uploads.length) onUploaded(uploads);
+    if (!failed) {
+      setItems([]);
+      onClose();
     }
   };
+
+  const pendingCount = items.filter((it) => it.status === 'pending').length;
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={close}>
@@ -72,13 +123,14 @@ function UploadPsakModal({ open, onClose, onLoaded }) {
           <div>
             <h2 className="text-base font-bold text-slate-900">Upload Rekap Koreksi PSAK</h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Excel/CSV dengan kolom Segmen, Reverse, Correction, Net & PSAK Type
+              Excel raw data segmen DGS, DPS, DSS, dan RBS (jenis file dikenali otomatis)
             </p>
           </div>
           <button
             type="button"
             onClick={close}
-            className="size-8 rounded-lg hover:bg-slate-100 grid place-items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+            disabled={loading}
+            className="size-8 rounded-lg hover:bg-slate-100 grid place-items-center text-slate-400 hover:text-slate-600 cursor-pointer disabled:cursor-not-allowed"
             aria-label="Tutup"
           >
             <X size={18} />
@@ -98,17 +150,18 @@ function UploadPsakModal({ open, onClose, onLoaded }) {
             onDrop={(e) => {
               e.preventDefault();
               setDrag(false);
-              pick(e.dataTransfer.files?.[0]);
+              if (!loading) pick(e.dataTransfer.files);
             }}
-            onClick={() => inputRef.current?.click()}
+            onClick={() => !loading && inputRef.current?.click()}
           >
             <input
               ref={inputRef}
               type="file"
-              accept=".xlsx,.xls,.csv"
+              accept=".xlsx"
+              multiple
               className="hidden"
               onChange={(e) => {
-                pick(e.target.files?.[0]);
+                pick(e.target.files);
                 e.target.value = '';
               }}
             />
@@ -116,16 +169,44 @@ function UploadPsakModal({ open, onClose, onLoaded }) {
               <Upload size={22} />
             </div>
             <p className="text-sm font-semibold text-slate-700">
-              {drag ? 'Lepaskan file di sini' : 'Drag & drop file atau klik untuk pilih'}
+              {drag ? 'Lepaskan file di sini' : 'Drag & drop file atau klik untuk pilih (bisa lebih dari satu)'}
             </p>
-            <p className="text-xs text-slate-400 mt-1">.xlsx, .xls, .csv · baris total boleh ada (dihitung ulang)</p>
+            <p className="text-xs text-slate-400 mt-1">.xlsx · maks. {MAX_MB} MB per file · satu file per segmen</p>
           </div>
 
-          {file && (
-            <div className="flex items-center gap-3 px-3 py-2.5 bg-slate-50 rounded-lg border border-slate-100">
-              <FileSpreadsheet size={18} className="text-emerald-600 shrink-0" />
-              <p className="text-xs font-semibold text-slate-800 truncate flex-1">{file.name}</p>
-              <span className="text-[11px] text-slate-400">{(file.size / 1024).toFixed(1)} KB</span>
+          {items.length > 0 && (
+            <div className="space-y-1.5 max-h-56 overflow-y-auto">
+              {items.map((it) => (
+                <div
+                  key={it.id}
+                  className={`flex items-start gap-3 px-3 py-2.5 rounded-lg border ${
+                    it.status === 'error' ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 border-slate-100'
+                  }`}
+                >
+                  <FileSpreadsheet size={18} className="text-emerald-600 shrink-0 mt-px" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-slate-800 truncate">{it.file.name}</p>
+                    {it.message && (
+                      <p className={`text-[11px] mt-0.5 ${it.status === 'error' ? 'text-rose-700' : 'text-emerald-700'}`}>
+                        {it.message}
+                      </p>
+                    )}
+                  </div>
+                  <span className="text-[11px] text-slate-400 shrink-0 mt-px">{fmtSize(it.file.size)}</span>
+                  {it.status === 'uploading' && <Loader2 size={14} className="animate-spin text-blue-600 shrink-0 mt-px" />}
+                  {it.status === 'done' && <Check size={14} className="text-emerald-600 shrink-0 mt-px" />}
+                  {(it.status === 'pending' || it.status === 'error') && !loading && (
+                    <button
+                      type="button"
+                      onClick={() => remove(it.id)}
+                      className="text-slate-400 hover:text-slate-600 cursor-pointer shrink-0"
+                      aria-label={`Hapus ${it.file.name}`}
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
           )}
 
@@ -138,23 +219,24 @@ function UploadPsakModal({ open, onClose, onLoaded }) {
         </div>
 
         <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
-          <span className="text-[11px] text-slate-500">Data hanya tersimpan di browser ini</span>
+          <span className="text-[11px] text-slate-500">File disimpan ke server sebagai riwayat upload</span>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={close}
-              className="px-4 py-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-100 cursor-pointer"
+              disabled={loading}
+              className="px-4 py-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-100 cursor-pointer disabled:cursor-not-allowed"
             >
-              Batal
+              {items.some((it) => it.status === 'error') ? 'Tutup' : 'Batal'}
             </button>
             <button
               type="button"
               onClick={submit}
-              disabled={!file || loading}
+              disabled={!pendingCount || loading}
               className="px-5 py-2 text-xs font-semibold rounded-lg flex items-center gap-2 bg-[#2563EB] hover:bg-blue-700 text-white disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-              {loading ? 'Membaca...' : 'Upload'}
+              {loading ? 'Mengunggah...' : pendingCount > 1 ? `Upload ${pendingCount} file` : 'Upload'}
             </button>
           </div>
         </div>
@@ -203,17 +285,88 @@ export default function KoreksiJurbalPsak() {
   const correctionLabel = `Correction ${period.correction}`;
   const PSAK_PERIOD = period;
 
-  const flash = (msg, tone = 'ok') => {
+  const noticeTimer = useRef(null);
+  // ms = null → notice tetap tampil (dipakai selama import berjalan)
+  const flash = (msg, tone = 'ok', ms = 3500) => {
+    clearTimeout(noticeTimer.current);
     setNotice({ msg, tone });
-    setTimeout(() => setNotice(null), 3500);
+    if (ms) noticeTimer.current = setTimeout(() => setNotice(null), ms);
   };
 
-  const handleLoaded = (parsed) => {
-    const next = { period: parsed.period, rows: parsed.rows, source: parsed.source };
-    setData(next);
-    savePsakData(next);
-    const extra = parsed.missing?.length ? ` · kolom tidak ditemukan: ${parsed.missing.join(', ')}` : '';
-    flash(`${parsed.rows.length} segmen dimuat dari ${parsed.source.filename}${extra}`, parsed.missing?.length ? 'warn' : 'ok');
+  // Tabel diisi dari rekap server (upload terbaru per segmen). Belum ada upload → data contoh.
+  const loadSummary = useCallback(async () => {
+    try {
+      const res = await koreksiJurbalApi.summary();
+      if (!res?.rows?.length) return;
+      const latest = res.rows.reduce((a, r) => (r.source.uploadedAt > a.source.uploadedAt ? r : a));
+      const segmen = res.rows.map((r) => r.segmen).join(', ');
+      const missing = res.missing?.length ? ` · belum ada: ${res.missing.join(', ')}` : '';
+      setData({
+        period: { reverse: res.period.reverse, correction: res.period.correction },
+        rows: res.rows,
+        source: { filename: `Upload ${segmen}${missing}`, uploadedAt: latest.source.uploadedAt, server: true }
+      });
+    } catch {
+      // server tidak bisa dihubungi: tetap tampilkan data yang ada
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSummary();
+  }, [loadSummary]);
+
+  // Import berjalan di queue server: pantau status lewat GET uploads sampai done/failed.
+  // Beberapa file diproses berurutan di queue: tabel di-refresh setiap ada file yang selesai.
+  const handleUploaded = async (uploads) => {
+    const waiting = new Map(uploads.map((u) => [u.id, u]));
+    const done = [];
+    const failed = [];
+    const progress = () =>
+      flash(
+        `Memproses ${uploads.length} file... ${done.length + failed.length}/${uploads.length} selesai` +
+          (done.length ? ` (${done.join(', ')})` : ''),
+        'ok',
+        null
+      );
+    progress();
+
+    const deadline = Date.now() + 60 * 60 * 1000;
+    while (waiting.size && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 3000));
+      let list;
+      try {
+        list = (await koreksiJurbalApi.uploads()).data ?? [];
+      } catch {
+        continue; // gangguan jaringan sesaat: coba lagi
+      }
+
+      let changed = false;
+      for (const current of list) {
+        if (!waiting.has(current.id) || current.status === 'processing') continue;
+        waiting.delete(current.id);
+        changed = true;
+        if (current.status === 'done') {
+          done.push(current.segmen);
+        } else {
+          const e = current.first_error;
+          const detail = e ? `${e.row ? `Baris ${e.row}: ` : ''}${e.messages?.join(', ')}` : 'Import gagal';
+          failed.push(`${current.original_name}: ${detail}`);
+        }
+      }
+      if (changed) {
+        if (done.length) await loadSummary();
+        progress();
+      }
+    }
+
+    if (waiting.size) {
+      flash(`${waiting.size} file masih diproses. Cek lagi nanti.`, 'warn');
+    } else if (failed.length) {
+      const ok = done.length ? `Berhasil: ${done.join(', ')}. ` : '';
+      flash(`${ok}Gagal: ${failed.join(' · ')}`, 'warn', 15000);
+    } else {
+      flash(`Segmen ${done.join(', ')} berhasil dimuat ke tabel`);
+    }
   };
 
   const handleReset = () => {
@@ -306,7 +459,7 @@ export default function KoreksiJurbalPsak() {
             ) : (
               <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 font-semibold">Data contoh</span>
             )}
-            {source && (
+            {source && !source.server && (
               <button
                 type="button"
                 data-html2canvas-ignore="true"
@@ -387,7 +540,7 @@ export default function KoreksiJurbalPsak() {
         </div>
       </section>
 
-      <UploadPsakModal open={showUpload} onClose={() => setShowUpload(false)} onLoaded={handleLoaded} />
+      <UploadPsakModal open={showUpload} onClose={() => setShowUpload(false)} onUploaded={handleUploaded} />
 
       {notice && (
         <div

@@ -8,6 +8,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Edk\EdkExportController;
 use App\Http\Controllers\Edk\EdkSummaryController;
 use App\Http\Controllers\Edk\EdkUploadController;
+use App\Http\Controllers\KoreksiJurbal\KoreksiJurbalUploadController;
 
 // ===== Auth =====
 Route::prefix('auth')->group(function () {
@@ -17,6 +18,13 @@ Route::prefix('auth')->group(function () {
         Route::get('me', [AuthController::class, 'me']);
         Route::post('logout', [AuthController::class, 'logout']);
     });
+});
+
+// ===== Koreksi & Jurbal PSAK =====
+Route::prefix('koreksi-jurbal')->middleware('auth:sanctum')->group(function () {
+    Route::get('summary', [KoreksiJurbalUploadController::class, 'summary']);
+    Route::get('uploads', [KoreksiJurbalUploadController::class, 'index']);
+    Route::post('uploads', [KoreksiJurbalUploadController::class, 'store'])->middleware('role:admin');
 });
 
 // ===== EDK =====
