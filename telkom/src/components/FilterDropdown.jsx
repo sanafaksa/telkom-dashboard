@@ -8,6 +8,8 @@ export default function FilterDropdown({
   onChange,
   multiColumn = false,
   isSort = false,
+  disabled = false,
+  placeholder = 'Sort by',
   className = ''
 }) {
   const [open, setOpen] = useState(false);
@@ -67,7 +69,7 @@ export default function FilterDropdown({
   // Determine display text on trigger button
   const getDisplayText = () => {
     if (isSort) {
-      return selected[0] || 'Sort by';
+      return selected[0] || placeholder;
     }
     if (!selected || selected.length === 0 || selected.length === options.length) {
       return 'Semua';
@@ -86,8 +88,9 @@ export default function FilterDropdown({
 
       <button
         type="button"
+        disabled={disabled}
         onClick={() => setOpen(!open)}
-        className="w-full bg-white border border-slate-200/90 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 flex items-center justify-between gap-2 min-w-[120px] shadow-2xs transition-colors cursor-pointer h-[32px]"
+        className="w-full bg-white border border-slate-200/90 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 flex items-center justify-between gap-2 min-w-[120px] shadow-2xs transition-colors cursor-pointer h-[32px] disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed"
       >
         <span className="truncate">{getDisplayText()}</span>
         <ChevronDown
@@ -123,13 +126,13 @@ export default function FilterDropdown({
               return (
                 <label
                   key={opt}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    toggleItem(opt);
+                  }}
                   className="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-slate-50 cursor-pointer text-xs text-slate-700 select-none group"
                 >
                   <div
-                    onClick={(e) => {
-                      e.preventDefault();
-                      toggleItem(opt);
-                    }}
                     className={`size-4 rounded flex items-center justify-center transition-colors shrink-0 ${
                       isChecked
                         ? 'bg-[#2563EB] text-white'

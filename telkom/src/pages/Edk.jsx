@@ -930,23 +930,22 @@ export default function Edk() {
       {/* 3. Filter Toolbar */}
       <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs">
         <div className="flex flex-wrap items-end gap-3 w-full">
-          <label className="flex-1 min-w-[190px]">
-            <span className="block text-[11px] font-semibold text-slate-500 mb-1">Bulan Populasi EDK</span>
-            <select
-              value={selectedPopulationId}
-              onChange={(e) => selectPopulation(e.target.value)}
-              disabled={populationOptions.length === 0}
-              className="w-full h-[32px] px-2.5 text-xs border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:border-[#1D8BCB] disabled:bg-slate-50 disabled:text-slate-400"
-            >
-              {populationOptions.length === 0 ? (
-                <option value="">Belum ada populasi sukses</option>
-              ) : (
-                populationOptions.map((item) => (
-                  <option key={item.value} value={item.value}>{item.label}</option>
-                ))
-              )}
-            </select>
-          </label>
+          <FilterDropdown
+            label="Bulan Populasi EDK"
+            options={populationOptions.map((item) => item.label)}
+            selected={populationOptions
+              .filter((item) => item.value === String(selectedPopulationId))
+              .map((item) => item.label)}
+            onChange={([label]) => {
+              const hit = populationOptions.find((item) => item.label === label);
+              if (hit) selectPopulation(hit.value);
+            }}
+            isSort
+            disabled={populationOptions.length === 0}
+            placeholder={populationOptions.length === 0 ? 'Belum ada populasi sukses' : 'Pilih populasi'}
+            className="flex-1 min-w-[190px]"
+          />
+
 
           <FilterDropdown
             label="Periode EDK"
