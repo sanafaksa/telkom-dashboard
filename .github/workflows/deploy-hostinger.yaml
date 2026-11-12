@@ -30,9 +30,18 @@ jobs:
           script: bash /home/usersolo/deploy.sh
           command_timeout: 25m
 
-      - name: Verifikasi situs
-        run: |
-          html=$(curl -fsS https://solaris-solo.tech/)
-          js=$(echo "$html" | grep -o '/assets/[^"]*\.js' | head -1)
-          test -n "$js"
-          curl -fsSI "https://solaris-solo.tech$js" | grep -qi 'content-type:.*javascript'
+      - name: Verifikasi situs dari VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script: |
+            set -e
+            html=$(curl -fsS --retry 3 --retry-delay 5 https://solaris-solo.tech/)
+            js=$(echo "$html" | grep -o '/assets/[^"]*\.js' | head -1)
+            test -n "$js"
+            curl -fsSI "https://solaris-solo.tech$js" | grep -qi 'content-type:.*javascript'
+            echo "Verifikasi OK"
+
