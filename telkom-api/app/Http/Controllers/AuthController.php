@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Support\Audit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
 
@@ -14,10 +15,17 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $data = $request->validate([
-            'login'    => 'required|string|max:255',   // email atau NIK
-            'password' => 'required|string',
-            'remember' => 'boolean',
+            'login'                  => 'required|string|max:255',   // email atau NIK
+            'password'               => 'required|string',
+            'remember'               => 'boolean',
+            'cf-turnstile-response'  => 'required|string',
         ]);
+
+        if (!$this->verifyTurnstile($data['cf-turnstile-response'], $request->ip())) {
+            throw ValidationException::withMessages([
+                'login' => 'Verifikasi keamanan gagal. Silakan coba lagi.',
+            ]);
+        }
 
         $field = filter_var($data['login'], FILTER_VALIDATE_EMAIL) ? 'email' : 'nik';
         $user  = User::where($field, trim($data['login']))->first();
@@ -57,6 +65,19 @@ class AuthController extends Controller
         }
 
         return response()->json(['message' => 'Berhasil keluar.']);
+    }
+
+    private function verifyTurnstile(string $token, ?string $ip): bool
+    {
+        $response = Http::asForm()
+            ->timeout(10)
+            ->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
+                'secret'   => config('services.turnstile.secret'),
+                'response' => $token,
+                'remoteip' => $ip,
+            ]);
+
+        return $response->successful() && $response->json('success') === true;
     }
 
     private function payload(User $user): array

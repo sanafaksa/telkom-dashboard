@@ -34,5 +34,7 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    
+    'turnstile' => ['secret' => env('TURNSTILE_SECRET_KEY')],
 
 ];

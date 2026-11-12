@@ -15,8 +15,13 @@ export const isLoggedIn = () => !!localStorage.getItem(TOKEN_KEY);
 
 export const isAdmin = () => getUser()?.role === 'admin';
 
-export async function login(loginId, password, remember = false) {
-  const res = await apiPost('/auth/login', { login: loginId, password, remember });
+export async function login(loginId, password, remember = false, turnstileToken = '') {
+  const res = await apiPost('/auth/login', {
+    login: loginId,
+    password,
+    remember,
+    'cf-turnstile-response': turnstileToken,
+  });
   localStorage.setItem(TOKEN_KEY, res.token);
   localStorage.setItem(USER_KEY, JSON.stringify(res.user));
   return res.user;

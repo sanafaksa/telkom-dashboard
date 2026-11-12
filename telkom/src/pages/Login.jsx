@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DotGlow from '../components/DotGlow';
 import {
@@ -28,6 +28,55 @@ export default function Login() {
   const [error, setError] = useState('');
   const [forgotModal, setForgotModal] = useState(false);
 
+  // Turnstile
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileRef = useRef(null);   // elemen <div> tempat widget dirender
+  const widgetIdRef = useRef(null);    // id widget dari turnstile.render()
+
+  useEffect(() => {
+    const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+    if (!siteKey) {
+      console.warn('VITE_TURNSTILE_SITE_KEY belum diisi di telkom/.env');
+      return;
+    }
+
+    const renderWidget = () => {
+      if (!turnstileRef.current || widgetIdRef.current !== null) return;
+      widgetIdRef.current = window.turnstile.render(turnstileRef.current, {
+        sitekey: siteKey,
+        callback: (token) => {
+          setTurnstileToken(token);
+          setError('');
+        },
+
+      });
+    };
+
+    if (window.turnstile) {
+      renderWidget();
+      return;
+    }
+
+    let script = document.querySelector('script[data-turnstile]');
+    if (!script) {
+      script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.async = true;
+      script.defer = true;
+      script.dataset.turnstile = 'true';
+      document.head.appendChild(script);
+    }
+    script.addEventListener('load', renderWidget);
+    return () => script.removeEventListener('load', renderWidget);
+  }, []);
+
+  const resetTurnstile = () => {
+    setTurnstileToken('');
+    if (window.turnstile && widgetIdRef.current !== null) {
+      window.turnstile.reset(widgetIdRef.current);
+    }
+  };
+
   // Animasi pintu setelah backend menyatakan login berhasil
   const startLoginSequence = () => {
     setAuthStatus('granted');
@@ -50,15 +99,23 @@ export default function Login() {
       setError('Silakan masukkan kata sandi.');
       return;
     }
+    if (!turnstileToken) {
+      setError(
+        'Verifikasi keamanan belum selesai. Tunggu proses Cloudflare selesai, centang kotak "Verify you are human" bila muncul, lalu klik Masuk lagi.'
+      );
+      return;
+    }
+
 
     setError('');
     setAuthStatus('verifying');
 
     try {
-      await login(email.trim(), password, rememberMe);
+      await login(email.trim(), password, rememberMe, turnstileToken);
       startLoginSequence();
     } catch (err) {
       setAuthStatus('idle');
+      resetTurnstile(); // token Turnstile hanya bisa dipakai sekali
       if (err?.status === 422) {
         setError(err.data?.errors?.login?.[0] ?? err.message);
       } else if (err?.status === 429) {
@@ -70,6 +127,7 @@ export default function Login() {
       }
     }
   };
+
 
   const isTransitioning = authStatus === 'opening_up';
   const isVerifying = authStatus === 'verifying';
@@ -365,6 +423,9 @@ export default function Login() {
                     </span>
                   </label>
                 </div>
+
+                {/* Cloudflare Turnstile */}
+                <div ref={turnstileRef} className="flex justify-center" />
 
                 {/* Submit Button with Dynamic States */}
                 <button
