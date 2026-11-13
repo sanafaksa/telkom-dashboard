@@ -585,7 +585,8 @@ export function loadSavedSupportData() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      // Cache kosong [] valid: artinya database memang kosong, jangan diganti CSV contoh.
+      if (Array.isArray(parsed)) {
         return parsed;
       }
     }
@@ -633,7 +634,9 @@ export async function fetchSupportFromApi() {
     });
     if (!res.ok) return null;
     const json = await res.json();
-    if (json && json.success && Array.isArray(json.items) && json.items.length > 0) {
+    // Respons kosong tetap dianggap sukses: database adalah sumber kebenaran,
+    // jadi cache lokal/CSV contoh tidak boleh menggantikannya.
+    if (json && json.success && Array.isArray(json.items)) {
       saveSupportData(json.items);
       return json.items;
     }
@@ -682,6 +685,32 @@ export async function updateSupportItemApi(item) {
   return res.json();
 }
 
+/** Tambah butir manual. Mengembalikan item baru (sudah berisi id dari database). */
+export async function createSupportItemApi(item) {
+  const res = await fetch(`${API_BASE}/mom-support`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(item)
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    const firstFieldError = data?.errors ? Object.values(data.errors)[0]?.[0] : null;
+    throw new Error(firstFieldError ?? data?.message ?? `Gagal menambah data ke server (${res.status}).`);
+  }
+  return data.item;
+}
+
+export async function deleteSupportItemApi(id) {
+  const res = await fetch(`${API_BASE}/mom-support/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders()
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.message ?? `Gagal menghapus data di server (${res.status}).`);
+  }
+  return res.json();
+}
 
 export async function resetSupportApi() {
   try {

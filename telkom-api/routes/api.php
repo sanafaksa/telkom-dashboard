@@ -50,8 +50,10 @@ Route::prefix('kuadran')->group(function () {
 // ===== MoM Support =====
 Route::prefix('mom-support')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [MomSupportController::class, 'index']);
+    Route::post('/', [MomSupportController::class, 'store']);
     Route::post('/sync', [MomSupportController::class, 'sync']);
     Route::put('/{id}', [MomSupportController::class, 'update']);
+    Route::delete('/{id}', [MomSupportController::class, 'destroy']);
     Route::post('/reset', [MomSupportController::class, 'reset']);
 });
 

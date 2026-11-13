@@ -321,9 +321,10 @@ export default function KoreksiJurbalPsak() {
           </div>
         </div>
 
-        <div className="overflow-x-auto w-full">
+        <div className="overflow-auto max-h-[70vh] w-full">
           <table className="w-full min-w-[1300px] text-xs border-collapse border-spacing-0">
-            <thead className="bg-white">
+            {/* z-20: header di atas sel kolom kiri (z-10) */}
+            <thead className="sticky top-0 z-20 bg-white">
               <tr>
                 <th
                   rowSpan={2}

@@ -415,9 +415,9 @@ export default function Dashboard() {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto">
+        <div className="overflow-auto max-h-[70vh]">
           <table className="w-full min-w-[900px] text-xs">
-            <thead>
+            <thead className="sticky top-0 z-10 bg-white">
               <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-400 tracking-wider text-left uppercase">
                 <th className="py-3 pr-4">AGENDA</th>
                 <th className="py-3 px-4">WITEL / UNIT</th>

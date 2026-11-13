@@ -2074,9 +2074,9 @@ export default function MonitoringOrderSjt() {
                     />
                   }
                 >
-                  <div className="overflow-x-auto">
+                  <div className="overflow-auto max-h-[70vh]">
                     <table className="w-full text-xs border-collapse">
-                      <thead>
+                      <thead className="sticky top-0 z-10 bg-white">
                         <tr className="bg-[#0F172A] text-white font-bold uppercase text-[11px] tracking-wider">
                           <th className="py-3 px-3.5 text-left rounded-tl-xl">Milestone</th>
                           <th className="py-3 px-2.5 text-right">DGS</th>
@@ -2199,9 +2199,9 @@ export default function MonitoringOrderSjt() {
                     />
                   }
                 >
-                  <div className="overflow-x-auto">
+                  <div className="overflow-auto max-h-[70vh]">
                     <table className="w-full text-xs border-collapse">
-                      <thead>
+                      <thead className="sticky top-0 z-10 bg-white">
                         <tr className="bg-[#0F172A] text-white font-bold uppercase text-[11px] tracking-wider">
                           <th className="py-3 px-3.5 text-left rounded-tl-xl">Milestone</th>
                           <th className="py-3 px-3 text-right">Before</th>
@@ -2301,9 +2301,9 @@ export default function MonitoringOrderSjt() {
                   />
                 }
               >
-                <div className="overflow-x-auto">
+                <div className="overflow-auto max-h-[70vh]">
                   <table className="w-full text-xs border-collapse">
-                    <thead>
+                    <thead className="sticky top-0 z-10 bg-white">
                       <tr className="bg-[#0F172A] text-white font-bold uppercase text-[11px] tracking-wider">
                         <th className="py-3 px-4 text-left rounded-tl-xl">
                           Milestone (Tahapan Order)
@@ -2476,9 +2476,9 @@ export default function MonitoringOrderSjt() {
                       />
                     }
                   >
-                    <div className="overflow-x-auto">
+                    <div className="overflow-auto max-h-[70vh]">
                       <table className="w-full text-xs border-collapse">
-                        <thead>
+                        <thead className="sticky top-0 z-10 bg-white">
                           <tr className="bg-[#0F172A] text-white font-bold uppercase text-[10.5px] tracking-wider">
                             <th className="py-3 px-3.5 text-left rounded-tl-xl">Nama AM</th>
                             <th className="py-3 px-2 text-right">Pending</th>
@@ -2589,9 +2589,9 @@ export default function MonitoringOrderSjt() {
                       />
                     }
                   >
-                    <div className="overflow-x-auto">
+                    <div className="overflow-auto max-h-[70vh]">
                       <table className="w-full text-xs border-collapse">
-                        <thead>
+                        <thead className="sticky top-0 z-10 bg-white">
                           <tr className="bg-[#0F172A] text-white font-bold uppercase text-[10.5px] tracking-wider">
                             <th className="py-3 px-3.5 text-left rounded-tl-xl">Nama AM</th>
                             <th className="py-3 px-2 text-right">Pending</th>
@@ -2735,9 +2735,9 @@ export default function MonitoringOrderSjt() {
                     />
                   }
                 >
-                  <div className="overflow-x-auto">
+                  <div className="overflow-auto max-h-[70vh]">
                     <table className="w-full text-xs border-collapse">
-                      <thead>
+                      <thead className="sticky top-0 z-10 bg-white">
                         <tr className="bg-[#0F172A] text-white font-bold uppercase text-[11px] tracking-wider">
                           <th className="py-3 px-3.5 text-left rounded-tl-xl">Range Umur</th>
                           <th className="py-3 px-2.5 text-right">DGS</th>
@@ -2865,9 +2865,9 @@ export default function MonitoringOrderSjt() {
                     />
                   }
                 >
-                  <div className="overflow-x-auto">
+                  <div className="overflow-auto max-h-[70vh]">
                     <table className="w-full text-xs border-collapse">
-                      <thead>
+                      <thead className="sticky top-0 z-10 bg-white">
                         <tr className="bg-[#0F172A] text-white font-bold uppercase text-[11px] tracking-wider">
                           <th className="py-3 px-3.5 text-left rounded-tl-xl">Order Subtype</th>
                           <th className="py-3 px-3 text-right">Jumlah</th>
@@ -2988,9 +2988,9 @@ export default function MonitoringOrderSjt() {
                     />
                   }
                 >
-                  <div className="overflow-x-auto">
+                  <div className="overflow-auto max-h-[70vh]">
                     <table className="w-full text-xs border-collapse">
-                      <thead>
+                      <thead className="sticky top-0 z-10 bg-white">
                         <tr className="bg-[#0F172A] text-white font-bold uppercase text-[11px] tracking-wider">
                           <th className="py-3 px-3.5 text-left rounded-tl-xl">Produk</th>
                           <th className="py-3 px-2.5 text-right">DGS</th>
@@ -3102,9 +3102,9 @@ export default function MonitoringOrderSjt() {
                   }
                   chartElement={<ChartOrderBergerak rows={filteredOrderBergerak} />}
                 >
-                  <div className="overflow-x-auto">
+                  <div className="overflow-auto max-h-[70vh]">
                     <table className="w-full text-xs border-collapse">
-                      <thead>
+                      <thead className="sticky top-0 z-10 bg-white">
                         <tr className="bg-[#0F172A] text-white font-bold uppercase text-[10.5px] tracking-wider">
                           <th className="py-3 px-3.5 text-left rounded-tl-xl">Pelanggan</th>
                           <th className="py-3 px-2.5 text-left">Produk</th>

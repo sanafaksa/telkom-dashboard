@@ -19,7 +19,8 @@ import {
   HelpCircle,
   FileCheck2,
   Pencil,
-  Plus
+  Plus,
+  Trash2
 } from 'lucide-react';
 import {
   loadSavedSupportData,
@@ -34,6 +35,8 @@ import {
   fetchSupportFromApi,
   syncSupportToApi,
   updateSupportItemApi,
+  createSupportItemApi,
+  deleteSupportItemApi,
   resetSupportApi,
   exportSupportExcel
 } from '../data/supportParser';
@@ -43,6 +46,7 @@ import {
   renderFullSupportPageToBlob
 } from '../data/supportImageRenderer';
 import { exportCSV, ShareDropdown } from '../components/ui';
+import SupportFormModal from '../components/SupportFormModal';
 import { createPortal } from "react-dom";
 
 export default function Support() {
@@ -79,11 +83,15 @@ export default function Support() {
   const [editFormData, setEditFormData] = useState({});
   const [editSuccessMsg, setEditSuccessMsg] = useState('');
 
+  // Form tambah data manual
+  const [showCreate, setShowCreate] = useState(false);
+
   // Load latest data from MySQL Backend on mount
   useEffect(() => {
     let active = true;
     fetchSupportFromApi().then((dbItems) => {
-      if (active && Array.isArray(dbItems) && dbItems.length > 0) {
+      // Hasil [] dari database juga ditampilkan (kosong), agar sama dengan isi tabel
+      if (active && Array.isArray(dbItems)) {
         setActionPlans(dbItems);
       }
     });
@@ -157,6 +165,41 @@ export default function Support() {
     setEditFormData({});
   };
 
+  // Tambah butir manual: simpan ke MySQL, lalu tampilkan di daftar (filter direset agar data baru terlihat)
+  const handleCreateItem = async (payload) => {
+    const created = await createSupportItemApi(payload);
+    setActionPlans((prev) => [...prev, created]);
+    setSearchQ('');
+    setStatusFilter('Semua');
+    setAgendaFilter('Semua');
+    setUicFilter('Semua');
+    setPage(Math.ceil((actionPlans.length + 1) / pageSize));
+    setShowCreate(false);
+  };
+
+  // Hapus butir. Butir yang belum punya id dari database (mis. data lokal) hanya dihapus dari browser.
+  const handleDeleteItem = async (item) => {
+    if (!item) return;
+    if (!confirm(`Hapus butir action plan ini?\n\n"${item.actionPlan || item.mainTopic || '-'}"`)) return;
+
+    const isDbItem = typeof item.id === 'number';
+    if (isDbItem) {
+      try {
+        await deleteSupportItemApi(item.id);
+      } catch (err) {
+        alert(`Gagal menghapus dari database.\n${err.message}`);
+        return;
+      }
+    }
+
+    setActionPlans((prev) =>
+      prev.filter((x) => (isDbItem ? x.id !== item.id : x !== item))
+    );
+    if (detailItem && (detailItem.id === item.id)) {
+      handleCloseDetail();
+    }
+  };
+
   useEffect(() => {
   if (!detailItem) return;
   const prev = document.body.style.overflow;
@@ -220,6 +263,20 @@ export default function Support() {
   }, [actionPlans, statusFilter, agendaFilter, uicFilter, searchQ]);
 
   const totalPages = Math.max(1, Math.ceil(filteredPlans.length / pageSize));
+
+  // Saran NO rapat untuk form tambah: nomor rapat terbesar + 1
+  const nextMeetingNo = useMemo(() => {
+    const nums = actionPlans
+      .map((x) => String(x.no ?? '').trim())
+      .filter((n) => /^\d+$/.test(n))
+      .map(Number);
+    return String((nums.length ? Math.max(...nums) : 0) + 1);
+  }, [actionPlans]);
+
+  // Halaman tidak boleh melebihi jumlah halaman setelah item dihapus
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
   const paginatedPlans = useMemo(() => {
     const start = (page - 1) * pageSize;
     return filteredPlans.slice(start, start + pageSize);
@@ -421,6 +478,16 @@ export default function Support() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {/* Tambah Data Manual */}
+          <button
+            type="button"
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition-all shadow-md shadow-emerald-600/20 cursor-pointer active:scale-95"
+          >
+            <Plus size={14} />
+            <span>Tambah Data</span>
+          </button>
+
           {/* Upload Button */}
           <button
             type="button"
@@ -541,9 +608,9 @@ export default function Support() {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto">
+        <div className="overflow-auto max-h-[70vh]">
           <table className="w-full min-w-[960px] border-collapse text-xs">
-            <thead>
+            <thead className="sticky top-0 z-10 bg-white">
               <tr className="bg-slate-50/90 text-slate-600 font-bold border-b border-slate-200">
                 <th className="py-3 px-3 text-center w-12 font-semibold">NO</th>
                 <th className="py-3 px-3 text-left min-w-[200px] font-bold">NAMA AGENDA KOORDINASI</th>
@@ -812,9 +879,9 @@ export default function Support() {
         </div>
 
         {/* Action Plans Table */}
-        <div className="overflow-x-auto rounded-xl border border-slate-200">
+        <div className="overflow-auto max-h-[70vh] rounded-xl border border-slate-200">
           <table className="w-full min-w-[1180px] border-collapse text-xs">
-            <thead>
+            <thead className="sticky top-0 z-10 bg-slate-50 shadow-[0_1px_0_0_rgb(226_232_240)]">
               <tr className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 text-left">
                 <th className="py-3.5 px-3 text-center w-12">#</th>
                 <th className="py-3.5 px-3 w-38 whitespace-nowrap">Agenda &amp; Tgl</th>
@@ -824,7 +891,7 @@ export default function Support() {
                 <th className="py-3.5 px-4 min-w-[260px]">Support Needed</th>
                 <th className="py-3.5 px-3 w-28 text-center whitespace-nowrap">Deadline</th>
                 <th className="py-3.5 px-3 w-32 text-center whitespace-nowrap">Status</th>
-                <th className="py-3.5 px-2 w-16 text-center whitespace-nowrap">Aksi</th>
+                <th className="py-3.5 px-2 w-24 text-center whitespace-nowrap">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -918,6 +985,14 @@ export default function Support() {
                           className="p-1.5 rounded-lg text-slate-400 hover:text-blue-700 hover:bg-blue-50 transition-colors cursor-pointer"
                         >
                           <Pencil size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteItem(item)}
+                          title="Hapus butir ini"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        >
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     </td>
@@ -1383,6 +1458,20 @@ export default function Support() {
                 />
               </div>
 
+              {/* 6b. Pembahasan (Notulen) — kolom terpisah di Notulensi Tracker */}
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1.5">
+                  PEMBAHASAN (NOTULEN)
+                </label>
+                <textarea
+                  rows={4}
+                  value={editFormData.pembahasanNotulen || ''}
+                  onChange={(e) => handleFieldChange('pembahasanNotulen', e.target.value)}
+                  className="w-full p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-700 text-[11px] leading-relaxed focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                  placeholder="Notulen rapat (kolom PEMBAHASAN (NOTULEN))..."
+                />
+              </div>
+
               {/* 7. Peserta Rapat Box */}
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
                 <label className="font-bold text-slate-700 text-[11px] block mb-1">
@@ -1410,6 +1499,14 @@ export default function Support() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  onClick={() => handleDeleteItem(detailItem)}
+                  className="px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl cursor-pointer transition-colors flex items-center gap-1.5"
+                >
+                  <Trash2 size={13} />
+                  Hapus
+                </button>
+                <button
+                  type="button"
                   onClick={handleCloseDetail}
                   className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-xl cursor-pointer transition-colors"
                 >
@@ -1428,6 +1525,16 @@ export default function Support() {
           </div>
         </div>,
         document.body
+      )}
+
+      {/* 8. Tambah Data Manual */}
+      {showCreate && (
+        <SupportFormModal
+          onClose={() => setShowCreate(false)}
+          onSave={handleCreateItem}
+          defaultNo={nextMeetingNo}
+          agendaOptions={uniqueAgendas}
+        />
       )}
     </div>
   );

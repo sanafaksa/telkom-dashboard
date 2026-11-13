@@ -199,9 +199,9 @@ function StatusPanel({
       ) : rows.length === 0 ? (
         <div className="px-5 py-16 text-center text-sm text-slate-400">Tidak ada pelanggan pada kombinasi Status dan Progress ini.</div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-auto max-h-[70vh]">
           <table className="w-full min-w-[760px] text-xs">
-            <thead className="bg-slate-50 text-slate-600">
+            <thead className="sticky top-0 z-10 bg-slate-50 text-slate-600">
               <tr>
                 <th className="px-5 py-3 text-center font-bold w-12">#</th>
                 <th className="px-4 py-3 text-left font-bold">Nama Pelanggan / Akun Entitas</th>
@@ -1123,9 +1123,10 @@ export default function Edk() {
         )}
 
         {/* Table Container */}
-        <div className={`overflow-x-auto w-full ${isTop10View ? 'border-t border-slate-200/90' : ''}`}>
+        <div className={`overflow-auto max-h-[70vh] w-full ${isTop10View ? 'border-t border-slate-200/90' : ''}`}>
           <table className="w-full min-w-[1550px] text-xs border-collapse border-spacing-0">
-            <thead className="bg-white">
+            {/* z-20: header di atas sel kolom kiri (z-10). Corner cell th sticky-left memakai z-30 di dalam header. */}
+            <thead className="sticky top-0 z-20 bg-white">
               {/* ======================================================== */}
               {/* MODE A: TOP 10 PELANGGAN (NAMA CC) */}
               {/* ======================================================== */}
