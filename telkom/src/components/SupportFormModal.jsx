@@ -1,6 +1,37 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AlertCircle, Check, Plus, X } from 'lucide-react';
+import { AlertCircle, Check, Plus, Trash2, X } from 'lucide-react';
+
+// Pilihan agenda sesuai filter "TYPE OF AGENDA" di dashboard Witel sebelumnya.
+export const AGENDA_OPTIONS = [
+  '1 ON 1 UNIT',
+  '1 ON 1 WITEL',
+  'EVP DIRECTION',
+  'WBR 04 MAR',
+  'WBR 11 FEB',
+  'WBR 17 FEB',
+  'WBR 18 JUNI',
+  'WBR 18 MAR',
+  'WBR 19 MEI',
+  'WBR 22 Jul',
+  'WBR 23 JUNI',
+  'WBR 25 FEB',
+  'WBR 26 MEI',
+  'WBR 6 MEI'
+];
+
+export const UNIT_OPTIONS = [
+  'PRQ',
+  'BS',
+  'GS',
+  'SSGS',
+  'TELDA SOLO',
+  'TELDA SRAGEN',
+  'TELDA KUDUS',
+  'TELDA PATI',
+  'TELDA PURWODADI',
+  'ALL UNIT WITEL SOLO JATENG TIMUR'
+];
 
 const STATUS_OPTIONS = [
   { value: 'BELUM FU', label: 'BELUM FU (Open)' },
@@ -21,23 +52,15 @@ const isoToDmy = (iso) => {
   return y && m && d ? `${d}/${m}/${y}` : '';
 };
 
-const EMPTY_FORM = {
-  no: '',
-  tglIso: todayIso(),
-  agenda: '',
-  mainTopic: '',
-  unitTelda: 'PRQ',
-  peserta: '',
-  pembahasan: '',
-  pembahasanNotulen: '',
+const emptyItem = () => ({
   actionPlan: '',
+  supportNeeded: '',
   uic: '',
   destinasiFu: '',
-  supportNeeded: '',
   deadline: '',
   status: 'BELUM FU',
   notes: ''
-};
+});
 
 const labelCls = 'text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1.5';
 const inputCls =
@@ -45,15 +68,21 @@ const inputCls =
 const textareaCls = `${inputCls} leading-relaxed`;
 
 /**
- * Form input manual satu butir Action Plan & Support Needed.
- * Kolom mengikuti Notulensi Tracker: NO, TGL, AGENDA, MAIN TOPIC, UNIT/TELDA, PESERTA,
- * PEMBAHASAN, PEMBAHASAN (NOTULEN), ACTION PLAN, UIC, DESTINASI FU, SUPPORT NEEDED,
- * DEADLINE, STATUS, NOTES TO FOLLOW UP.
+ * Form satu rapat: 1 PEMBAHASAN -> banyak butir Action Plan (sejajar dengan SN, UIC,
+ * Destinasi FU, Deadline, Status, Notes). NO rapat dikunci dan dibuat otomatis.
  *
- * onSave(payload) harus mengembalikan Promise; error yang dilempar akan ditampilkan di form.
+ * onSave({ meeting, items }) harus mengembalikan Promise; error yang dilempar ditampilkan di form.
  */
-export default function SupportFormModal({ onClose, onSave, defaultNo = '', agendaOptions = [] }) {
-  const [form, setForm] = useState({ ...EMPTY_FORM, no: defaultNo });
+export default function SupportFormModal({ onClose, onSave, nextNo = '' }) {
+  const [meta, setMeta] = useState({
+    tglIso: todayIso(),
+    agenda: '',
+    mainTopic: '',
+    units: [],
+    peserta: '',
+    pembahasan: ''
+  });
+  const [items, setItems] = useState([emptyItem()]);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -70,40 +99,54 @@ export default function SupportFormModal({ onClose, onSave, defaultNo = '', agen
     };
   }, [onClose, saving]);
 
-  const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
+  const setM = (field) => (e) => setMeta((prev) => ({ ...prev, [field]: e.target.value }));
+
+  const toggleUnit = (unit) =>
+    setMeta((prev) => ({
+      ...prev,
+      units: prev.units.includes(unit) ? prev.units.filter((u) => u !== unit) : [...prev.units, unit]
+    }));
+
+  const setItem = (idx, field) => (e) =>
+    setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, [field]: e.target.value } : it)));
+
+  const addItem = () => setItems((prev) => [...prev, emptyItem()]);
+  const removeItem = (idx) => setItems((prev) => prev.filter((_, i) => i !== idx));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
     const required = [
-      ['tglIso', 'Tanggal rapat'],
-      ['agenda', 'Agenda'],
-      ['mainTopic', 'Main topic'],
-      ['actionPlan', 'Action plan']
+      [!meta.tglIso, 'Tanggal rapat wajib diisi.'],
+      [!meta.agenda, 'Agenda wajib dipilih.'],
+      [!meta.mainTopic.trim(), 'Main topic wajib diisi.'],
+      [items.some((it) => !it.actionPlan.trim()) , 'Setiap poin action plan wajib diisi.']
     ];
-    const missing = required.find(([key]) => !String(form[key] ?? '').trim());
-    if (missing) {
-      setError(`${missing[1]} wajib diisi.`);
+    const failed = required.find(([bad]) => bad);
+    if (failed) {
+      setError(failed[1]);
       return;
     }
 
     const payload = {
-      no: String(form.no ?? '').trim(),
-      tgl: isoToDmy(form.tglIso),
-      agenda: form.agenda.trim(),
-      mainTopic: form.mainTopic.trim(),
-      unitTelda: form.unitTelda.trim(),
-      peserta: form.peserta.trim(),
-      pembahasan: form.pembahasan.trim(),
-      pembahasanNotulen: form.pembahasanNotulen.trim(),
-      actionPlan: form.actionPlan.trim(),
-      uic: form.uic.trim(),
-      destinasiFu: form.destinasiFu.trim(),
-      supportNeeded: form.supportNeeded.trim(),
-      deadline: form.deadline.trim(),
-      status: form.status,
-      notes: form.notes.trim()
+      meeting: {
+        tgl: isoToDmy(meta.tglIso),
+        agenda: meta.agenda,
+        mainTopic: meta.mainTopic.trim(),
+        unitTelda: meta.units.join(', '),
+        peserta: meta.peserta.trim(),
+        pembahasan: meta.pembahasan.trim()
+      },
+      items: items.map((it) => ({
+        actionPlan: it.actionPlan.trim(),
+        supportNeeded: it.supportNeeded.trim(),
+        uic: it.uic.trim(),
+        destinasiFu: it.destinasiFu.trim(),
+        deadline: it.deadline.trim(),
+        status: it.status,
+        notes: it.notes.trim()
+      }))
     };
 
     setSaving(true);
@@ -132,8 +175,8 @@ export default function SupportFormModal({ onClose, onSave, defaultNo = '', agen
               <Plus size={16} />
             </div>
             <div>
-              <h3 className="font-extrabold text-base leading-tight">Tambah Action Plan &amp; Support Needed</h3>
-              <p className="text-xs text-white/70">Input manual, kolom sesuai Notulensi Tracker</p>
+              <h3 className="font-extrabold text-base leading-tight">Tambah Rapat &amp; Action Plan</h3>
+              <p className="text-xs text-white/70">Satu pembahasan bisa memiliki banyak action plan</p>
             </div>
           </div>
           <button
@@ -155,110 +198,162 @@ export default function SupportFormModal({ onClose, onSave, defaultNo = '', agen
             </div>
           )}
 
-          {/* Rapat */}
+          {/* Data rapat */}
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div>
               <label className={labelCls} htmlFor="sf-no">NO Rapat</label>
-              <input id="sf-no" type="text" value={form.no} onChange={set('no')} className={inputCls} placeholder="Otomatis" />
+              <input id="sf-no" type="text" value={nextNo} readOnly className={`${inputCls} bg-slate-100 text-slate-500 cursor-not-allowed`} title="Dibuat otomatis" />
             </div>
             <div>
               <label className={labelCls} htmlFor="sf-tgl">Tanggal *</label>
-              <input id="sf-tgl" type="date" value={form.tglIso} onChange={set('tglIso')} className={inputCls} />
+              <input id="sf-tgl" type="date" value={meta.tglIso} onChange={setM('tglIso')} className={inputCls} />
             </div>
             <div className="sm:col-span-2">
               <label className={labelCls} htmlFor="sf-agenda">Agenda *</label>
-              <input
-                id="sf-agenda"
-                type="text"
-                list="sf-agenda-list"
-                value={form.agenda}
-                onChange={set('agenda')}
-                className={inputCls}
-                placeholder="e.g. FORUM WITEL"
-              />
-              <datalist id="sf-agenda-list">
-                {agendaOptions.map((ag) => (
-                  <option key={ag} value={ag} />
+              <select id="sf-agenda" value={meta.agenda} onChange={setM('agenda')} className={`${inputCls} cursor-pointer`}>
+                <option value="">— Pilih agenda —</option>
+                {AGENDA_OPTIONS.map((ag) => (
+                  <option key={ag} value={ag}>{ag}</option>
                 ))}
-              </datalist>
+              </select>
             </div>
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-4">
               <label className={labelCls} htmlFor="sf-topic">Main Topic *</label>
-              <input id="sf-topic" type="text" value={form.mainTopic} onChange={set('mainTopic')} className={inputCls} placeholder="Topik utama" />
+              <input id="sf-topic" type="text" value={meta.mainTopic} onChange={setM('mainTopic')} className={inputCls} placeholder="Topik utama rapat" />
             </div>
-            <div className="sm:col-span-2">
-              <label className={labelCls} htmlFor="sf-unit">Unit / Telda</label>
-              <input id="sf-unit" type="text" value={form.unitTelda} onChange={set('unitTelda')} className={inputCls} placeholder="e.g. PRQ" />
+            <div className="sm:col-span-4">
+              <span className={labelCls}>Unit / Telda</span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {UNIT_OPTIONS.map((u) => (
+                  <label key={u} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 cursor-pointer hover:border-blue-300">
+                    <input
+                      type="checkbox"
+                      checked={meta.units.includes(u)}
+                      onChange={() => toggleUnit(u)}
+                      className="accent-blue-600"
+                    />
+                    <span className="text-[11px] font-semibold text-slate-700">{u}</span>
+                  </label>
+                ))}
+              </div>
             </div>
             <div className="sm:col-span-4">
               <label className={labelCls} htmlFor="sf-peserta">Peserta Rapat</label>
               <input
                 id="sf-peserta"
                 type="text"
-                value={form.peserta}
-                onChange={set('peserta')}
+                value={meta.peserta}
+                onChange={setM('peserta')}
                 className={inputCls}
                 placeholder="Misal: GM WITEL, PRQ (3), SSGS (3), BS (3)..."
               />
             </div>
           </div>
 
-          {/* Pembahasan */}
+          {/* Pembahasan (satu box) */}
           <div>
-            <label className={labelCls} htmlFor="sf-pembahasan">Pembahasan</label>
-            <textarea id="sf-pembahasan" rows={3} value={form.pembahasan} onChange={set('pembahasan')} className={textareaCls} placeholder="Poin pembahasan rapat..." />
-          </div>
-          <div>
-            <label className={labelCls} htmlFor="sf-notulen">Pembahasan (Notulen)</label>
-            <textarea id="sf-notulen" rows={3} value={form.pembahasanNotulen} onChange={set('pembahasanNotulen')} className={textareaCls} placeholder="Notulen rapat secara lengkap..." />
-          </div>
-
-          {/* Action plan & support */}
-          <div>
-            <label className={labelCls} htmlFor="sf-action">Action Plan *</label>
-            <textarea id="sf-action" rows={3} value={form.actionPlan} onChange={set('actionPlan')} className={`${textareaCls} bg-blue-50/50 border-blue-200`} placeholder="Tuliskan butir rencana aksi..." />
-          </div>
-          <div>
-            <label className={`${labelCls} text-rose-600`} htmlFor="sf-support">Support Needed</label>
-            <textarea id="sf-support" rows={2} value={form.supportNeeded} onChange={set('supportNeeded')} className={`${textareaCls} bg-rose-50/60 border-rose-200`} placeholder="Dukungan atau eskalasi yang dibutuhkan (kosongkan jika tidak ada)..." />
+            <label className={labelCls} htmlFor="sf-pembahasan">Pembahasan (Notulen)</label>
+            <textarea
+              id="sf-pembahasan"
+              rows={4}
+              value={meta.pembahasan}
+              onChange={setM('pembahasan')}
+              className={textareaCls}
+              placeholder="Notulen rapat secara lengkap..."
+            />
           </div>
 
-          {/* PIC & target */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-            <div>
-              <label className={labelCls} htmlFor="sf-uic">UIC (PIC)</label>
-              <input id="sf-uic" type="text" value={form.uic} onChange={set('uic')} className={inputCls} placeholder="e.g. BS, PRQ" />
-            </div>
-            <div>
-              <label className={labelCls} htmlFor="sf-dest">Destinasi FU</label>
-              <input id="sf-dest" type="text" value={form.destinasiFu} onChange={set('destinasiFu')} className={inputCls} placeholder="e.g. SSGS" />
-            </div>
-            <div>
-              <label className={labelCls} htmlFor="sf-deadline">Deadline</label>
-              <input id="sf-deadline" type="text" value={form.deadline} onChange={set('deadline')} className={inputCls} placeholder="e.g. W3 Nov 2026" />
-            </div>
-            <div>
-              <label className={labelCls} htmlFor="sf-status">Status</label>
-              <select id="sf-status" value={form.status} onChange={set('status')} className={`${inputCls} font-bold cursor-pointer`}>
-                {STATUS_OPTIONS.map((st) => (
-                  <option key={st.value} value={st.value}>
-                    {st.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+          {/* Butir action plan */}
+          <div className="space-y-3">
+            {items.map((it, idx) => (
+              <div key={idx} className="p-4 rounded-2xl border border-blue-200 bg-blue-50/30 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-700">
+                    Action Plan #{idx + 1}
+                  </span>
+                  {items.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeItem(idx)}
+                      className="text-rose-500 hover:text-rose-700 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Trash2 size={13} /> Hapus poin
+                    </button>
+                  )}
+                </div>
 
-          <div>
-            <label className={labelCls} htmlFor="sf-notes">Notes to Follow Up / No. NDE</label>
-            <textarea id="sf-notes" rows={2} value={form.notes} onChange={set('notes')} className={`${textareaCls} font-mono text-[11px]`} placeholder="Nomor NDE, tanggal pengajuan, catatan tindak lanjut..." />
+                <div>
+                  <label className={labelCls} htmlFor={`sf-action-${idx}`}>Action Plan *</label>
+                  <textarea
+                    id={`sf-action-${idx}`}
+                    rows={2}
+                    value={it.actionPlan}
+                    onChange={setItem(idx, 'actionPlan')}
+                    className={textareaCls}
+                    placeholder="Tuliskan butir rencana aksi..."
+                  />
+                </div>
+                <div>
+                  <label className={`${labelCls} text-rose-600`} htmlFor={`sf-support-${idx}`}>Support Needed</label>
+                  <textarea
+                    id={`sf-support-${idx}`}
+                    rows={2}
+                    value={it.supportNeeded}
+                    onChange={setItem(idx, 'supportNeeded')}
+                    className={`${textareaCls} bg-rose-50/60 border-rose-200`}
+                    placeholder="Kosongkan jika tidak ada..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  <div>
+                    <label className={labelCls} htmlFor={`sf-uic-${idx}`}>UIC (PIC)</label>
+                    <input id={`sf-uic-${idx}`} type="text" value={it.uic} onChange={setItem(idx, 'uic')} className={inputCls} placeholder="e.g. BS, PRQ" />
+                  </div>
+                  <div>
+                    <label className={labelCls} htmlFor={`sf-dest-${idx}`}>Destinasi FU</label>
+                    <input id={`sf-dest-${idx}`} type="text" value={it.destinasiFu} onChange={setItem(idx, 'destinasiFu')} className={inputCls} placeholder="e.g. SSGS" />
+                  </div>
+                  <div>
+                    <label className={labelCls} htmlFor={`sf-deadline-${idx}`}>Deadline</label>
+                    <input id={`sf-deadline-${idx}`} type="text" value={it.deadline} onChange={setItem(idx, 'deadline')} className={inputCls} placeholder="e.g. W3 Nov 2026" />
+                  </div>
+                  <div>
+                    <label className={labelCls} htmlFor={`sf-status-${idx}`}>Status</label>
+                    <select id={`sf-status-${idx}`} value={it.status} onChange={setItem(idx, 'status')} className={`${inputCls} font-bold cursor-pointer`}>
+                      {STATUS_OPTIONS.map((st) => (
+                        <option key={st.value} value={st.value}>{st.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelCls} htmlFor={`sf-notes-${idx}`}>Notes to Follow Up / No. NDE</label>
+                  <textarea
+                    id={`sf-notes-${idx}`}
+                    rows={2}
+                    value={it.notes}
+                    onChange={setItem(idx, 'notes')}
+                    className={`${textareaCls} font-mono text-[11px]`}
+                    placeholder="Nomor NDE, tanggal pengajuan, catatan tindak lanjut..."
+                  />
+                </div>
+              </div>
+            ))}
+
+            <button
+              type="button"
+              onClick={addItem}
+              className="w-full py-2.5 rounded-xl border-2 border-dashed border-blue-300 text-blue-700 text-xs font-bold hover:bg-blue-50 cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <Plus size={14} /> Tambah poin action plan
+            </button>
           </div>
         </div>
 
         <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
-          <span className="text-[11px] text-slate-500">
-            Field bertanda * wajib diisi.
-          </span>
+          <span className="text-[11px] text-slate-500">Field bertanda * wajib diisi.</span>
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -274,7 +369,7 @@ export default function SupportFormModal({ onClose, onSave, defaultNo = '', agen
               className="px-5 py-2 text-xs font-bold text-white bg-[#1447B8] hover:bg-blue-700 rounded-xl cursor-pointer transition-all shadow-md flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-wait"
             >
               <Check size={14} />
-              {saving ? 'Menyimpan...' : 'Simpan Data'}
+              {saving ? 'Menyimpan...' : `Simpan Rapat (${items.length} poin)`}
             </button>
           </div>
         </div>

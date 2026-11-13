@@ -685,6 +685,21 @@ export async function updateSupportItemApi(item) {
   return res.json();
 }
 
+/** Tambah satu rapat beserta banyak butir action plan. Mengembalikan { no, items } dari database. */
+export async function createSupportBatchApi(payload) {
+  const res = await fetch(`${API_BASE}/mom-support/batch`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    const firstFieldError = data?.errors ? Object.values(data.errors)[0]?.[0] : null;
+    throw new Error(firstFieldError ?? data?.message ?? `Gagal menyimpan rapat ke server (${res.status}).`);
+  }
+  return data;
+}
+
 /** Tambah butir manual. Mengembalikan item baru (sudah berisi id dari database). */
 export async function createSupportItemApi(item) {
   const res = await fetch(`${API_BASE}/mom-support`, {

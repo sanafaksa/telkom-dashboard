@@ -125,6 +125,44 @@ class MomSupportCrudTest extends TestCase
             ->assertJsonCount(0, 'items');
     }
 
+    public function test_batch_satu_rapat_banyak_action_plan_dengan_no_sama(): void
+    {
+        MomActionPlan::create(['no' => '12', 'tgl' => '01/11/2026', 'agenda' => 'A', 'main_topic' => 'T', 'action_plan' => 'x']);
+
+        $res = $this->postJson('/api/mom-support/batch', [
+            'tgl'        => '13/11/2026',
+            'agenda'     => 'WBR 11 FEB',
+            'mainTopic'  => 'RADIO IP',
+            'unitTelda'  => 'PRQ, BS',
+            'pembahasan' => 'Notulen rapat',
+            'items'      => [
+                ['actionPlan' => 'Poin 1', 'uic' => 'BS', 'status' => 'DONE'],
+                ['actionPlan' => 'Poin 2', 'deadline' => 'W4 Nov 2026'],
+            ],
+        ])->assertStatus(201)
+          ->assertJsonPath('no', '13')
+          ->assertJsonCount(2, 'items')
+          ->assertJsonPath('items.0.no', '13')
+          ->assertJsonPath('items.1.no', '13')
+          ->assertJsonPath('items.0.unitTelda', 'PRQ, BS')
+          ->assertJsonPath('items.0.pembahasan', 'Notulen rapat')
+          ->assertJsonPath('items.1.uic', '-')
+          ->assertJsonPath('items.1.status', 'BELUM FU');
+
+        $this->assertSame(2, MomActionPlan::where('no', '13')->count());
+        $this->assertNotEmpty($res->json('items'));
+    }
+
+    public function test_batch_menolak_rapat_tanpa_butir(): void
+    {
+        $this->postJson('/api/mom-support/batch', [
+            'tgl'       => '13/11/2026',
+            'agenda'    => 'WBR 11 FEB',
+            'mainTopic' => 'RADIO IP',
+            'items'     => [],
+        ])->assertStatus(422)->assertJsonValidationErrors(['items']);
+    }
+
     public function test_endpoint_membutuhkan_login(): void
     {
         $this->app['auth']->forgetGuards();

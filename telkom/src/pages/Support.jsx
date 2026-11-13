@@ -35,7 +35,7 @@ import {
   fetchSupportFromApi,
   syncSupportToApi,
   updateSupportItemApi,
-  createSupportItemApi,
+  createSupportBatchApi,
   deleteSupportItemApi,
   resetSupportApi,
   exportSupportExcel
@@ -48,6 +48,39 @@ import {
 import { exportCSV, ShareDropdown } from '../components/ui';
 import SupportFormModal from '../components/SupportFormModal';
 import { createPortal } from "react-dom";
+
+// Pilihan filter UIC (urutan sesuai dropdown dashboard)
+const UIC_FILTER_OPTIONS = [
+  { value: 'Semua', label: 'All UIC' },
+  { value: 'WITEL', label: 'All Witel' },
+  ...['BPPLP', 'ED', 'EVP', 'RLEGS', 'RSMES', 'RSMES & RLEGS', 'RSO', 'RSO 1', 'RSO 2', 'RWS', 'SSGS'].map(
+    (v) => ({ value: v, label: v })
+  )
+];
+
+// Unit Witel yang masuk kategori "All Witel"
+const WITEL_UIC = ['PRQ', 'BS', 'GS', 'SSGS', 'LESA V'];
+
+// Samakan penulisan UIC: "RSO - PO" -> "RSO", "BPPLP - LEGAL" -> "BPPLP", "RSMESS" -> "RSMES"
+const normalizeUicToken = (t) =>
+  t.trim().toUpperCase().replace(/\s+-\s+.*$/, '').replace(/^RSMESS$/, 'RSMES');
+
+const matchUicFilter = (uicText, filter) => {
+  if (filter === 'Semua') return true;
+  const tokens = String(uicText || '')
+    .split(',')
+    .map(normalizeUicToken)
+    .filter(Boolean);
+  const has = (v) => tokens.includes(v);
+
+  if (filter === 'WITEL') {
+    return tokens.some(
+      (t) => WITEL_UIC.includes(t) || t.startsWith('TELDA') || t === 'ALL TELDA' || t === 'GM WITEL'
+    );
+  }
+  if (filter === 'RSMES & RLEGS') return has('RSMES') && has('RLEGS');
+  return has(filter);
+};
 
 export default function Support() {
   // Action plans data state (loaded from LocalStorage or default CSV, then synced with MySQL)
@@ -165,15 +198,15 @@ export default function Support() {
     setEditFormData({});
   };
 
-  // Tambah butir manual: simpan ke MySQL, lalu tampilkan di daftar (filter direset agar data baru terlihat)
-  const handleCreateItem = async (payload) => {
-    const created = await createSupportItemApi(payload);
-    setActionPlans((prev) => [...prev, created]);
+  // Tambah rapat + banyak butir action plan: simpan ke MySQL dengan NO rapat yang sama, lalu tampilkan di daftar
+  const handleCreateItem = async ({ meeting, items }) => {
+    const { items: created } = await createSupportBatchApi({ ...meeting, items });
+    setActionPlans((prev) => [...prev, ...created]);
     setSearchQ('');
     setStatusFilter('Semua');
     setAgendaFilter('Semua');
     setUicFilter('Semua');
-    setPage(Math.ceil((actionPlans.length + 1) / pageSize));
+    setPage(Math.ceil((actionPlans.length + created.length) / pageSize));
     setShowCreate(false);
   };
 
@@ -224,16 +257,6 @@ export default function Support() {
     return Array.from(s);
   }, [actionPlans]);
 
-  const uniqueUics = useMemo(() => {
-    const s = new Set();
-    actionPlans.forEach((x) => {
-      if (x.uic) {
-        x.uic.split(',').forEach((u) => s.add(u.trim()));
-      }
-    });
-    return Array.from(s).filter(Boolean);
-  }, [actionPlans]);
-
   // Filtered action plan items
   const filteredPlans = useMemo(() => {
     return actionPlans.filter((item) => {
@@ -244,9 +267,7 @@ export default function Support() {
       const matchAgenda =
         agendaFilter === 'Semua' || item.agenda === agendaFilter;
 
-      const matchUic =
-        uicFilter === 'Semua' ||
-        (item.uic && item.uic.includes(uicFilter));
+      const matchUic = matchUicFilter(item.uic, uicFilter);
 
       const q = searchQ.trim().toLowerCase();
       const matchQuery =
@@ -868,10 +889,9 @@ export default function Support() {
               }}
               className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium cursor-pointer focus:outline-none focus:border-blue-500"
             >
-              <option value="Semua">Semua UIC</option>
-              {uniqueUics.map((u) => (
-                <option key={u} value={u}>
-                  {u}
+              {UIC_FILTER_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
                 </option>
               ))}
             </select>
@@ -1532,8 +1552,7 @@ export default function Support() {
         <SupportFormModal
           onClose={() => setShowCreate(false)}
           onSave={handleCreateItem}
-          defaultNo={nextMeetingNo}
-          agendaOptions={uniqueAgendas}
+          nextNo={nextMeetingNo}
         />
       )}
     </div>

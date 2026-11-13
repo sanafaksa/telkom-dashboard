@@ -204,6 +204,78 @@ class MomSupportController extends Controller
     }
 
     /**
+     * POST /api/mom-support/batch
+     * Satu rapat dengan banyak butir Action Plan (1 PEMBAHASAN -> banyak action plan).
+     * NO rapat dibuat otomatis (nomor terbesar + 1) dan dipakai bersama oleh semua butir.
+     */
+    public function batch(Request $request): JsonResponse
+    {
+        $payload = $request->validate([
+            'no'                    => 'nullable|string|max:20',
+            'tgl'                   => 'required|string|max:30',
+            'agenda'                => 'required|string|max:120',
+            'mainTopic'             => 'required|string|max:255',
+            'unitTelda'             => 'nullable|string|max:100',
+            'peserta'               => 'nullable|string',
+            'pembahasan'            => 'nullable|string',
+            'items'                 => 'required|array|min:1',
+            'items.*.actionPlan'    => 'required|string',
+            'items.*.supportNeeded' => 'nullable|string',
+            'items.*.uic'           => 'nullable|string|max:150',
+            'items.*.destinasiFu'   => 'nullable|string|max:255',
+            'items.*.deadline'      => 'nullable|string|max:80',
+            'items.*.status'        => 'nullable|string|in:DONE,IN PROGRESS,NEED DISCUSS,BELUM FU',
+            'items.*.notes'         => 'nullable|string',
+        ]);
+
+        $no = trim((string) ($payload['no'] ?? ''));
+        if ($no === '') {
+            $no = $this->nextMeetingNo();
+        }
+
+        $created = DB::transaction(function () use ($payload, $no) {
+            $out = [];
+            foreach ($payload['items'] as $it) {
+                $out[] = MomActionPlan::create([
+                    'no'                 => $no,
+                    'tgl'                => $payload['tgl'],
+                    'agenda'             => $payload['agenda'],
+                    'main_topic'         => $payload['mainTopic'],
+                    'unit_telda'         => $this->orDefault($payload['unitTelda'] ?? null, 'PRQ'),
+                    'peserta'            => (string) ($payload['peserta'] ?? ''),
+                    'pembahasan'         => (string) ($payload['pembahasan'] ?? ''),
+                    'pembahasan_notulen' => '',
+                    'action_plan'        => $it['actionPlan'],
+                    'uic'                => $this->orDefault($it['uic'] ?? null, '-'),
+                    'destinasi_fu'       => $this->orDefault($it['destinasiFu'] ?? null, '-'),
+                    'support_needed'     => $this->orDefault($it['supportNeeded'] ?? null, '-'),
+                    'deadline'           => $this->orDefault($it['deadline'] ?? null, '-'),
+                    'status'             => $it['status'] ?? 'BELUM FU',
+                    'notes'              => (string) ($it['notes'] ?? ''),
+                ]);
+            }
+            return $out;
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Rapat dan butir Action Plan berhasil ditambahkan ke MySQL.',
+            'no'      => $no,
+            'items'   => collect($created)->map(fn ($m) => self::toCamelItem($m->fresh()->toArray()))->all(),
+        ], 201);
+    }
+
+    private function nextMeetingNo(): string
+    {
+        $maxNo = MomActionPlan::query()->pluck('no')
+            ->filter(fn ($n) => ctype_digit(trim((string) $n)))
+            ->map(fn ($n) => (int) $n)
+            ->max() ?? 0;
+
+        return (string) ($maxNo + 1);
+    }
+
+    /**
      * POST /api/mom-support/reset
      * Mengembalikan isi tabel mom_action_plans ke data seed awal (21 baris Notulensi Tracker).
      */
