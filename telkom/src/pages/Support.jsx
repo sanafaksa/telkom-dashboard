@@ -25,19 +25,17 @@ import {
 import {
   loadSavedSupportData,
   saveSupportData,
-  resetSupportData,
   parseSupportCSV,
   parseSupportExcel,
   listSupportExcelSheets,
   computeSupportMetrics,
   normalizeStatus,
-  DEFAULT_SUPPORT_CSV,
   fetchSupportFromApi,
+  fetchSupportResult,
   syncSupportToApi,
   updateSupportItemApi,
   createSupportBatchApi,
   deleteSupportItemApi,
-  resetSupportApi,
   exportSupportExcel
 } from '../data/supportParser';
 import {
@@ -46,7 +44,10 @@ import {
   renderFullSupportPageToBlob
 } from '../data/supportImageRenderer';
 import { exportCSV, ShareDropdown } from '../components/ui';
-import SupportFormModal from '../components/SupportFormModal';
+import SupportFormModal, { AGENDA_OPTIONS, UNIT_OPTIONS } from '../components/SupportFormModal';
+import { RichText, RichTextarea } from '../components/RichText';
+import { DESTINASI_OPTIONS, DeadlineInput, StatusSelect, UicMultiSelect } from '../components/FormFields';
+import { useOpenDraftIntent } from '../lib/draft';
 import { createPortal } from "react-dom";
 
 // Pilihan filter UIC (urutan sesuai dropdown dashboard)
@@ -118,6 +119,8 @@ export default function Support() {
 
   // Form tambah data manual
   const [showCreate, setShowCreate] = useState(false);
+  const [createPrefill, setCreatePrefill] = useState(null);
+  useOpenDraftIntent('mom-support-form', () => setShowCreate(true));
 
   // Load latest data from MySQL Backend on mount
   useEffect(() => {
@@ -208,6 +211,31 @@ export default function Support() {
     setUicFilter('Semua');
     setPage(Math.ceil((actionPlans.length + created.length) / pageSize));
     setShowCreate(false);
+    setCreatePrefill(null);
+  };
+
+  // Enter di Action Plan saat edit: simpan perubahan, lalu buka form tambah action plan untuk rapat yang sama
+  const openAddActionFromEdit = () => {
+    const src = { ...detailItem, ...editFormData };
+    const m = String(src.tgl || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    const tglIso = m ? `${m[3]}-${m[2]}-${m[1]}` : new Date().toISOString().slice(0, 10);
+    const units = String(src.unitTelda || '')
+      .split(',')
+      .map((u) => u.trim())
+      .filter((u) => UNIT_OPTIONS.includes(u));
+    handleSaveAll();
+    setCreatePrefill({
+      no: String(src.no ?? ''),
+      meta: {
+        tglIso,
+        agenda: src.agenda || '',
+        mainTopic: src.mainTopic || '',
+        units,
+        peserta: src.peserta || '',
+        pembahasan: src.pembahasan || src.pembahasanNotulen || ''
+      }
+    });
+    setShowCreate(true);
   };
 
   // Hapus butir. Butir yang belum punya id dari database (mis. data lokal) hanya dihapus dari browser.
@@ -250,12 +278,6 @@ export default function Support() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [detailItem]);
-
-  // Unique list of agendas and UICs for filters
-  const uniqueAgendas = useMemo(() => {
-    const s = new Set(actionPlans.map((x) => x.agenda).filter(Boolean));
-    return Array.from(s);
-  }, [actionPlans]);
 
   // Filtered action plan items
   const filteredPlans = useMemo(() => {
@@ -387,16 +409,24 @@ export default function Support() {
     }
   };
 
-  // Reset to default sample CSV & reset MySQL database
-  const handleResetDefault = async () => {
-    if (confirm('Kembalikan ke data default template MoM & Support Needed?')) {
-      const dbReset = await resetSupportApi();
-      if (dbReset && dbReset.length > 0) {
-        setActionPlans(dbReset);
-      } else {
-        const def = resetSupportData();
-        setActionPlans(def);
+  // Muat ulang tabel dari MySQL untuk melihat perubahan terakhir (termasuk dari pengguna lain)
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshTable = async () => {
+    setRefreshing(true);
+    try {
+      const result = await fetchSupportResult();
+      if (result.ok) {
+        setActionPlans(result.items);
+      } else if (result.reason === 'network') {
+        alert('Gagal memuat ulang data.\nTidak bisa terhubung ke server. Periksa koneksi atau pastikan backend berjalan.');
+      } else if (result.reason === 'http') {
+        alert(`Gagal memuat ulang data.\nServer menolak permintaan (kode ${result.status}).`);
+      } else if (result.reason === 'format') {
+        alert('Gagal memuat ulang data.\nRespons server tidak sesuai. Coba lagi beberapa saat.');
       }
+      // reason 'session': overlay "Sesi berakhir" sudah tampil, tidak perlu alert
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -562,11 +592,12 @@ export default function Support() {
           {/* Reset Button */}
           <button
             type="button"
-            onClick={handleResetDefault}
-            title="Kembalikan ke data template awal"
-            className="flex items-center gap-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 text-xs font-semibold p-2.5 rounded-lg transition-colors shadow-2xs cursor-pointer"
+            onClick={refreshTable}
+            disabled={refreshing}
+            title="Refresh tabel MoM untuk melihat perubahan terakhir"
+            className="flex items-center gap-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 text-xs font-semibold p-2.5 rounded-lg transition-colors shadow-2xs cursor-pointer disabled:opacity-60 disabled:cursor-wait"
           >
-            <RefreshCw size={14} />
+            <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
           </button>
 
           {/* Full Page & Table Specific Share / Copy as Picture */}
@@ -873,7 +904,7 @@ export default function Support() {
               className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium cursor-pointer focus:outline-none focus:border-blue-500"
             >
               <option value="Semua">Semua Agenda</option>
-              {uniqueAgendas.map((ag) => (
+              {AGENDA_OPTIONS.map((ag) => (
                 <option key={ag} value={ag}>
                   {ag}
                 </option>
@@ -948,9 +979,9 @@ export default function Support() {
                       onClick={() => handleOpenDetail(item)}
                       title="Klik untuk melihat & mengedit detail Action Plan"
                     >
-                      <p className="text-slate-800 group-hover/cell:text-blue-700 font-medium leading-relaxed text-xs break-words transition-colors">
-                        {item.actionPlan}
-                      </p>
+                      <div className="text-slate-800 group-hover/cell:text-blue-700 font-medium leading-relaxed text-xs break-words transition-colors">
+                        <RichText text={item.actionPlan} />
+                      </div>
                     </td>
                     <td className="py-3 px-3">
                       <div className="text-xs">
@@ -1054,8 +1085,8 @@ export default function Support() {
       {/* 6. Upload Modal */}
       {showUpload && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200">
-            <div className="flex items-center justify-between px-6 py-4.5 border-b border-slate-100 bg-slate-50/50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-[fadeIn_0.2s_ease-out]">
+            <div className="flex items-center justify-between px-6 py-4.5 border-b border-slate-100 bg-white">
               <div className="flex items-center gap-2.5">
                 <div className="size-8 rounded-xl bg-blue-50 text-[#1447B8] grid place-items-center">
                   <FileSpreadsheet size={18} />
@@ -1192,26 +1223,14 @@ export default function Support() {
             </div>
 
             <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-              <button
-                type="button"
-                onClick={async () => {
-                  const dbReset = await resetSupportApi();
-                  if (dbReset && dbReset.length > 0) {
-                    setActionPlans(dbReset);
-                  } else {
-                    const parsed = parseSupportCSV(DEFAULT_SUPPORT_CSV);
-                    setActionPlans(parsed);
-                  }
-                  setUploadSuccess('Berhasil memuat template contoh data MoM & Support Needed!');
-                  setTimeout(() => {
-                    setShowUpload(false);
-                    setUploadSuccess('');
-                  }, 1200);
-                }}
-                className="text-xs text-blue-600 hover:text-blue-800 font-bold cursor-pointer"
+              <a
+                href="/template-mom.xlsx"
+                download="Template MoM & Support Needed.xlsx"
+                className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-bold cursor-pointer"
               >
-                Gunakan Data Contoh
-              </button>
+                <Download size={14} />
+                Download Template MoM
+              </a>
 
               <div className="flex items-center gap-2">
                 <button
@@ -1255,48 +1274,48 @@ export default function Support() {
             if (e.target === e.currentTarget) handleCloseDetail();
           }}
         >
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-hidden flex flex-col border border-slate-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[92vh] overflow-hidden flex flex-col border border-slate-200 animate-[fadeIn_0.2s_ease-out]">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-100 bg-[#0B1E48] text-white flex items-center justify-between gap-3">
+            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 text-slate-900 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0 flex-1">
-                <span className="size-9 rounded-xl bg-white/10 grid place-items-center font-black text-xs text-white shrink-0">
+                <span className="size-9 rounded-xl bg-blue-50 grid place-items-center font-black text-xs text-[#1447B8] shrink-0">
                   #{detailItem.no}
                 </span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 min-w-0 flex-1">
                   <div>
-                    <label className="text-[10px] text-blue-200 block font-semibold mb-0.5">
+                    <label className="text-[10px] text-slate-500 block font-semibold mb-0.5">
                       AGENDA
                     </label>
                     <input
                       type="text"
                       value={editFormData.agenda || ''}
                       onChange={(e) => handleFieldChange('agenda', e.target.value)}
-                      className="w-full px-2.5 py-1 text-xs rounded-lg bg-white/15 text-white border border-white/20 focus:outline-none focus:border-white font-bold placeholder-white/50"
+                      className="w-full px-2.5 py-1 text-xs rounded-lg bg-white text-slate-900 border border-slate-300 focus:outline-none focus:border-blue-500 font-bold placeholder-slate-400"
                       placeholder="Agenda Rapat"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] text-blue-200 block font-semibold mb-0.5">
+                    <label className="text-[10px] text-slate-500 block font-semibold mb-0.5">
                       TANGGAL
                     </label>
                     <input
                       type="text"
                       value={editFormData.tgl || ''}
                       onChange={(e) => handleFieldChange('tgl', e.target.value)}
-                      className="w-full px-2.5 py-1 text-xs rounded-lg bg-white/15 text-white border border-white/20 focus:outline-none focus:border-white placeholder-white/50"
+                      className="w-full px-2.5 py-1 text-xs rounded-lg bg-white text-slate-900 border border-slate-300 focus:outline-none focus:border-blue-500 placeholder-slate-400"
                       placeholder="DD/MM/YYYY"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] text-blue-200 block font-semibold mb-0.5">
+                    <label className="text-[10px] text-slate-500 block font-semibold mb-0.5">
                       UNIT / TELDA
                     </label>
                     <input
                       type="text"
                       value={editFormData.unitTelda || ''}
                       onChange={(e) => handleFieldChange('unitTelda', e.target.value)}
-                      className="w-full px-2.5 py-1 text-xs rounded-lg bg-white/15 text-white border border-white/20 focus:outline-none focus:border-white placeholder-white/50"
+                      className="w-full px-2.5 py-1 text-xs rounded-lg bg-white text-slate-900 border border-slate-300 focus:outline-none focus:border-blue-500 placeholder-slate-400"
                       placeholder="Unit Telda"
                     />
                   </div>
@@ -1317,7 +1336,7 @@ export default function Support() {
                 <button
                   type="button"
                   onClick={handleCloseDetail}
-                  className="text-white/70 hover:text-white p-1.5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors"
+                  className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors"
                   title="Tutup"
                 >
                   <X size={18} />
@@ -1363,16 +1382,16 @@ export default function Support() {
                     <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                       STATUS AKSI
                     </label>
-                    <select
+                    <StatusSelect
                       value={editFormData.status || 'BELUM FU'}
-                      onChange={(e) => handleFieldChange('status', e.target.value)}
-                      className="w-full px-3 py-2 text-xs font-bold text-slate-800 bg-white border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none cursor-pointer"
-                    >
-                      <option value="DONE">DONE (Selesai)</option>
-                      <option value="IN PROGRESS">IN PROGRESS (Dalam Proses)</option>
-                      <option value="NEED DISCUSS">NEED DISCUSS (Butuh Diskusi)</option>
-                      <option value="BELUM FU">BELUM FU (Open)</option>
-                    </select>
+                      onChange={(v) => handleFieldChange('status', v)}
+                      options={[
+                        { value: 'DONE', label: 'DONE (Selesai)' },
+                        { value: 'IN PROGRESS', label: 'IN PROGRESS (Dalam Proses)' },
+                        { value: 'NEED DISCUSS', label: 'NEED DISCUSS (Butuh Diskusi)' },
+                        { value: 'BELUM FU', label: 'BELUM FU (Open)' }
+                      ]}
+                    />
                   </div>
                 </div>
               </div>
@@ -1382,13 +1401,24 @@ export default function Support() {
                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1.5">
                   RENCANA AKSI (ACTION PLAN)
                 </label>
-                <textarea
+                <RichTextarea
                   rows={4}
                   value={editFormData.actionPlan || ''}
                   onChange={(e) => handleFieldChange('actionPlan', e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return;
+                    e.preventDefault();
+                    if (!String(editFormData.actionPlan || '').trim()) return;
+                    openAddActionFromEdit();
+                  }}
                   className="w-full p-3.5 rounded-2xl bg-blue-50/50 border border-blue-200 text-slate-900 font-medium leading-relaxed text-xs sm:text-sm focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none transition-all"
                   placeholder="Tuliskan butir rencana aksi..."
                 />
+                <p className="text-[10.5px] text-slate-500 mt-1">
+                  Tips: tekan <kbd className="px-1 rounded bg-slate-100 border border-slate-300 font-mono">Enter</kbd> untuk
+                  simpan dan menambah action plan baru di rapat ini, atau{' '}
+                  <kbd className="px-1 rounded bg-slate-100 border border-slate-300 font-mono">Shift+Enter</kbd> untuk baris baru.
+                </p>
               </div>
 
               {/* 3. Support Needed Callout Box */}
@@ -1415,36 +1445,29 @@ export default function Support() {
                     <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">
                       UIC (Penanggung Jawab)
                     </label>
-                    <input
-                      type="text"
+                    <UicMultiSelect
                       value={editFormData.uic || ''}
-                      onChange={(e) => handleFieldChange('uic', e.target.value)}
-                      className="w-full text-xs font-bold text-slate-900 bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 focus:border-blue-500 outline-none"
-                      placeholder="e.g. PRQ, BS"
+                      onChange={(v) => handleFieldChange('uic', v)}
                     />
                   </div>
                   <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
                     <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">
                       Destinasi FU
                     </label>
-                    <input
-                      type="text"
+                    <UicMultiSelect
                       value={editFormData.destinasiFu || ''}
-                      onChange={(e) => handleFieldChange('destinasiFu', e.target.value)}
-                      className="w-full text-xs font-bold text-blue-700 bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 focus:border-blue-500 outline-none"
-                      placeholder="e.g. BS, SSGS, TELDA"
+                      onChange={(v) => handleFieldChange('destinasiFu', v)}
+                      options={DESTINASI_OPTIONS}
+                      placeholder="Pilih destinasi FU"
                     />
                   </div>
                   <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
                     <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">
                       Target Deadline
                     </label>
-                    <input
-                      type="text"
+                    <DeadlineInput
                       value={editFormData.deadline || ''}
-                      onChange={(e) => handleFieldChange('deadline', e.target.value)}
-                      className="w-full text-xs font-bold text-slate-900 bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 focus:border-blue-500 outline-none"
-                      placeholder="e.g. W3 Sep 2026"
+                      onChange={(v) => handleFieldChange('deadline', v)}
                     />
                   </div>
                 </div>
@@ -1550,9 +1573,13 @@ export default function Support() {
       {/* 8. Tambah Data Manual */}
       {showCreate && (
         <SupportFormModal
-          onClose={() => setShowCreate(false)}
+          onClose={() => {
+            setShowCreate(false);
+            setCreatePrefill(null);
+          }}
           onSave={handleCreateItem}
           nextNo={nextMeetingNo}
+          prefill={createPrefill}
         />
       )}
     </div>

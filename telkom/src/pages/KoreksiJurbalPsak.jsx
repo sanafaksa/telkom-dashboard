@@ -1,7 +1,10 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Upload, X, FileSpreadsheet, RotateCcw, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { ExportButton, ShareDropdown } from '../components/ui';
+import { clearDraftFiles, loadDraftFiles, saveDraftFiles, useOpenDraftIntent } from '../lib/draft';
+
+const PSAK_DRAFT_FILE = 'koreksi-psak-upload-file';
 import {
   PSAK_TYPES,
   computePsakTotal,
@@ -28,6 +31,26 @@ function UploadPsakModal({ open, onClose, onLoaded }) {
   const [error, setError] = useState('');
   const inputRef = useRef(null);
 
+  // Draft: file yang sudah dipilih dipulihkan setelah sesi berakhir / halaman dimuat ulang
+  const draftReady = useRef(false);
+  useEffect(() => {
+    let alive = true;
+    loadDraftFiles(PSAK_DRAFT_FILE).then((restored) => {
+      if (!alive) return;
+      if (restored.length) setFile(restored[0]);
+      draftReady.current = true;
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!draftReady.current) return;
+    if (file) saveDraftFiles(PSAK_DRAFT_FILE, [file]);
+    else clearDraftFiles(PSAK_DRAFT_FILE);
+  }, [file]);
+
   if (!open) return null;
 
   const pick = (f) => {
@@ -40,8 +63,8 @@ function UploadPsakModal({ open, onClose, onLoaded }) {
     setFile(f);
   };
 
+  // Tutup modal tidak menghapus file: draft tetap ada sampai data berhasil dimuat
   const close = () => {
-    setFile(null);
     setError('');
     setLoading(false);
     onClose();
@@ -54,6 +77,7 @@ function UploadPsakModal({ open, onClose, onLoaded }) {
     try {
       const parsed = await parsePsakFile(file);
       onLoaded({ ...parsed, source: { filename: file.name, uploadedAt: new Date().toISOString() } });
+      setFile(null);
       close();
     } catch (err) {
       setError(err.message || 'Gagal membaca file.');
@@ -195,6 +219,7 @@ function NumCell({ value, strong = false, groupEnd = false }) {
 export default function KoreksiJurbalPsak() {
   const [data, setData] = useState(() => loadPsakData());
   const [showUpload, setShowUpload] = useState(false);
+  useOpenDraftIntent('koreksi-psak-upload-file', () => setShowUpload(true));
   const [notice, setNotice] = useState(null);
 
   const { period, rows, source } = data;

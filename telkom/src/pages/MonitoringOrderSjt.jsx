@@ -1,4 +1,5 @@
-import { useState, useMemo, useRef, Fragment } from 'react';
+import { useState, useMemo, useRef, Fragment, useEffect } from 'react';
+import { clearDraftFiles, loadDraftFiles, saveDraftFiles, useOpenDraftIntent } from '../lib/draft';
 import { createPortal, flushSync } from 'react-dom';
 import {
   AlertTriangle,
@@ -161,12 +162,34 @@ const FILTER_OPTIONS = {
 /* UPLOAD MODAL (IDENTIK DENGAN EDK MONITORING)                               */
 /* ========================================================================== */
 
+const ORDER_DRAFT_FILES = 'monitoring-order-upload-files';
+
 function UploadOrderModal({ open, onClose }) {
   const [files, setFiles] = useState([]);
   const [drag, setDrag] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [done, setDone] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Draft: file yang sudah dipilih dipulihkan setelah sesi berakhir / halaman dimuat ulang
+  const draftReady = useRef(false);
+  useEffect(() => {
+    let alive = true;
+    loadDraftFiles(ORDER_DRAFT_FILES).then((restored) => {
+      if (!alive) return;
+      if (restored.length) setFiles(restored);
+      draftReady.current = true;
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!draftReady.current) return;
+    if (files.length) saveDraftFiles(ORDER_DRAFT_FILES, files);
+    else clearDraftFiles(ORDER_DRAFT_FILES);
+  }, [files]);
 
   if (!open) return null;
 
@@ -1470,6 +1493,7 @@ function TableSectionBox({
 
 export default function MonitoringOrderSjt() {
   const [showUpload, setShowUpload] = useState(false);
+  useOpenDraftIntent('monitoring-order-upload-files', () => setShowUpload(true));
 
   // Filter States (Persis gaya FilterDropdown EDK Monitoring)
   const [selectedPeriode, setSelectedPeriode] = useState([]);

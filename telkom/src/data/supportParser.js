@@ -1,5 +1,6 @@
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
+import { SESSION_EXPIRED_EVENT } from '../lib/api';
 
 export const DEFAULT_SUPPORT_CSV = `NO,TGL,AGENDA,MAIN TOPIC,UNIT/TELDA,PESERTA,PEMBAHASAN,PEMBAHASAN (NOTULEN),ACTION PLAN,UIC,DESTINASI FU,SUPPORT NEEDED,DEADLINE,STATUS,NOTES TO FOLLOW UP,
 1,11/09/2026,FORUM WITEL,HSI LIMITER & RESELLER,PRQ,"GM WITEL, PRQ (3), SSGS (3), BS (3), TELDA SOLO (1), TELDA SRAGEN (2), TELDA KUDUS (2), TELDA PATI (2), TELDA PURWODADI (1)","1. Perlu grup koordinasi penanganan HSI Limiter & Reseller di area Witel dan Telda
@@ -627,23 +628,37 @@ function authHeaders(extra = {}) {
   };
 }
 
-export async function fetchSupportFromApi() {
+/**
+ * Ambil data MoM dari database dengan alasan kegagalan yang jelas.
+ * reason: 'session' (401, overlay sesi sudah ditampilkan), 'http', 'network', atau 'format'.
+ */
+export async function fetchSupportResult() {
   try {
     const res = await fetch(`${API_BASE}/mom-support`, {
       headers: authHeaders()
     });
-    if (!res.ok) return null;
+    if (res.status === 401) {
+      window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+      return { ok: false, reason: 'session' };
+    }
+    if (!res.ok) return { ok: false, reason: 'http', status: res.status };
     const json = await res.json();
     // Respons kosong tetap dianggap sukses: database adalah sumber kebenaran,
     // jadi cache lokal/CSV contoh tidak boleh menggantikannya.
     if (json && json.success && Array.isArray(json.items)) {
       saveSupportData(json.items);
-      return json.items;
+      return { ok: true, items: json.items };
     }
+    return { ok: false, reason: 'format' };
   } catch {
-    // Fallback to localStorage when offline
+    // Tidak bisa terhubung ke server
+    return { ok: false, reason: 'network' };
   }
-  return null;
+}
+
+export async function fetchSupportFromApi() {
+  const result = await fetchSupportResult();
+  return result.ok ? result.items : null;
 }
 
 export async function syncSupportToApi(items, filename = 'Notulensi Rapat GM.xlsx', sheetName = 'Notulensi Tracker', mode = 'replace') {
@@ -694,8 +709,13 @@ export async function createSupportBatchApi(payload) {
   });
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    const firstFieldError = data?.errors ? Object.values(data.errors)[0]?.[0] : null;
-    throw new Error(firstFieldError ?? data?.message ?? `Gagal menyimpan rapat ke server (${res.status}).`);
+    // Semua error validasi dibawa ke form (ditampilkan di popup), bukan hanya yang pertama
+    const serverErrors = data?.errors
+      ? Object.entries(data.errors).flatMap(([field, msgs]) => msgs.map((message) => ({ field, message })))
+      : [];
+    const err = new Error(serverErrors[0]?.message ?? data?.message ?? `Gagal menyimpan rapat ke server (${res.status}).`);
+    err.serverErrors = serverErrors;
+    throw err;
   }
   return data;
 }

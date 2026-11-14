@@ -1,6 +1,8 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
+import SessionExpiredOverlay from './components/SessionExpiredOverlay';
+import DraftNotice from './components/DraftNotice';
 import { isLoggedIn } from './features/auth/auth';
 
 function RequireAuth({ children }) {
@@ -27,6 +29,7 @@ const NF = () => (
 export default function App() {
   return (
     <Suspense fallback={<p className="p-8 text-center text-slate-400">Memuat…</p>}>
+      <SessionExpiredOverlay />
       <Routes>
         {/* Halaman Login mandiri tanpa Layout Dashboard */}
         <Route path="/login" element={<Login />} />
@@ -48,6 +51,7 @@ export default function App() {
                 <Route path="/support-needed" element={<Support />} />
                 <Route path="*" element={<NF />} />
               </Routes>
+              <DraftNotice />
             </Layout>
             </RequireAuth>
           }

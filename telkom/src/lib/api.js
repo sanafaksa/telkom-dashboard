@@ -43,11 +43,20 @@ function buildHeaders(extra = {}) {
   };
 }
 
+/** Event saat sesi idle berakhir. Halaman tidak di-reload agar data yang sedang dikerjakan tetap ada. */
+export const SESSION_EXPIRED_EVENT = 'session-expired';
+
 async function handle(res) {
   if (isHostingChallenge(res)) recoverFromChallenge();
   if (res.ok) {
     sessionStorage.removeItem(CHALLENGE_KEY);
     return res.status === 204 ? null : res.json();
+  }
+
+  // 401 pada endpoint non-auth = sesi berakhir (idle). Login/logout tidak memicu overlay.
+  const isAuthPath = res.url ? new URL(res.url).pathname.includes('/auth/') : false;
+  if (res.status === 401 && !isAuthPath) {
+    window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
   }
 
   let data = null;

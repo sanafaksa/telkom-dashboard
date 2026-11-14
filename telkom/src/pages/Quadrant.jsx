@@ -25,8 +25,10 @@ import {
   DEFAULT_QUADRANT_AGG
 } from '../data/quadrantXlsx';
 import FilterDropdown from '../components/FilterDropdown';
+import { clearDraftFiles, loadDraftFiles, saveDraftFiles, useOpenDraftIntent } from '../lib/draft';
 
 const STORAGE_KEY = 'telkom_quadrant_agg_v2';
+const KUADRAN_DRAFT_FILES = 'kuadran-upload-files';
 
 function loadInitialAgg() {
   try {
@@ -86,9 +88,30 @@ export default function Quadrant() {
     defaultData ? buildQuadrantData(view, cachedAgg, defaultData, defaultFilters(view, getFilterOptions(cachedAgg, view))) : null
   );
   const [showUpload, setShowUpload] = useState(false);
+  useOpenDraftIntent('kuadran-upload-files', () => setShowUpload(true));
   const [uploadFiles, setUploadFiles] = useState([]);
   const [uploadError, setUploadError] = useState(null);
   const [autoDownloadTemplate, setAutoDownloadTemplate] = useState(true);
+
+  // Draft: file upload yang belum diproses dipulihkan setelah sesi berakhir / halaman dimuat ulang
+  const draftReady = useRef(false);
+  useEffect(() => {
+    let alive = true;
+    loadDraftFiles(KUADRAN_DRAFT_FILES).then((restored) => {
+      if (!alive) return;
+      if (restored.length) setUploadFiles(restored.slice(0, 1));
+      draftReady.current = true;
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!draftReady.current) return;
+    if (uploadFiles.length) saveDraftFiles(KUADRAN_DRAFT_FILES, uploadFiles.slice(0, 1));
+    else clearDraftFiles(KUADRAN_DRAFT_FILES);
+  }, [uploadFiles]);
   const [toast, setToast] = useState(null);
   const [processing, setProcessing] = useState(null);
   const [showFilter, setShowFilter] = useState(false);
@@ -560,7 +583,6 @@ export default function Quadrant() {
                 <button
                   onClick={() => {
                     setShowUpload(false);
-                    setUploadFiles([]);
                     setUploadError(null);
                   }}
                   className="text-slate-400 hover:text-slate-600 cursor-pointer"
@@ -654,7 +676,6 @@ export default function Quadrant() {
                 <button
                   onClick={() => {
                     setShowUpload(false);
-                    setUploadFiles([]);
                     setUploadError(null);
                   }}
                   className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-lg cursor-pointer"

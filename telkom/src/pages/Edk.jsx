@@ -1,4 +1,8 @@
-import { useMemo, useState, Fragment, useRef } from 'react';
+import { useMemo, useState, Fragment, useRef, useEffect } from 'react';
+import { clearDraft, clearDraftFiles, loadDraft, loadDraftFiles, saveDraft, saveDraftFiles, useOpenDraftIntent } from '../lib/draft';
+
+const EDK_DRAFT_FILES = 'edk-upload-files';
+const EDK_DRAFT_META = 'edk-upload-meta';
 import { ExportButton, ShareDropdown } from '../components/ui';
 import FilterDropdown from '../components/FilterDropdown';
 import { createPortal } from 'react-dom';
@@ -363,6 +367,40 @@ function UploadModal({ open, onClose, onUploaded }) {
     : '';
   const canUpload = files.length > 0 && !!reportDate && !!activeUploadPeriod && !uploading;
 
+  // Draft: file & pilihan periode dipulihkan setelah sesi berakhir / halaman dimuat ulang
+  const draftReady = useRef(false);
+  useEffect(() => {
+    let alive = true;
+    loadDraftFiles(EDK_DRAFT_FILES).then((restored) => {
+      if (!alive) return;
+      if (restored.length) setFiles(restored.slice(0, 1));
+      draftReady.current = true;
+    });
+    const meta = loadDraft(EDK_DRAFT_META);
+    if (meta?.value) {
+      if (meta.value.reportDate) setReportDate(meta.value.reportDate);
+      if (meta.value.selectedPeriod) setSelectedPeriod(meta.value.selectedPeriod);
+    }
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!draftReady.current) return;
+    if (files.length) saveDraftFiles(EDK_DRAFT_FILES, files);
+    else {
+      clearDraftFiles(EDK_DRAFT_FILES);
+      clearDraft(EDK_DRAFT_META);
+    }
+  }, [files]);
+
+  // Pilihan tanggal/periode hanya disimpan kalau ada file yang sedang disiapkan
+  useEffect(() => {
+    if (draftReady.current && files.length) saveDraft(EDK_DRAFT_META, { reportDate, selectedPeriod });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reportDate, selectedPeriod, files.length]);
+
   if (!open) return null;
 
   const handleDrop = (e) => {
@@ -390,6 +428,8 @@ function UploadModal({ open, onClose, onUploaded }) {
 
     try {
       await uploadMutation.mutateAsync({ file: files[0], reportDate, periodeEdk: activeUploadPeriod });
+      clearDraftFiles(EDK_DRAFT_FILES);
+      clearDraft(EDK_DRAFT_META);
       onUploaded?.(activeUploadPeriod);
       setDone(true);
       setTimeout(() => {
@@ -575,6 +615,7 @@ export default function Edk() {
   const isTop10View = isStatusView;
 
   const [showUpload, setShowUpload] = useState(false);
+  useOpenDraftIntent('edk-upload-files', () => setShowUpload(true));
   const [showHistory, setShowHistory] = useState(false);
   const canManage = isAdmin();
   const [pageSize, setPageSize] = useState(25);

@@ -38,7 +38,8 @@ class AuthController extends Controller
             ]);
         }
 
-        $expiresAt = ($data['remember'] ?? false) ? now()->addDays(30) : now()->addHours(12);
+        // Sesi idle: berakhir setelah sanctum.idle_minutes tanpa aktivitas (berlaku juga untuk "ingat saya").
+        $expiresAt = now()->addMinutes((int) config('sanctum.idle_minutes', 15));
         $token     = $user->createToken('dashboard', ['*'], $expiresAt)->plainTextToken;
 
         Audit::log('auth.login', null, ['remember' => (bool) ($data['remember'] ?? false)], $user);
