@@ -15,7 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
 ->withMiddleware(function (Middleware $middleware): void {
     $middleware->alias([
-            'role' => \App\Http\Middleware\EnsureRole::class,
+        'role'       => \App\Http\Middleware\EnsureRole::class,
+        'permission' => \App\Http\Middleware\EnsurePermission::class,
+        'active'     => \App\Http\Middleware\EnsureActive::class,
+        'session'    => \App\Http\Middleware\EnsureSessionToken::class,
     ]);
 })
 

@@ -56,8 +56,30 @@ async function handle(res) {
   } catch {
     // response bukan JSON
   }
+
+  // Token kedaluwarsa / dicabut / akun dinonaktifkan → bersihkan sesi lalu ke halaman login.
+  if (res.status === 401 && localStorage.getItem('token')) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('telkom_user');
+    if (window.location.pathname !== '/login') window.location.assign('/login');
+  }
+
   throw new ApiError(res.status, data);
 }
+
+async function send(method, path, body) {
+  return handle(
+    await fetch(buildUrl(path), {
+      method,
+      headers: buildHeaders({ 'Content-Type': 'application/json' }),
+      body: body === undefined ? undefined : JSON.stringify(body),
+    }),
+  );
+}
+
+export const apiPut = (path, body) => send('PUT', path, body ?? {});
+export const apiPatch = (path, body) => send('PATCH', path, body ?? {});
+export const apiDelete = (path) => send('DELETE', path);
 
 export async function apiGet(path, params) {
   return handle(await fetch(buildUrl(path, params), { headers: buildHeaders() }));

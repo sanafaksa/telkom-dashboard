@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { can } from '../features/auth/auth';
 import {
   Filter,
   ChevronDown,
@@ -83,6 +84,8 @@ const matchUicFilter = (uicText, filter) => {
 };
 
 export default function Support() {
+  // Hanya menyembunyikan tombol; endpoint tulis tetap dijaga permission mom.manage di backend.
+  const canManage = can('mom.manage');
   // Action plans data state (loaded from LocalStorage or default CSV, then synced with MySQL)
   const [actionPlans, setActionPlans] = useState(() => {
     const loaded = loadSavedSupportData();
@@ -503,6 +506,7 @@ export default function Support() {
           <button
             type="button"
             onClick={() => setShowCreate(true)}
+            hidden={!canManage}
             className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition-all shadow-md shadow-emerald-600/20 cursor-pointer active:scale-95"
           >
             <Plus size={14} />
@@ -513,6 +517,7 @@ export default function Support() {
           <button
             type="button"
             onClick={() => setShowUpload(true)}
+            hidden={!canManage}
             className="flex items-center gap-2 bg-gradient-to-r from-[#1447B8] to-[#2563EB] hover:from-[#0E3A9E] hover:to-[#1D4ED8] text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition-all shadow-md shadow-blue-600/20 cursor-pointer active:scale-95"
           >
             <Upload size={14} />
@@ -563,6 +568,7 @@ export default function Support() {
           <button
             type="button"
             onClick={handleResetDefault}
+            hidden={!canManage}
             title="Kembalikan ke data template awal"
             className="flex items-center gap-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 text-xs font-semibold p-2.5 rounded-lg transition-colors shadow-2xs cursor-pointer"
           >
@@ -1009,6 +1015,7 @@ export default function Support() {
                         <button
                           type="button"
                           onClick={() => handleDeleteItem(item)}
+            hidden={!canManage}
                           title="Hapus butir ini"
                           className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                         >

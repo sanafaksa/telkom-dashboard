@@ -15,7 +15,7 @@ class MomSupportCrudTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Sanctum::actingAs(User::factory()->create());
+        Sanctum::actingAs(User::factory()->create(['role' => 'staff']), ['*']);
     }
 
     private function payload(array $overrides = []): array

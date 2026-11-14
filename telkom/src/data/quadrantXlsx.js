@@ -983,16 +983,24 @@ export async function downloadSummaryTemplate(
 
 /* ------------------------ Laravel + MySQL API client ---------------------- */
 
-const API_BASE = import.meta.env?.VITE_API_URL || '/api/kuadran';
+const API_BASE = `${(import.meta.env?.VITE_API_URL ?? '/api').replace(/\/$/, '')}/kuadran`;
+
+// Endpoint kuadran kini wajib login: sertakan token Sanctum.
+function authHeaders(extra = {}) {
+  const token = localStorage.getItem('token');
+  return {
+    Accept: 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...extra
+  };
+}
 
 /**
  * Fetches aggregated quadrant data from Laravel MySQL endpoint.
  */
 export async function fetchAggFromApi() {
   const res = await fetch(API_BASE, {
-    headers: {
-      Accept: 'application/json'
-    }
+    headers: authHeaders()
   });
 
   if (!res.ok) {
@@ -1022,10 +1030,7 @@ export async function syncAggToApi(
 
   const res = await fetch(`${API_BASE}/sync`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json'
-    },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({
       filename,
       rows

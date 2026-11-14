@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DotGlow from '../components/DotGlow';
 import {
-  Mail,
+  IdCard,
   Lock,
   Eye,
   EyeOff,
@@ -84,7 +84,7 @@ export default function Login() {
     setTimeout(() => {
       setAuthStatus('opening_up');
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate('/home');
       }, 750);
     }, 150);
   };
@@ -92,7 +92,7 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email.trim()) {
-      setError('Silakan masukkan email Telkom atau NIK Anda.');
+      setError('Silakan masukkan NIP Anda.');
       return;
     }
     if (!password.trim()) {
@@ -117,7 +117,7 @@ export default function Login() {
       setAuthStatus('idle');
       resetTurnstile(); // token Turnstile hanya bisa dipakai sekali
       if (err?.status === 422) {
-        setError(err.data?.errors?.login?.[0] ?? err.message);
+        setError(err.data?.errors?.nip?.[0] ?? Object.values(err.data?.errors ?? {})[0]?.[0] ?? err.message);
       } else if (err?.status === 429) {
         setError('Terlalu banyak percobaan login. Coba lagi dalam 1 menit.');
       } else if (err?.status) {
@@ -337,7 +337,7 @@ export default function Login() {
                   Selamat Datang
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1.5 leading-relaxed">
-                  Silakan masukkan email Telkom atau NIK Anda untuk mengakses dashboard operasional.
+                  Silakan masuk dengan NIP dan kata sandi Anda. Dashboard yang tampil mengikuti role akun.
                 </p>
               </div>
 
@@ -354,18 +354,20 @@ export default function Login() {
                 {/* Email / NIK */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                    Email Telkom / NIK
+                    NIP
                   </label>
                   <div className="relative flex items-center group">
                     <div className="absolute left-3.5 text-slate-400 group-focus-within:text-[#1D56D6] transition-colors pointer-events-none">
-                      <Mail size={17} />
+                      <IdCard size={17} />
                     </div>
                     <input
                       type="text"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       disabled={isVerifying || isGranted}
-                      placeholder="contoh: executive.lead@telkom.co.id"
+                      placeholder="Masukkan NIP Anda"
+                      autoComplete="username"
+                      inputMode="numeric"
                       className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200/90 bg-slate-50/60 hover:bg-white text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#2563EB] focus:ring-4 focus:ring-blue-500/15 transition-all shadow-2xs font-medium"
                     />
                   </div>
@@ -395,6 +397,7 @@ export default function Login() {
                       onChange={(e) => setPassword(e.target.value)}
                       disabled={isVerifying || isGranted}
                       placeholder="Masukkan kata sandi Anda"
+                      autoComplete="current-password"
                       className="w-full pl-10 pr-11 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200/90 bg-slate-50/60 hover:bg-white text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#2563EB] focus:ring-4 focus:ring-blue-500/15 transition-all shadow-2xs font-medium"
                     />
                     <button
@@ -442,7 +445,7 @@ export default function Login() {
                   {isVerifying ? (
                     <>
                       <Loader2 size={16} className="animate-spin text-white" />
-                      <span>Memverifikasi Kredensial SSO...</span>
+                      <span>Memverifikasi NIP & kata sandi...</span>
                     </>
                   ) : isGranted ? (
                     <>
@@ -503,7 +506,7 @@ export default function Login() {
 
             <div className="space-y-3 text-xs text-slate-600 bg-slate-50 p-4 rounded-2xl border border-slate-200/80 mb-5">
               <p className="leading-relaxed">
-                Untuk menjaga standar keamanan data eksekutif, reset kata sandi dan pembukaan blokir akun dilakukan melalui saluran resmi IT SSO Telkom:
+                Kata sandi dibuat dan direset oleh Admin atau Super Admin SOLARIS. Hubungi administrator Anda, atau saluran berikut:
               </p>
               <div className="pt-2 border-t border-slate-200/60 space-y-1.5 font-medium text-slate-700">
                 <div className="flex justify-between">

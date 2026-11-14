@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Support\Audit;
+use App\Support\Rbac;
+use App\Support\Settings;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
@@ -15,44 +17,67 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $data = $request->validate([
-            'login'                  => 'required|string|max:255',   // email atau NIK
-            'password'               => 'required|string',
+            'nip'                    => 'required|string|max:30',
+            'password'               => 'required|string|max:255',
             'remember'               => 'boolean',
             'cf-turnstile-response'  => 'required|string',
         ]);
 
         if (!$this->verifyTurnstile($data['cf-turnstile-response'], $request->ip())) {
             throw ValidationException::withMessages([
-                'login' => 'Verifikasi keamanan gagal. Silakan coba lagi.',
+                'nip' => 'Verifikasi keamanan gagal. Silakan coba lagi.',
             ]);
         }
 
-        $field = filter_var($data['login'], FILTER_VALIDATE_EMAIL) ? 'email' : 'nik';
-        $user  = User::where($field, trim($data['login']))->first();
+        $nip  = trim($data['nip']);
+        $user = User::where('nip', $nip)->first();
 
         if (!$user || !Hash::check($data['password'], $user->password)) {
-            Audit::log('auth.login_failed', null, ['login' => $data['login']], $user);
+            Audit::log('auth.login_failed', null, ['nip' => $nip], $user);
 
             throw ValidationException::withMessages([
-                'login' => 'Email/NIK atau kata sandi salah.',
+                'nip' => 'NIP atau kata sandi salah.',
             ]);
         }
 
-        $expiresAt = ($data['remember'] ?? false) ? now()->addDays(30) : now()->addHours(12);
-        $token     = $user->createToken('dashboard', ['*'], $expiresAt)->plainTextToken;
+        if (!$user->is_active) {
+            Audit::log('auth.login_blocked', null, ['reason' => 'inactive'], $user);
 
-        Audit::log('auth.login', null, ['remember' => (bool) ($data['remember'] ?? false)], $user);
+            throw ValidationException::withMessages([
+                'nip' => 'Akun Anda dinonaktifkan. Hubungi administrator.',
+            ]);
+        }
+
+        if (!$user->isSuperAdmin() && Settings::get('maintenance_mode')) {
+            throw ValidationException::withMessages([
+                'nip' => Settings::get('maintenance_message'),
+            ]);
+        }
+
+        if (Settings::get('single_session')) {
+            $user->tokens()->where('name', User::SESSION_TOKEN)->delete();
+        }
+
+        $remember  = (bool) ($data['remember'] ?? false);
+        $expiresAt = $remember
+            ? now()->addDays(Settings::get('remember_days'))
+            : now()->addHours(Settings::get('session_hours'));
+        $token = $user->createToken(User::SESSION_TOKEN, ['*'], $expiresAt)->plainTextToken;
+
+        $user->forceFill(['last_login_at' => now()])->save();
+
+        Audit::log('auth.login', null, ['remember' => $remember], $user);
 
         return response()->json([
             'token'      => $token,
             'expires_at' => $expiresAt->toIso8601String(),
-            'user'       => $this->payload($user),
+            'user'       => self::payload($user),
         ]);
     }
 
     public function me(Request $request)
     {
-        return response()->json($this->payload($request->user()));
+        return response()->json(self::payload($request->user()));
     }
 
     public function logout(Request $request)
@@ -80,8 +105,14 @@ class AuthController extends Controller
         return $response->successful() && $response->json('success') === true;
     }
 
-    private function payload(User $user): array
+    /** Data user untuk client. Permission selalu dihitung server dari role di database. */
+    public static function payload(User $user): array
     {
-        return $user->only(['id', 'name', 'email', 'nik', 'role']);
+        return [
+            ...$user->only(['id', 'name', 'email', 'nip', 'role', 'is_active']),
+            'role_label'   => Rbac::label($user->role),
+            'permissions'  => $user->permissions(),
+            'announcement' => Settings::get('announcement'),
+        ];
     }
 }
