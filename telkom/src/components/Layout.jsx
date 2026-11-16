@@ -124,17 +124,17 @@ function Sidebar({ close, onCollapse }) {
 
       {/* Brand Header */}
       <div className="flex items-center justify-between px-2 pt-1 pb-4 mb-1">
-        <NavLink to="/home" className="flex items-center gap-3 group select-none py-1">
+        <NavLink to="/home" className="flex items-center gap-2.5 group select-none py-1">
           <img
             src={isTopRole ? '/solaris-gradient-blue.svg' : '/solaris-white-transparent.svg'}
             alt=""
             aria-hidden="true"
             draggable={false}
-            className="h-10 w-auto shrink-0"
+            className="h-8 w-auto shrink-0"
           />
-          <span className="h-7 w-px bg-white/35 shrink-0" aria-hidden="true" />
+          <span className="h-5 w-px bg-white/35 shrink-0" aria-hidden="true" />
           <span
-            className={`text-xl font-black tracking-wide leading-none transition-colors ${
+            className={`text-base font-black tracking-wide leading-none transition-colors ${
               isTopRole
                 ? 'bg-gradient-to-r from-[#F7FBFF] via-[#A9D0FF] to-[#68ACFF] bg-clip-text text-transparent'
                 : 'text-white group-hover:text-blue-100'
@@ -150,11 +150,11 @@ function Sidebar({ close, onCollapse }) {
               e.stopPropagation();
               onCollapse();
             }}
-            className="size-7.5 rounded-full bg-white text-[#06246A] shadow-md grid place-items-center hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
+            className="size-6 rounded-full bg-white text-[#06246A] shadow-md grid place-items-center hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
             aria-label="Tutup sidebar"
             title="Tutup sidebar"
           >
-            <ChevronRight size={15} strokeWidth={2.5} />
+            <ChevronRight size={13} strokeWidth={2.5} />
           </button>
         )}
       </div>
