@@ -14,6 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
 )
 
 ->withMiddleware(function (Middleware $middleware): void {
+    // Nginx/CloudPanel berada di server yang sama, jadi hanya loopback yang dipercaya untuk X-Forwarded-For.
+    $middleware->trustProxies(at: ['127.0.0.1', '::1']);
+
     $middleware->alias([
             'role' => \App\Http\Middleware\EnsureRole::class,
     ]);

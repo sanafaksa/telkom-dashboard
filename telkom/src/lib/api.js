@@ -1,4 +1,5 @@
-const BASE_URL = (import.meta.env.VITE_API_URL ?? '/api').replace(/\/$/, '');
+// Base URL API dari .env (VITE_API_BASE_URL). Default '/api' untuk deploy satu domain.
+const BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
 
 export class ApiError extends Error {
   constructor(status, data) {

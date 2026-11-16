@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Clock, LogIn, ShieldCheck } from 'lucide-react';
+import { Clock, RefreshCw, ShieldCheck } from 'lucide-react';
 import { SESSION_EXPIRED_EVENT } from '../lib/api';
 
 /**
- * Muncul saat sesi idle berakhir. Halaman tetap utuh (form, file upload, filter),
- * jadi pengguna cukup masuk lagi di tab lain lalu kembali dan mengulang aksinya.
- * Begitu token baru tersimpan (storage event dari tab login), overlay otomatis tertutup.
+ * Muncul saat sesi idle berakhir. Pengguna memuat ulang halaman untuk login lagi di tab yang sama.
+ * Draft yang sudah tersimpan di localStorage / IndexedDB tetap ada dan dipulihkan oleh DraftNotice.
+ * Begitu token baru tersimpan di tab lain (storage event), overlay otomatis tertutup.
  */
 export default function SessionExpiredOverlay() {
   const [expired, setExpired] = useState(false);
@@ -53,6 +53,13 @@ export default function SessionExpiredOverlay() {
     );
   }
 
+  // Hapus sesi lama dulu, supaya setelah reload aplikasi mengarahkan ke /login (bukan kembali ke dashboard).
+  const reloadToLogin = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('telkom_user');
+    window.location.reload();
+  };
+
   if (!expired) return null;
 
   return createPortal(
@@ -63,19 +70,18 @@ export default function SessionExpiredOverlay() {
         </div>
         <h3 className="font-extrabold text-lg text-slate-900">Sesi berakhir</h3>
         <p className="text-sm mt-2 leading-relaxed">
-          Sesi dihentikan karena tidak ada aktivitas. Isian form dan file yang sedang kamu kerjakan
-          <strong> tetap ada di halaman ini</strong>. Masuk lagi di tab baru, lalu kembali ke sini dan ulangi aksimu.
+          Sesi dihentikan karena tidak ada aktivitas. Draft form dan file yang sudah tersimpan
+          <strong> tetap aman</strong>. Muat ulang halaman untuk masuk lagi.
         </p>
-        <a
-          href="/login"
-          target="_blank"
-          rel="noopener"
-          className="mt-5 w-full py-2.5 rounded-xl bg-[#1447B8] hover:bg-blue-700 text-white text-sm font-bold flex items-center justify-center gap-2"
+        <button
+          type="button"
+          onClick={reloadToLogin}
+          className="mt-5 w-full py-2.5 rounded-xl bg-[#1447B8] hover:bg-blue-700 text-white text-sm font-bold flex items-center justify-center gap-2 cursor-pointer"
         >
-          <LogIn size={16} /> Masuk lagi (tab baru)
-        </a>
+          <RefreshCw size={16} /> Muat ulang &amp; masuk lagi
+        </button>
         <p className="text-[11px] text-slate-500 mt-3 text-center">
-          Halaman ini akan memulihkan sesi otomatis setelah kamu berhasil masuk.
+          Draft yang sudah tersimpan akan dipulihkan otomatis setelah kamu berhasil masuk.
         </p>
       </div>
     </div>,

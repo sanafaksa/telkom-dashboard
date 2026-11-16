@@ -983,7 +983,7 @@ export async function downloadSummaryTemplate(
 
 /* ------------------------ Laravel + MySQL API client ---------------------- */
 
-const API_BASE = import.meta.env?.VITE_API_URL || '/api/kuadran';
+const API_BASE = `${(import.meta.env?.VITE_API_BASE_URL || '/api').replace(/\/$/, '')}/kuadran`;
 
 /**
  * Fetches aggregated quadrant data from Laravel MySQL endpoint.
