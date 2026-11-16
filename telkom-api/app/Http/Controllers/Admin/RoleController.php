@@ -7,16 +7,23 @@ use App\Models\User;
 use App\Support\Audit;
 use App\Support\Rbac;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class RoleController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $isSuper = $request->user()->isSuperAdmin();
         $counts = User::query()->selectRaw('role, count(*) as total')->groupBy('role')->pluck('total', 'role');
 
         $roles = [];
         foreach (Rbac::ROLES as $key => $info) {
+            // Admin tidak melihat role Super Admin
+            if (! $isSuper && $key === Rbac::SUPER_ADMIN) {
+                continue;
+            }
             $roles[] = [
                 'key'         => $key,
                 'label'       => $info['label'],
@@ -29,7 +36,11 @@ class RoleController extends Controller
 
         $permissions = [];
         foreach (Rbac::PERMISSIONS as $key => [$label, $group, $superOnly]) {
-            $permissions[] = ['key' => $key, 'label' => $label, 'group' => $group, 'super_only' => $superOnly];
+            // Permission khusus Super Admin disembunyikan dari Admin
+            if (! $isSuper && $superOnly) {
+                continue;
+            }
+            $permissions[] =['key' => $key, 'label' => $label, 'group' => $group, 'super_only' => $superOnly];
         }
 
         return response()->json(['roles' => $roles, 'permissions' => $permissions]);
@@ -57,5 +68,19 @@ class RoleController extends Controller
         }
 
         return response()->json(['role' => $role, 'permissions' => $after]);
+    }
+
+    /** Verifikasi password Super Admin yang sedang login sebelum matriks permission boleh diubah. */
+    public function verifyPassword(Request $request)
+    {
+        abort_unless($request->user()->isSuperAdmin(), 403, 'Hanya Super Admin yang dapat membuka kunci.');
+
+        $data = $request->validate(['password' => 'required|string|max:255']);
+
+        if (! Hash::check($data['password'], $request->user()->password)) {
+            throw ValidationException::withMessages(['password' => 'Kata sandi Super Admin salah.']);
+        }
+
+        return response()->json(['verified' => true]);
     }
 }

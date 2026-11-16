@@ -12,6 +12,7 @@ export const adminApi = {
 
   roles: () => apiGet('/admin/roles'),
   updateRole: (role, permissions) => apiPut(`/admin/roles/${role}`, { permissions }),
+  verifyRolePassword: (password) => apiPost('/admin/roles/verify-password', { password }),
 
   settings: (group) => apiGet(`/admin/settings/${group}`),
   saveSettings: (group, values) => apiPut(`/admin/settings/${group}`, values),

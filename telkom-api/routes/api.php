@@ -108,6 +108,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         // Role & Permission
         Route::middleware('permission:roles.manage')->group(function () {
             Route::get('roles', [RoleController::class, 'index']);
+            Route::post('roles/verify-password', [RoleController::class, 'verifyPassword'])->middleware('throttle:10,1');
             Route::put('roles/{role}', [RoleController::class, 'update']);
         });
 

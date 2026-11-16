@@ -10,7 +10,7 @@ const EASE = 'cubic-bezier(0.65, 0, 0.35, 1)';
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function playLogoutTransition(name = '') {
-  const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  // Animasi selalu jalan, tidak mengikuti setelan reduced-motion OS/browser.
   const firstName = String(name).trim().split(/\s+/)[0] ?? '';
 
   const overlay = document.createElement('div');
@@ -28,7 +28,7 @@ export async function playLogoutTransition(name = '') {
         ? 'background:linear-gradient(135deg,#061438 0%,#0A266E 55%,#1242B5 100%)'
         : 'background:linear-gradient(135deg,#F8FAFC 0%,#F1F5F9 55%,#E2E8F0 100%)',
       `box-shadow:${left ? '3px' : '-3px'} 0 18px rgba(34,211,238,0.55)`,
-      reduced ? 'opacity:0' : `transform:translateX(${left ? '-100%' : '100%'})`,
+      `transform:translateX(${left ? '-100%' : '100%'})`,
       `transition:transform ${DOOR_MS}ms ${EASE},opacity 250ms ease`,
       'will-change:transform',
     ].join(';');
@@ -74,7 +74,7 @@ export async function playLogoutTransition(name = '') {
   leftDoor.style.opacity = '1';
   rightDoor.style.opacity = '1';
 
-  await sleep(reduced ? 250 : DOOR_MS - 150);
+  await sleep(DOOR_MS - 150);
   message.style.opacity = '1';
   message.style.transform = 'scale(1)';
 

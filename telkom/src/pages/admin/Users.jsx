@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { KeyRound, Pencil, Plus, Power, Search, Trash2 } from 'lucide-react';
-import { can } from '../../features/auth/auth';
+import { can, getUser } from '../../features/auth/auth';
 import { adminApi } from '../../features/admin/api';
 import { Badge, Btn, Card, DataTable, errText, Field, fmtDate, inputCls, Modal, Notice, Page, Pager, Query, RoleBadge } from '../../features/admin/kit';
 
@@ -163,7 +163,9 @@ export default function Users({ scope = 'users' }) {
                   {scope !== 'admins' && (
                     <select className={`${inputCls} !w-auto`} value={filters.role} onChange={setFilter('role')} aria-label="Filter role">
                       <option value="">Semua role</option>
-                      {['super_admin', 'admin', 'staff', 'support', 'user'].map((r) => (
+                      {['super_admin', 'admin', 'staff', 'support', 'user']
+                        .filter((r) => r !== 'super_admin' || getUser()?.role === 'super_admin')
+                        .map((r) => (
                         <option key={r} value={r}>{r.replace('_', ' ')}</option>
                       ))}
                     </select>

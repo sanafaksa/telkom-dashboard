@@ -29,7 +29,9 @@ export default function Security() {
               <Stat icon={ShieldAlert} label="Login gagal 7 hari" value={d.failed_logins_7d} tone="text-amber-600 bg-amber-50" />
               <Stat icon={LogIn} label="Login berhasil 24 jam" value={d.logins_24h} tone="text-emerald-600 bg-emerald-50" />
               <Stat icon={MonitorSmartphone} label="Sesi aktif" value={d.active_sessions} />
-              <Stat icon={ShieldCheck} label="Super Admin aktif" value={d.active_super_admins} tone="text-violet-600 bg-violet-50" />
+              {d.active_super_admins !== null && (
+                <Stat icon={ShieldCheck} label="Super Admin aktif" value={d.active_super_admins} tone="text-violet-600 bg-violet-50" />
+              )}
               <Stat icon={UserX} label="Akun nonaktif" value={d.inactive_users} note={`${d.users_without_nip} akun tanpa NIP`} tone="text-slate-500 bg-slate-100" />
             </div>
 

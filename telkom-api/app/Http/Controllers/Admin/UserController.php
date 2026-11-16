@@ -26,6 +26,8 @@ class UserController extends Controller
         $actor = $request->user();
 
         $page = User::query()
+            // Admin tidak melihat akun Super Admin
+            ->when(! $actor->isSuperAdmin(), fn ($q) => $q->where('role', '!=', Rbac::SUPER_ADMIN))
             ->when($data['q'] ?? null, fn ($q, $v) => $q->where(fn ($w) => $w
                 ->where('name', 'like', "%{$v}%")
                 ->orWhere('nip', 'like', "%{$v}%")

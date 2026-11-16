@@ -8,16 +8,11 @@ use Illuminate\Database\Seeder;
 
 class EdkUserSeeder extends Seeder
 {
-    /**
-     * Membuat akun awal dari .env:
-     * - SUPER_ADMIN_NIP / SUPER_ADMIN_PASSWORD / SUPER_ADMIN_NAME / SUPER_ADMIN_EMAIL
-     * - ADMIN_NIP (atau ADMIN_NIK lama) / ADMIN_PASSWORD / ADMIN_NAME / ADMIN_EMAIL
-     * Akun tanpa NIP atau password di .env dilewati (login memakai NIP).
-     */
+    /** Membuat atau memperbarui akun awal (login memakai NIP). */
     public function run(): void
     {
-        $this->seed(Rbac::SUPER_ADMIN, env('SUPER_ADMIN_NIP'), env('SUPER_ADMIN_PASSWORD'), env('SUPER_ADMIN_NAME', 'Super Admin'), env('SUPER_ADMIN_EMAIL'));
-        $this->seed(Rbac::ADMIN, env('ADMIN_NIP', env('ADMIN_NIK')), env('ADMIN_PASSWORD'), env('ADMIN_NAME', 'Admin'), env('ADMIN_EMAIL'));
+        $this->seed(Rbac::SUPER_ADMIN, '900001', 'Solaris12345', 'Super Admin', null);
+        $this->seed(Rbac::ADMIN, '900002', 'Solaris12345', 'Admin', null);
     }
 
     private function seed(string $role, ?string $nip, ?string $password, string $name, ?string $email): void
