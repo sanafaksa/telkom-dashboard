@@ -105,7 +105,10 @@ export function Badge({ tone = 'bg-slate-100 text-slate-600', children }) {
   );
 }
 
-export const RoleBadge = ({ role }) => <Badge tone={ROLE_TONE[role]}>{ROLE_LABEL[role] ?? role}</Badge>;
+/** Label dari server (role buatan Admin) diutamakan; role bawaan memakai label statis. */
+export const RoleBadge = ({ role, label }) => (
+  <Badge tone={ROLE_TONE[role] ?? 'bg-indigo-100 text-indigo-700'}>{label ?? ROLE_LABEL[role] ?? role}</Badge>
+);
 
 export function Notice({ tone = 'ok', children, onClose }) {
   if (!children) return null;

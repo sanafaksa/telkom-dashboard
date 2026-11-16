@@ -5,16 +5,17 @@ namespace App\Support;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
  * Sumber kebenaran role & permission SOLARIS.
  *
- * - Daftar role bersifat tetap (5 role).
+ * - Role bawaan (ROLES) selalu ada. Admin dapat membuat role baru yang disimpan di tabel roles.
  * - Katalog permission didefinisikan di sini; pemetaan role → permission
- *   disimpan di tabel role_permissions dan dapat diubah Super Admin.
- * - Super Admin selalu memiliki seluruh permission (tidak bisa dikurangi).
- * - Permission bertanda super-only tidak pernah bisa diberikan ke role lain.
+ *   disimpan di tabel role_permissions dan dapat diubah.
+ * - Super Admin selalu memiliki seluruh permission (tidak bisa dikurangi) dan hanya 1 akun.
+ * - Permission bertanda super-only (grup Sistem) tidak pernah bisa diberikan ke role lain.
  */
 class Rbac
 {
@@ -24,6 +25,7 @@ class Rbac
     public const SUPPORT     = 'support';
     public const USER        = 'user';
 
+    /** Role bawaan sistem (tidak bisa dihapus). Seed awal tabel roles. */
     public const ROLES = [
         self::SUPER_ADMIN => ['label' => 'Super Admin', 'description' => 'Developer / pemilik sistem. Akses penuh.'],
         self::ADMIN       => ['label' => 'Admin',       'description' => 'Pengelola administrasi dan operasional.'],
@@ -31,9 +33,6 @@ class Rbac
         self::SUPPORT     => ['label' => 'Support',     'description' => 'Fitur pelayanan dan dukungan.'],
         self::USER        => ['label' => 'User',        'description' => 'Halaman pengguna biasa.'],
     ];
-
-    /** Role yang boleh dikelola oleh Admin (bukan Super Admin). */
-    public const REGULAR_ROLES = [self::STAFF, self::SUPPORT, self::USER];
 
     /** key => [label, grup, super-only] */
     public const PERMISSIONS = [
@@ -55,10 +54,12 @@ class Rbac
         'users.reset_password' => ['Reset password pengguna', 'Administrasi', false],
         'users.toggle_active'  => ['Mengaktifkan / menonaktifkan pengguna', 'Administrasi', false],
         'audit.view'           => ['Melihat audit log (terbatas)', 'Administrasi', false],
+        'maintenance.manage'   => ['Mengatur mode pemeliharaan', 'Administrasi', false],
+        'roles.custom'         => ['Membuat & mengatur role buatan', 'Administrasi', false],
 
         'users.delete'         => ['Menghapus pengguna', 'Sistem', true],
         'admins.manage'        => ['Mengelola Admin & Super Admin', 'Sistem', true],
-        'roles.manage'         => ['Mengubah role & permission', 'Sistem', true],
+        'roles.manage'         => ['Mengubah role & permission bawaan', 'Sistem', true],
         'audit.view_all'       => ['Melihat seluruh audit log', 'Sistem', true],
         'system.config'        => ['System Configuration', 'Sistem', true],
         'auth.settings'        => ['Authentication Settings', 'Sistem', true],
@@ -76,13 +77,13 @@ class Rbac
             'dashboard.view', 'edk.view', 'edk.upload', 'edk.export', 'order_sjt.view', 'psak.view',
             'kuadran.view', 'kuadran.manage', 'mom.view', 'mom.manage',
             'admin.dashboard', 'users.view', 'users.create', 'users.update',
-            'users.reset_password', 'users.toggle_active', 'audit.view',
+            'users.reset_password', 'users.toggle_active', 'audit.view', 'maintenance.manage', 'roles.custom',
         ],
         self::STAFF => [
             'dashboard.view', 'edk.view', 'edk.upload', 'edk.export', 'order_sjt.view', 'psak.view',
             'kuadran.view', 'kuadran.manage', 'mom.view', 'mom.manage',
         ],
-        self::SUPPORT => ['dashboard.view', 'mom.view', 'mom.manage'],
+        self::SUPPORT => ['dashboard.view', 'mom.view', 'mom.manage', 'audit.view', 'maintenance.manage'],
         self::USER    => [
             'dashboard.view', 'edk.view', 'edk.export', 'order_sjt.view', 'psak.view', 'kuadran.view', 'mom.view',
         ],
@@ -91,29 +92,85 @@ class Rbac
     /** Scope yang boleh diberikan ke API key integrasi (hanya baca). */
     public const API_ABILITIES = ['dashboard.view', 'edk.view', 'edk.export', 'kuadran.view', 'mom.view'];
 
-    private const CACHE_KEY = 'rbac.matrix';
+    /** Permission Administrasi yang boleh diberikan ke Support (troubleshooting, di bawah Admin). */
+    public const SUPPORT_EXTRA = ['audit.view', 'maintenance.manage'];
+
+    private const CACHE_KEY       = 'rbac.matrix';
+    private const ROLES_CACHE_KEY = 'rbac.roles';
+
+    // ===== Daftar role (dari tabel roles) =====
+
+    /** key => ['label', 'description', 'is_system'] (termasuk Super Admin). */
+    public static function roles(): array
+    {
+        return Cache::rememberForever(self::ROLES_CACHE_KEY, function () {
+            return DB::table('roles')->orderBy('id')->get()
+                ->mapWithKeys(fn ($r) => [$r->key => [
+                    'label'       => $r->label,
+                    'description' => $r->description,
+                    'is_system'   => (bool) $r->is_system,
+                ]])
+                ->all();
+        });
+    }
 
     public static function roleKeys(): array
     {
-        return array_keys(self::ROLES);
+        return array_keys(self::roles());
     }
 
     public static function label(string $role): string
     {
-        return self::ROLES[$role]['label'] ?? $role;
+        return self::roles()[$role]['label'] ?? $role;
     }
 
-    /** Permission yang boleh diberikan ke role selain Super Admin. */
+    public static function isSystem(string $role): bool
+    {
+        return self::roles()[$role]['is_system'] ?? false;
+    }
+
+    /** Role yang dikelola Admin: semua kecuali Super Admin dan Admin. */
+    public static function regularRoles(): array
+    {
+        return array_values(array_diff(self::roleKeys(), [self::SUPER_ADMIN, self::ADMIN]));
+    }
+
+    // ===== Permission =====
+
+    /** Permission yang boleh diberikan ke role selain Super Admin (tanpa grup Sistem). */
     public static function grantable(): array
     {
         return array_keys(array_filter(self::PERMISSIONS, fn ($p) => ! $p[2]));
+    }
+
+    private static function operationalKeys(): array
+    {
+        return array_keys(array_filter(self::PERMISSIONS, fn ($p) => $p[1] === 'Operasional' && ! $p[2]));
+    }
+
+    /**
+     * Permission yang boleh diatur untuk satu role.
+     * - Admin: seluruh permission non-super.
+     * - Support: grup Operasional + SUPPORT_EXTRA.
+     * - Staff, User: hanya grup Operasional.
+     * - Role buatan Admin: seluruh permission non-super (grup Sistem tetap khusus Super Admin).
+     */
+    public static function grantableFor(string $role): array
+    {
+        return match (true) {
+            $role === self::SUPER_ADMIN => [],
+            $role === self::ADMIN       => self::grantable(),
+            $role === self::SUPPORT     => array_values(array_unique([...self::operationalKeys(), ...self::SUPPORT_EXTRA])),
+            in_array($role, [self::STAFF, self::USER], true) => self::operationalKeys(),
+            default                     => self::grantable(),
+        };
     }
 
     /** @return array<string, string[]> role => permission[] (tanpa super_admin) */
     public static function matrix(): array
     {
         return Cache::rememberForever(self::CACHE_KEY, function () {
-            $matrix = array_fill_keys([self::ADMIN, self::STAFF, self::SUPPORT, self::USER], []);
+            $matrix = array_fill_keys(self::regularRoles(), []);
             foreach (DB::table('role_permissions')->get(['role', 'permission']) as $row) {
                 if (isset($matrix[$row->role])) {
                     $matrix[$row->role][] = $row->permission;
@@ -130,12 +187,14 @@ class Rbac
             return array_keys(self::PERMISSIONS);
         }
 
-        return array_values(array_intersect(self::grantable(), self::matrix()[$role] ?? []));
+        $role = (string) $role;
+
+        return array_values(array_intersect(self::grantableFor($role), self::matrix()[$role] ?? []));
     }
 
     public static function setPermissions(string $role, array $permissions): void
     {
-        $permissions = array_values(array_intersect(self::grantable(), $permissions));
+        $permissions = array_values(array_intersect(self::grantableFor($role), $permissions));
 
         DB::transaction(function () use ($role, $permissions) {
             DB::table('role_permissions')->where('role', $role)->delete();
@@ -147,23 +206,74 @@ class Rbac
         self::flush();
     }
 
+    /** Buat role buatan Admin. Mengembalikan key role baru. */
+    public static function createRole(string $label, ?string $description, array $permissions): string
+    {
+        $base = Str::limit(Str::slug($label, '_'), 30, '');
+        $base = $base !== '' ? $base : 'role';
+        $key  = $base;
+        $n    = 2;
+        while (DB::table('roles')->where('key', $key)->exists() || isset(self::ROLES[$key])) {
+            $key = $base . '_' . $n++;
+        }
+
+        DB::table('roles')->insert([
+            'key'         => $key,
+            'label'       => $label,
+            'description' => $description,
+            'is_system'   => false,
+            'created_at'  => now(),
+            'updated_at'  => now(),
+        ]);
+
+        self::flush();
+        self::setPermissions($key, $permissions);
+
+        return $key;
+    }
+
+    /**
+     * Hapus role buatan. Akun yang memakai role ini dipindahkan ke role User.
+     * Mengembalikan jumlah akun yang dipindahkan.
+     */
+    public static function deleteRole(string $role): int
+    {
+        $moved = User::where('role', $role)->update(['role' => self::USER]);
+
+        DB::transaction(function () use ($role) {
+            DB::table('role_permissions')->where('role', $role)->delete();
+            DB::table('roles')->where('key', $role)->delete();
+        });
+
+        self::flush();
+
+        return $moved;
+    }
+
     public static function flush(): void
     {
         Cache::forget(self::CACHE_KEY);
+        Cache::forget(self::ROLES_CACHE_KEY);
     }
 
     // ===== Aturan pengelolaan pengguna (anti privilege escalation) =====
 
-    /** Role yang boleh diberikan $actor kepada pengguna lain. */
+    /** Role yang boleh diberikan $actor kepada pengguna lain. Super Admin tidak pernah bisa diberikan. */
     public static function assignableRoles(User $actor): array
     {
-        return $actor->isSuperAdmin() ? self::roleKeys() : self::REGULAR_ROLES;
+        return $actor->isSuperAdmin()
+            ? array_values(array_merge([self::ADMIN], self::regularRoles()))
+            : self::regularRoles();
     }
 
     /** Apakah $actor boleh mengubah akun $target (di luar pengecekan permission). */
     public static function canManage(User $actor, User $target): bool
     {
-        return $actor->isSuperAdmin() || in_array($target->role, self::REGULAR_ROLES, true);
+        if ($actor->isSuperAdmin()) {
+            return true;
+        }
+
+        return ! in_array($target->role, [self::SUPER_ADMIN, self::ADMIN], true);
     }
 
     /**

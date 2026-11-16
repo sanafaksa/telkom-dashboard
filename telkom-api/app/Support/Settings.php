@@ -19,6 +19,10 @@ class Settings
         'maintenance_mode'    => ['general', 'bool', false, 'Mode pemeliharaan (hanya Super Admin yang bisa masuk)', 'boolean'],
         'maintenance_message' => ['general', 'string', 'Sistem sedang dalam pemeliharaan. Silakan coba beberapa saat lagi.', 'Pesan pemeliharaan', 'nullable|string|max:300'],
 
+        'maintenance_schedule_at'      => ['maintenance', 'string', '', 'Waktu pemeliharaan terjadwal (ISO 8601, kosong = tidak ada)', 'nullable|date'],
+        'maintenance_lead_minutes'     => ['maintenance', 'int', 10, 'Pengingat tampil berapa menit sebelum mulai', 'sometimes|required|integer|min:1|max:1440'],
+        'maintenance_reminder_message' => ['maintenance', 'string', 'Pemeliharaan sistem akan segera dimulai. Simpan pekerjaan Anda.', 'Pesan pengingat', 'nullable|string|max:300'],
+
         'session_hours'       => ['auth', 'int', 12, 'Durasi sesi login (jam)', 'required|integer|min:1|max:168'],
         'remember_days'       => ['auth', 'int', 30, 'Durasi sesi "Ingat saya" (hari)', 'required|integer|min:1|max:90'],
         'login_max_attempts'  => ['auth', 'int', 5, 'Maksimal percobaan login per menit', 'required|integer|min:3|max:30'],

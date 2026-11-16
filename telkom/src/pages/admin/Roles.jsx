@@ -1,17 +1,29 @@
 import { Fragment, useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Lock, Save } from 'lucide-react';
+import { Lock, Plus, Save, Trash2 } from 'lucide-react';
 import { adminApi } from '../../features/admin/api';
-import { getUser } from '../../features/auth/auth';
+import { can, getUser } from '../../features/auth/auth';
 import { Btn, Card, errText, Field, inputCls, Modal, Notice, Page, Query, RoleBadge } from '../../features/admin/kit';
 
 const IDLE_LOCK_MS = 5 * 60 * 1000;
+const SUPPORT_EXTRA = ['audit.view', 'maintenance.manage'];
 
 const draftFrom = (data) => Object.fromEntries(data.roles.map((r) => [r.key, new Set(r.permissions)]));
 
 const isDirty = (role, draft) => {
   const now = draft[role.key];
   return !!now && (now.size !== role.permissions.length || role.permissions.some((p) => !now.has(p)));
+};
+
+// Aturan per role (sama dengan Rbac::grantableFor di backend):
+// - Super Admin: tidak diatur di sini.
+// - Admin & role buatan: semua permission non-super.
+// - Support: Operasional + SUPPORT_EXTRA. Staff & User: hanya Operasional.
+const restricted = (roleKey, p) => {
+  if (roleKey === 'admin' || roleKey === 'super_admin') return false;
+  if (p.group === 'Operasional') return false;
+  if (roleKey === 'support' && SUPPORT_EXTRA.includes(p.key)) return false;
+  return ['staff', 'support', 'user'].includes(roleKey);
 };
 
 function UnlockModal({ onClose, onVerified }) {
@@ -30,7 +42,7 @@ function UnlockModal({ onClose, onVerified }) {
   return (
     <Modal
       title="Buka Kunci Akses"
-      sub="Masukkan kata sandi Super Admin Anda untuk mengubah permission."
+      sub="Masukkan kata sandi Super Admin Anda untuk mengubah role bawaan."
       onClose={onClose}
       footer={
         <>
@@ -58,19 +70,70 @@ function UnlockModal({ onClose, onVerified }) {
   );
 }
 
+function CreateRoleModal({ onClose, onCreated }) {
+  const [label, setLabel] = useState('');
+  const [description, setDescription] = useState('');
+
+  const create = useMutation({
+    mutationFn: () => adminApi.createRole({ label: label.trim(), description: description.trim() || null, permissions: [] }),
+    onSuccess: onCreated,
+  });
+
+  const submit = (e) => {
+    e.preventDefault();
+    if (label.trim()) create.mutate();
+  };
+
+  return (
+    <Modal
+      title="Tambah role"
+      sub="Role baru dibuat tanpa permission. Atur permission-nya di tabel setelah role dibuat."
+      onClose={onClose}
+      footer={
+        <>
+          <Btn onClick={onClose}>Batal</Btn>
+          <Btn variant="primary" busy={create.isPending} disabled={!label.trim()} onClick={submit}>
+            Buat role
+          </Btn>
+        </>
+      }
+    >
+      <form onSubmit={submit} className="space-y-4">
+        <Field label="Nama role" hint="Contoh: AM, Account Manager, Pengawas Witel">
+          <input className={`${inputCls} mt-1`} maxLength={60} value={label} onChange={(e) => setLabel(e.target.value)} autoFocus />
+        </Field>
+        <Field label="Deskripsi (opsional)">
+          <input className={`${inputCls} mt-1`} maxLength={255} value={description} onChange={(e) => setDescription(e.target.value)} />
+        </Field>
+        {create.isError && <Notice tone="bad">{errText(create.error)}</Notice>}
+      </form>
+    </Modal>
+  );
+}
+
 function Matrix({ data }) {
   const qc = useQueryClient();
   const [draft, setDraft] = useState(() => draftFrom(data));
   const [isLocked, setIsLocked] = useState(true);
   const [showUnlock, setShowUnlock] = useState(false);
   const [msg, setMsg] = useState(null);
+  const [activity, setActivity] = useState(0);
+
+  const isSuper = getUser()?.role === 'super_admin';
+  const canCustom = can('roles.custom');
+
+  // Role bawaan hanya bisa diubah Super Admin yang sudah membuka kunci. Role buatan bisa diubah Admin langsung.
+  const canEdit = (r) => {
+    if (r.key === 'super_admin') return false;
+    if (r.is_system) return isSuper && !isLocked;
+    return canCustom;
+  };
 
   useEffect(() => {
     setDraft(draftFrom(data));
   }, [data]);
 
-  const isSuper = getUser()?.role === 'super_admin';
-  const changed = data.roles.filter((r) => !r.locked && isDirty(r, draft));
+  const changed = data.roles.filter((r) => canEdit(r) && !r.locked && isDirty(r, draft));
 
   const save = useMutation({
     mutationFn: () => Promise.all(changed.map((r) => adminApi.updateRole(r.key, [...draft[r.key]]))),
@@ -79,6 +142,16 @@ function Matrix({ data }) {
     },
     onError: (e) => setMsg({ tone: 'bad', text: errText(e) }),
     onSettled: () => qc.invalidateQueries({ queryKey: ['admin', 'roles'] }),
+  });
+
+  const remove = useMutation({
+    mutationFn: (key) => adminApi.deleteRole(key),
+    onSuccess: (res) => setMsg({ tone: 'ok', text: res.message }),
+    onError: (e) => setMsg({ tone: 'bad', text: errText(e) }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'roles'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+    },
   });
 
   const toggle = (role, perm) =>
@@ -94,9 +167,7 @@ function Matrix({ data }) {
     setIsLocked(true);
   };
 
-  // Kunci otomatis setelah IDLE_LOCK_MS tanpa aktivitas (klik atau tombol) saat terbuka.
-  const [activity, setActivity] = useState(0);
-
+  // Kunci otomatis setelah IDLE_LOCK_MS tanpa aktivitas saat role bawaan terbuka.
   useEffect(() => {
     if (isLocked) return undefined;
     const bump = () => setActivity((n) => n + 1);
@@ -114,6 +185,12 @@ function Matrix({ data }) {
     return () => clearTimeout(id);
   }, [isLocked, activity]);
 
+  const grantableKeysFor = (roleKey) =>
+    data.permissions.filter((p) => !p.super_only && !restricted(roleKey, p)).map((p) => p.key);
+  const allChecked = (roleKey) => grantableKeysFor(roleKey).every((k) => draft[roleKey]?.has(k));
+  const toggleAllFor = (roleKey) =>
+    setDraft((d) => ({ ...d, [roleKey]: allChecked(roleKey) ? new Set() : new Set(grantableKeysFor(roleKey)) }));
+
   const groups = [...new Set(data.permissions.map((p) => p.group))];
 
   return (
@@ -125,12 +202,40 @@ function Matrix({ data }) {
             <thead>
               <tr className="border-b border-line">
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-mute">Permission</th>
-                {data.roles.map((r) => (
-                  <th key={r.key} className="px-3 py-3 text-center align-top">
-                    <RoleBadge role={r.key} />
-                    <p className="mt-1 text-[10px] font-normal text-mute">{r.users} pengguna</p>
-                  </th>
-                ))}
+                {data.roles.map((r) => {
+                  const editable = canEdit(r) && !r.locked;
+                  return (
+                    <th key={r.key} className="px-3 py-3 text-center align-top">
+                      <RoleBadge role={r.key} label={r.label} />
+                      {editable && (
+                        <div className="mt-1.5 flex justify-center">
+                          <input
+                            type="checkbox"
+                            className="size-4 cursor-pointer accent-[#2563EB]"
+                            checked={allChecked(r.key)}
+                            onChange={() => toggleAllFor(r.key)}
+                            aria-label={`Pilih semua permission untuk ${r.label}`}
+                            title="Pilih semua / hapus semua"
+                          />
+                        </div>
+                      )}
+                      <p className="mt-1 text-[10px] font-normal text-mute">{r.users} pengguna</p>
+                      {canCustom && !r.is_system && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm(`Hapus role ${r.label}? Akun yang memakai role ini akan dipindahkan ke role User.`)) {
+                              remove.mutate(r.key);
+                            }
+                          }}
+                          className="mt-1 inline-flex items-center gap-1 text-[10px] text-rose-600 hover:underline cursor-pointer"
+                        >
+                          <Trash2 size={11} /> Hapus role
+                        </button>
+                      )}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
@@ -150,8 +255,8 @@ function Matrix({ data }) {
                           <code className="ml-2 text-[10px] text-slate-400">{p.key}</code>
                         </td>
                         {data.roles.map((r) => {
-                          const locked = r.locked || p.super_only;
-                          const checked = r.locked ? true : !p.super_only && !!draft[r.key]?.has(p.key);
+                          const locked = r.locked || p.super_only || restricted(r.key, p);
+                          const checked = r.locked ? true : !locked && !!draft[r.key]?.has(p.key);
                           return (
                             <td key={r.key} className="px-3 py-2 text-center">
                               {locked && !checked ? (
@@ -161,7 +266,7 @@ function Matrix({ data }) {
                                   type="checkbox"
                                   className="size-4 cursor-pointer accent-[#2563EB] disabled:cursor-not-allowed"
                                   checked={checked}
-                                  disabled={isLocked || locked}
+                                  disabled={!canEdit(r) || locked}
                                   onChange={() => toggle(r.key, p.key)}
                                   aria-label={`${p.label} untuk ${r.label}`}
                                 />
@@ -196,19 +301,19 @@ function Matrix({ data }) {
               </Btn>
             ))}
           <span>
-            {!isSuper
-              ? 'Hanya Super Admin yang dapat mengubah permission.'
-              : isLocked
-              ? 'Terkunci. Buka kunci untuk mengubah permission.'
-              : changed.length
-                ? `${changed.length} role berubah belum disimpan.`
-                : `Tidak ada perubahan. Terkunci otomatis setelah ${IDLE_LOCK_MS / 60000} menit tanpa aktivitas.`}
+            {changed.length
+              ? `${changed.length} role berubah belum disimpan.`
+              : isSuper && isLocked
+              ? 'Role bawaan terkunci. Buka kunci untuk mengubahnya.'
+              : isSuper
+              ? `Tidak ada perubahan. Terkunci otomatis setelah ${IDLE_LOCK_MS / 60000} menit tanpa aktivitas.`
+              : 'Role buatan Anda bisa diatur langsung. Role bawaan hanya dapat diubah Super Admin.'}
           </span>
         </div>
         <Btn
           variant="primary"
           icon={Save}
-          disabled={!isSuper || isLocked || changed.length === 0}
+          disabled={changed.length === 0}
           busy={save.isPending}
           onClick={() => save.mutate()}
         >
@@ -222,7 +327,7 @@ function Matrix({ data }) {
           onVerified={() => {
             setIsLocked(false);
             setShowUnlock(false);
-            setMsg({ tone: 'ok', text: 'Akses dibuka. Anda dapat mengubah permission.' });
+            setMsg({ tone: 'ok', text: 'Akses dibuka. Anda dapat mengubah role bawaan.' });
           }}
         />
       )}
@@ -231,11 +336,36 @@ function Matrix({ data }) {
 }
 
 export default function Roles() {
+  const [showCreate, setShowCreate] = useState(false);
+  const [msg, setMsg] = useState(null);
+  const qc = useQueryClient();
   const q = useQuery({ queryKey: ['admin', 'roles'], queryFn: adminApi.roles });
 
   return (
-    <Page title="Role & Permission" sub="Atur permission tiap role. Perubahan berlaku pada request berikutnya dari setiap pengguna.">
+    <Page
+      title="Role & Permission"
+      sub="Atur permission tiap role. Perubahan berlaku pada request berikutnya dari setiap pengguna."
+      actions={
+        can('roles.custom') && (
+          <Btn variant="primary" icon={Plus} onClick={() => setShowCreate(true)}>
+            Tambah role
+          </Btn>
+        )
+      }
+    >
+      <Notice tone={msg?.tone} onClose={() => setMsg(null)}>{msg?.text}</Notice>
       <Query q={q}>{(d) => <Matrix data={d} />}</Query>
+
+      {showCreate && (
+        <CreateRoleModal
+          onClose={() => setShowCreate(false)}
+          onCreated={() => {
+            setShowCreate(false);
+            setMsg({ tone: 'ok', text: 'Role baru dibuat. Centang permission-nya di tabel di bawah.' });
+            qc.invalidateQueries({ queryKey: ['admin', 'roles'] });
+          }}
+        />
+      )}
     </Page>
   );
 }

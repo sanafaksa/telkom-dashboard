@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Support\Audit;
+use App\Support\Maintenance;
 use App\Support\Rbac;
 use App\Support\Settings;
 use Illuminate\Http\Request;
@@ -48,7 +49,9 @@ class AuthController extends Controller
             ]);
         }
 
-        if (!$user->isSuperAdmin() && Settings::get('maintenance_mode')) {
+        Maintenance::activateIfDue();
+
+        if (!in_array($user->role, [Rbac::SUPER_ADMIN, Rbac::SUPPORT], true) && Settings::get('maintenance_mode')) {
             throw ValidationException::withMessages([
                 'nip' => Settings::get('maintenance_message'),
             ]);

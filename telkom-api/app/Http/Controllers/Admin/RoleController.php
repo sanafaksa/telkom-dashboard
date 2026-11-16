@@ -16,10 +16,10 @@ class RoleController extends Controller
     public function index(Request $request)
     {
         $isSuper = $request->user()->isSuperAdmin();
-        $counts = User::query()->selectRaw('role, count(*) as total')->groupBy('role')->pluck('total', 'role');
+        $counts  = User::query()->selectRaw('role, count(*) as total')->groupBy('role')->pluck('total', 'role');
 
         $roles = [];
-        foreach (Rbac::ROLES as $key => $info) {
+        foreach (Rbac::roles() as $key => $info) {
             // Admin tidak melihat role Super Admin
             if (! $isSuper && $key === Rbac::SUPER_ADMIN) {
                 continue;
@@ -28,6 +28,7 @@ class RoleController extends Controller
                 'key'         => $key,
                 'label'       => $info['label'],
                 'description' => $info['description'],
+                'is_system'   => $info['is_system'],
                 'users'       => (int) ($counts[$key] ?? 0),
                 'locked'      => $key === Rbac::SUPER_ADMIN,
                 'permissions' => Rbac::permissionsFor($key),
@@ -40,16 +41,38 @@ class RoleController extends Controller
             if (! $isSuper && $superOnly) {
                 continue;
             }
-            $permissions[] =['key' => $key, 'label' => $label, 'group' => $group, 'super_only' => $superOnly];
+            $permissions[] = ['key' => $key, 'label' => $label, 'group' => $group, 'super_only' => $superOnly];
         }
 
         return response()->json(['roles' => $roles, 'permissions' => $permissions]);
     }
 
+    /** Buat role baru (buatan Admin) dengan permission pilihan. */
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'label'         => 'required|string|max:60',
+            'description'   => 'nullable|string|max:255',
+            'permissions'   => 'present|array',
+            'permissions.*' => ['string', Rule::in(Rbac::grantableFor('custom'))],
+        ]);
+
+        $key = Rbac::createRole($data['label'], $data['description'] ?? null, $data['permissions']);
+
+        Audit::log('role.created', null, [
+            'role'       => $key,
+            'label'      => $data['label'],
+            'permissions' => Rbac::permissionsFor($key),
+        ]);
+
+        return response()->json(['role' => $key, 'permissions' => Rbac::permissionsFor($key)], 201);
+    }
+
     public function update(Request $request, string $role)
     {
-        abort_unless(isset(Rbac::ROLES[$role]), 404);
+        abort_unless(isset(Rbac::roles()[$role]), 404);
         abort_if($role === Rbac::SUPER_ADMIN, 403, 'Permission Super Admin tidak dapat diubah.');
+        abort_if(Rbac::isSystem($role) && ! $request->user()->isSuperAdmin(), 403, 'Role bawaan hanya dapat diubah Super Admin.');
 
         $data = $request->validate([
             'permissions'   => 'present|array',
@@ -70,7 +93,21 @@ class RoleController extends Controller
         return response()->json(['role' => $role, 'permissions' => $after]);
     }
 
-    /** Verifikasi password Super Admin yang sedang login sebelum matriks permission boleh diubah. */
+    /** Hapus role buatan. Akun yang memakainya dipindahkan ke role User. Role bawaan tidak bisa dihapus. */
+    public function destroy(Request $request, string $role)
+    {
+        abort_unless(isset(Rbac::roles()[$role]), 404);
+        abort_if(Rbac::isSystem($role), 403, 'Role bawaan sistem tidak dapat dihapus.');
+
+        $label = Rbac::label($role);
+        $moved = Rbac::deleteRole($role);
+
+        Audit::log('role.deleted', null, ['role' => $role, 'label' => $label, 'akun_dipindahkan_ke_user' => $moved]);
+
+        return response()->json(['message' => "Role {$label} dihapus. {$moved} akun dipindahkan ke role User."]);
+    }
+
+    /** Verifikasi password Super Admin yang sedang login sebelum matriks role bawaan boleh diubah. */
     public function verifyPassword(Request $request)
     {
         abort_unless($request->user()->isSuperAdmin(), 403, 'Hanya Super Admin yang dapat membuka kunci.');

@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   KeyRound,
   ScrollText,
-  SlidersHorizontal,
+  Wrench,
   Fingerprint,
   ShieldAlert,
   Database,
@@ -48,12 +48,12 @@ export const NAV = [
       { to: '/admin/admins', icon: ShieldCheck, label: 'Admin Management', desc: 'Kelola Admin & Super Admin', perm: 'admins.manage' },
       { to: '/admin/roles', icon: KeyRound, label: 'Role & Permission', desc: 'Atur permission tiap role', perm: 'roles.manage' },
       { to: '/admin/audit-logs', icon: ScrollText, label: 'Audit Logs', desc: 'Riwayat aktivitas sistem', perm: ['audit.view', 'audit.view_all'] },
+      { to: '/admin/maintenance', icon: Wrench, label: 'Mode Pemeliharaan', desc: 'Atur maintenance sistem', perm: 'maintenance.manage' },
     ],
   },
   {
     section: 'Sistem',
     items: [
-      { to: '/admin/system-config', icon: SlidersHorizontal, label: 'System Configuration', desc: 'Pengumuman & mode pemeliharaan', perm: 'system.config' },
       { to: '/admin/auth-settings', icon: Fingerprint, label: 'Authentication Settings', desc: 'Sesi, rate limit & aturan password', perm: 'auth.settings' },
       { to: '/admin/security', icon: ShieldAlert, label: 'Security Center', desc: 'Login gagal & sesi aktif', perm: 'security.center' },
       { to: '/admin/database', icon: Database, label: 'Database Management', desc: 'Tabel, jumlah baris & migration', perm: 'database.manage' },

@@ -30,6 +30,9 @@ use Illuminate\Support\Facades\Route;
 // ===== Auth (NIP + password) =====
 Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
+// Status sistem publik untuk notifikasi pemeliharaan (polling dari frontend, tanpa login)
+Route::get('system/status', [\App\Http\Controllers\SystemStatusController::class, 'show'])->middleware('throttle:120,1');
+
 Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::get('auth/me', [AuthController::class, 'me']);
     Route::post('auth/logout', [AuthController::class, 'logout']);
@@ -95,6 +98,12 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     // ===== Administrasi =====
     Route::prefix('admin')->middleware('throttle:admin')->group(function () {
+        // Mode pemeliharaan (Admin & Support)
+        Route::middleware('permission:maintenance.manage')->group(function () {
+            Route::get('maintenance', [\App\Http\Controllers\Admin\MaintenanceController::class, 'show']);
+            Route::put('maintenance', [\App\Http\Controllers\Admin\MaintenanceController::class, 'update']);
+        });
+
         Route::get('overview', [OverviewController::class, 'index'])->middleware('permission:admin.dashboard');
 
         // User Management & Admin Management
@@ -106,11 +115,16 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::delete('users/{user}', [UserController::class, 'destroy'])->middleware('permission:users.delete');
 
         // Role & Permission
-        Route::middleware('permission:roles.manage')->group(function () {
+        // Lihat & atur role: Super Admin (roles.manage) atau Admin (roles.custom, untuk role buatan).
+        // Pengecekan role bawaan dilakukan di RoleController::update.
+        Route::middleware('permission:roles.manage,roles.custom')->group(function () {
             Route::get('roles', [RoleController::class, 'index']);
-            Route::post('roles/verify-password', [RoleController::class, 'verifyPassword'])->middleware('throttle:10,1');
             Route::put('roles/{role}', [RoleController::class, 'update']);
         });
+        Route::post('roles', [RoleController::class, 'store'])->middleware('permission:roles.custom');
+        Route::delete('roles/{role}', [RoleController::class, 'destroy'])->middleware('permission:roles.custom');
+        Route::post('roles/verify-password', [RoleController::class, 'verifyPassword'])
+            ->middleware(['permission:roles.manage', 'throttle:10,1']);
 
         // System Configuration / Authentication Settings / Email Configuration
         // (permission per grup dicek di SettingController)

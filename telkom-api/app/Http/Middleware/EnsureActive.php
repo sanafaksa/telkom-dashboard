@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Maintenance;
 use App\Support\Settings;
 use Closure;
 use Illuminate\Http\Request;
@@ -23,7 +24,9 @@ class EnsureActive
             abort(401, 'Akun Anda dinonaktifkan. Hubungi administrator.');
         }
 
-        if ($user && ! $user->isSuperAdmin() && Settings::get('maintenance_mode')) {
+        Maintenance::activateIfDue();
+
+        if ($user && ! in_array($user->role, [\App\Support\Rbac::SUPER_ADMIN, \App\Support\Rbac::SUPPORT], true) && Settings::get('maintenance_mode')) {
             abort(503, Settings::get('maintenance_message'));
         }
 

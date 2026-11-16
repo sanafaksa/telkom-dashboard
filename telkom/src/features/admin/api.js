@@ -12,6 +12,8 @@ export const adminApi = {
 
   roles: () => apiGet('/admin/roles'),
   updateRole: (role, permissions) => apiPut(`/admin/roles/${role}`, { permissions }),
+  createRole: (body) => apiPost('/admin/roles', body),
+  deleteRole: (role) => apiDelete(`/admin/roles/${role}`),
   verifyRolePassword: (password) => apiPost('/admin/roles/verify-password', { password }),
 
   settings: (group) => apiGet(`/admin/settings/${group}`),
@@ -23,6 +25,9 @@ export const adminApi = {
   revokeSession: (id) => apiDelete(`/admin/security/sessions/${id}`),
 
   auditLogs: (params) => apiGet('/audit-logs', params),
+
+  maintenance: () => apiGet('/admin/maintenance'),
+  saveMaintenance: (body) => apiPut('/admin/maintenance', body),
 
   database: () => apiGet('/admin/database'),
   table: (name) => apiGet(`/admin/database/tables/${encodeURIComponent(name)}`),

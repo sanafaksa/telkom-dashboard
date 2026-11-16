@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
 import { ShieldX } from 'lucide-react';
 import Layout from './components/Layout';
 import SessionExpiredOverlay from './components/SessionExpiredOverlay';
+import SystemStatusGate from './components/SystemStatusGate';
 import DraftNotice from './components/DraftNotice';
 import { can, isLoggedIn } from './features/auth/auth';
 
@@ -45,6 +46,7 @@ const Login = P('Login');
 
 const Users = A('Users');
 const Roles = A('Roles');
+const Maintenance = A('Maintenance');
 const AuditLogs = A('AuditLogs');
 const SettingsPage = A('SettingsPage');
 const Security = A('Security');
@@ -67,6 +69,7 @@ export default function App() {
   return (
     <Suspense fallback={<p className="p-8 text-center text-slate-400">Memuat…</p>}>
       <SessionExpiredOverlay />
+      <SystemStatusGate />
       <Routes>
         {/* Halaman Login mandiri tanpa Layout Dashboard */}
         <Route path="/login" element={<Login />} />
@@ -100,6 +103,7 @@ export default function App() {
                     {guarded('/admin/admins', 'admins.manage', <Users key="admins" scope="admins" />)}
                     {guarded('/admin/roles', 'roles.manage', <Roles />)}
                     {guarded('/admin/audit-logs', ['audit.view', 'audit.view_all'], <AuditLogs />)}
+                    {guarded('/admin/maintenance', 'maintenance.manage', <Maintenance />)}
 
                     {/* Sistem (Super Admin) */}
                     {guarded('/admin/system-config', 'system.config', <SettingsPage key="general" group="general" />)}

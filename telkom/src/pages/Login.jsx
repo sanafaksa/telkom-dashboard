@@ -176,7 +176,7 @@ export default function Login() {
   const isGranted = authStatus === 'granted' || authStatus === 'opening_up';
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-[#F6F8FC] font-sans selection:bg-blue-500/25">
+    <div className="relative min-h-screen lg:h-screen w-full overflow-hidden bg-[#F6F8FC] font-sans selection:bg-blue-500/25">
       {/* ==================================================================== */}
       {/* ==================================================================== */}
       {/* UNDERNEATH PORTAL REVEAL (Tersingkap saat pintu geser terbuka)      */}
@@ -229,7 +229,7 @@ export default function Login() {
       {/* MAIN LOGIN STAGE (AUTOMATIC SLIDING DOORS - GESER KIRI & KANAN)     */}
       {/* ==================================================================== */}
       <div
-        className={`relative z-10 min-h-screen w-full flex flex-col lg:flex-row overflow-hidden ${
+        className={`relative z-10 min-h-screen lg:h-screen w-full flex flex-col lg:flex-row overflow-hidden ${
           isTransitioning ? 'pointer-events-none' : ''
         }`}
       >
@@ -352,7 +352,7 @@ export default function Login() {
         {/* RIGHT DOOR WING: Sleek Modern Login Container (Slides Right)      */}
         {/* ================================================================= */}
         <div
-          className={`flex-1 lg:w-1/2 flex flex-col justify-between p-6 sm:p-10 lg:p-12 xl:p-14 bg-gradient-to-br from-[#F8FAFC] via-[#F1F5F9] to-[#E2E8F0] relative overflow-y-auto will-change-transform transition-transform duration-[750ms] ease-[cubic-bezier(0.65,0,0.35,1)] ${
+          className={`flex-1 lg:w-1/2 flex flex-col justify-between p-6 sm:p-8 lg:px-10 lg:py-6 xl:px-14 xl:py-6 bg-gradient-to-br from-[#F8FAFC] via-[#F1F5F9] to-[#E2E8F0] relative overflow-y-auto will-change-transform transition-transform duration-[750ms] ease-[cubic-bezier(0.65,0,0.35,1)] ${
             isTransitioning ? 'translate-x-full' : 'translate-x-0'
           }`}
           style={{
@@ -395,9 +395,9 @@ export default function Login() {
 
           {/* Centered Login Card */}
           <div className="relative z-10 max-w-[430px] w-full mx-auto my-auto py-2">
-            <div className="bg-white rounded-[20px] border border-slate-200 shadow-[0_25px_50px_-12px_rgba(15,23,42,0.18)] p-7 sm:p-10 transition-all">
+            <div className="bg-white rounded-[20px] border border-slate-200 shadow-[0_25px_50px_-12px_rgba(15,23,42,0.18)] p-6 sm:p-7 transition-all">
               {/* Form Title & Badge */}
-              <div className="mb-7">
+              <div className="mb-5">
                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-[#1447B8] text-xs font-semibold mb-4">
                   <KeyRound size={13} className="text-[#1447B8]" />
                   <span>Portal Akses Solaris Dashboard</span>
@@ -419,7 +419,7 @@ export default function Login() {
               )}
 
               {/* Main Form */}
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-3">
                 {/* Email / NIK */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">
@@ -509,7 +509,7 @@ export default function Login() {
                 <button
                   type="submit"
                   disabled={isVerifying || isGranted}
-                  className={`w-full mt-3 py-3.5 px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-lg shadow-slate-900/10 active:scale-[0.99] select-none ${
+                  className={`w-full mt-2 py-3 px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-lg shadow-slate-900/10 active:scale-[0.99] select-none ${
                     isGranted
                       ? 'bg-emerald-600 text-white shadow-emerald-600/30'
                       : isVerifying
@@ -537,7 +537,7 @@ export default function Login() {
               </form>
 
               {/* IT Helpdesk Information */}
-              <div className="mt-6 text-center">
+              <div className="mt-4 text-center">
                 <p className="text-[11px] text-slate-500">
                   Mengalami kendala otentikasi?{' '}
                   <button
@@ -554,7 +554,7 @@ export default function Login() {
 
 
           {/* Footer Copyright */}
-          <div className="relative z-10 pt-4 text-center text-xs text-slate-500 border-t border-slate-200/60">
+          <div className="relative z-10 pt-3 text-center text-xs text-slate-500 border-t border-slate-200/60">
             <p>© 2026 PT Telkom Indonesia (Persero) Tbk. Seluruh hak cipta dilindungi.</p>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import DotGlow from './DotGlow';
+import { SystemBanners } from './SystemStatusGate';
 import {
   Home,
   BarChart2,
@@ -521,7 +522,7 @@ export default function Layout({ children }) {
                     ROLE_TONE[user?.role] ?? 'bg-slate-100 text-slate-500'
                   }`}
                 >
-                  {ROLE_LABEL[user?.role] ?? user?.role ?? '-'}
+                  {user?.role_label ?? ROLE_LABEL[user?.role] ?? user?.role ?? '-'}
                 </span>
                 <ChevronDown size={13} className="text-slate-400 group-hover:text-slate-600 transition-colors" />
               </div>
@@ -712,12 +713,7 @@ export default function Layout({ children }) {
         </div>
       </header>
 
-      {user?.announcement && (
-        <div className="mx-4 md:mx-8 mt-2 flex items-start gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-medium text-amber-800">
-          <BellRing size={14} className="mt-0.5 shrink-0" />
-          <span>{user.announcement}</span>
-        </div>
-      )}
+      <SystemBanners />
 
       <main className="p-4 md:p-8 max-w-[1440px] mx-auto page-enter">{children}</main>
     </div>

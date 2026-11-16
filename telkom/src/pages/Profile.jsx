@@ -34,7 +34,7 @@ function ProfileForm({ user, onSaved }) {
             <input className={inputCls} value={user.nip ?? ''} disabled />
           </Field>
           <Field label="Role">
-            <div className="py-2"><RoleBadge role={user.role} /></div>
+            <div className="py-2"><RoleBadge role={user.role} label={user.role_label} /></div>
           </Field>
           <Field label="Nama lengkap">
             <input className={inputCls} value={form.name} required maxLength={255} onChange={(e) => setForm({ ...form, name: e.target.value })} />

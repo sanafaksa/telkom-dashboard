@@ -34,7 +34,7 @@ class UserController extends Controller
                 ->orWhere('email', 'like', "%{$v}%")))
             ->when($data['role'] ?? null, fn ($q, $v) => $q->where('role', $v))
             ->when(($data['scope'] ?? null) === 'admins', fn ($q) => $q->whereIn('role', [Rbac::SUPER_ADMIN, Rbac::ADMIN]))
-            ->when(($data['scope'] ?? null) === 'users', fn ($q) => $q->whereIn('role', Rbac::REGULAR_ROLES))
+            ->when(($data['scope'] ?? null) === 'users', fn ($q) => $q->whereIn('role', Rbac::regularRoles()))
             ->when($data['status'] ?? null, fn ($q, $v) => $q->where('is_active', $v === 'active'))
             ->orderBy('name')
             ->paginate(20);
@@ -47,6 +47,11 @@ class UserController extends Controller
                 fn ($r) => ['key' => $r, 'label' => Rbac::label($r)],
                 Rbac::assignableRoles($actor)
             ),
+            // Daftar role untuk filter (Super Admin tidak ditampilkan ke Admin)
+            'roles' => collect(Rbac::roles())
+                ->filter(fn ($info, $key) => $actor->isSuperAdmin() || $key !== Rbac::SUPER_ADMIN)
+                ->map(fn ($info, $key) => ['key' => $key, 'label' => $info['label']])
+                ->values(),
             'password_min_length' => Settings::get('password_min_length'),
         ]);
     }

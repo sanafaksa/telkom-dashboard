@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { KeyRound, Pencil, Plus, Power, Search, Trash2 } from 'lucide-react';
-import { can, getUser } from '../../features/auth/auth';
+import { can } from '../../features/auth/auth';
 import { adminApi } from '../../features/admin/api';
 import { Badge, Btn, Card, DataTable, errText, Field, fmtDate, inputCls, Modal, Notice, Page, Pager, Query, RoleBadge } from '../../features/admin/kit';
 
@@ -163,10 +163,8 @@ export default function Users({ scope = 'users' }) {
                   {scope !== 'admins' && (
                     <select className={`${inputCls} !w-auto`} value={filters.role} onChange={setFilter('role')} aria-label="Filter role">
                       <option value="">Semua role</option>
-                      {['super_admin', 'admin', 'staff', 'support', 'user']
-                        .filter((r) => r !== 'super_admin' || getUser()?.role === 'super_admin')
-                        .map((r) => (
-                        <option key={r} value={r}>{r.replace('_', ' ')}</option>
+                      {d.roles.map((r) => (
+                        <option key={r.key} value={r.key}>{r.label}</option>
                       ))}
                     </select>
                   )}
@@ -193,7 +191,7 @@ export default function Users({ scope = 'users' }) {
                       ),
                     },
                     { key: 'nip', label: 'NIP', render: (u) => u.nip ?? <span className="text-rose-500">belum ada</span> },
-                    { key: 'role', label: 'Role', render: (u) => <RoleBadge role={u.role} /> },
+                    { key: 'role', label: 'Role', render: (u) => <RoleBadge role={u.role} label={u.role_label} /> },
                     {
                       key: 'is_active',
                       label: 'Status',

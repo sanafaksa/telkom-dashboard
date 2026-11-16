@@ -19,8 +19,12 @@ class OverviewController extends Controller
         $counts  = User::query()->selectRaw('role, count(*) as total')->groupBy('role')->pluck('total', 'role');
 
         $roles = [];
-        foreach (Rbac::ROLES as $key => $info) {
-            $roles[] = ['key' => $key, 'label' => $info['label'], 'users' => (int) ($counts[$key] ?? 0)];
+        foreach (Rbac::roles() as $key => $info) {
+            // Admin tidak melihat Super Admin
+            if (! $user->isSuperAdmin() && $key === Rbac::SUPER_ADMIN) {
+                continue;
+            }
+            $roles[] =['key' => $key, 'label' => $info['label'], 'users' => (int) ($counts[$key] ?? 0)];
         }
 
         $since = now()->subDay();
