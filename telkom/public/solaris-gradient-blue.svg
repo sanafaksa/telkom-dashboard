@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2834" height="2220" viewBox="0 0 1417 1110">
+  <defs>
+    <linearGradient id="orbitGradient" x1="0.08" y1="0.92" x2="0.94" y2="0.18" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#F7FBFF"/>
+      <stop offset="28%" stop-color="#E4F1FF"/>
+      <stop offset="56%" stop-color="#A9D0FF"/>
+      <stop offset="78%" stop-color="#68ACFF"/>
+      <stop offset="100%" stop-color="#348CF4"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Orbit/swoosh: original silhouette recolored with a white-to-blue gradient. -->
+  <path d="
+    M 1018,411
+    C 1116,407 1212,409 1267,449
+    C 1320,488 1302,557 1270,615
+    C 1210,725 1044,828 858,909
+    C 665,993 450,1032 279,1000
+    C 173,980 87,945 76,886
+    C 63,819 150,684 437,600
+    C 330,672 225,771 188,843
+    C 151,915 218,947 306,956
+    C 460,973 646,922 812,849
+    C 979,776 1125,671 1175,574
+    C 1215,496 1180,436 1018,411 Z"
+    fill="url(#orbitGradient)" stroke="#B9C9DD" stroke-opacity="0.28" stroke-width="3" stroke-linejoin="round"/>
+
+  <!-- Main four-point sparkle -->
+  <path d="
+    M 710,258
+    C 733,411 796,474 1021,516
+    C 796,558 733,621 710,774
+    C 687,621 624,558 399,516
+    C 624,474 687,411 710,258 Z"
+    fill="#FFFFFF" stroke="#C8CFD8" stroke-opacity="0.72" stroke-width="3.2" stroke-linejoin="round"/>
+
+  <!-- Smaller upper-right sparkle -->
+  <path d="
+    M 1110,72
+    C 1125,160 1148,182 1256,199
+    C 1148,216 1125,238 1110,327
+    C 1095,238 1072,216 964,199
+    C 1072,182 1095,160 1110,72 Z"
+    fill="#FFFFFF" stroke="#C8CFD8" stroke-opacity="0.72" stroke-width="3.2" stroke-linejoin="round"/>
+</svg>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { can } from '../auth/auth';
 import { createPortal } from 'react-dom';
 import { X, Eye, RotateCcw, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useActivateEdk, useAuditLogs, useEdkUploads } from './queries';
@@ -250,6 +251,7 @@ function AuditTab() {
 // ───────────────────────── Modal ─────────────────────────
 
 export default function UploadHistoryModal({ onClose, viewingId, onView, canActivate = false }) {
+  const canAudit = can('audit.view', 'audit.view_all');
   const [tab, setTab] = useState('history');
 
   return createPortal(
@@ -260,7 +262,7 @@ export default function UploadHistoryModal({ onClose, viewingId, onView, canActi
           <div>
             <h2 className="text-base font-bold text-slate-900">Riwayat Upload EDK</h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Lihat snapshot lama{canActivate ? ', aktifkan kembali (rollback), atau cek log aktivitas' : ''}.
+              Lihat snapshot lama{canActivate ? ', aktifkan kembali (rollback)' : ''}{canAudit ? ', atau cek log aktivitas' : ''}.
             </p>
           </div>
           <button
@@ -271,7 +273,7 @@ export default function UploadHistoryModal({ onClose, viewingId, onView, canActi
           </button>
         </div>
 
-        {canActivate && (
+        {canAudit && (
           <div className="flex gap-1 px-6 pt-3">
             {[
               ['history', 'Riwayat Upload'],
@@ -292,7 +294,7 @@ export default function UploadHistoryModal({ onClose, viewingId, onView, canActi
         )}
 
         <div className="max-h-[60vh] overflow-y-auto mt-2">
-          {tab === 'audit' && canActivate ? (
+          {tab === 'audit' && canAudit ? (
             <AuditTab />
           ) : (
             <HistoryTab viewingId={viewingId} canActivate={canActivate} onView={onView} onClose={onClose} />

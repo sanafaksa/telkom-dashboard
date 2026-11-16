@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { can } from '../features/auth/auth';
 import { useParams } from 'react-router-dom';
 import {
   Filter,
@@ -507,6 +508,7 @@ export default function Quadrant() {
           <button
             type="button"
             onClick={() => setShowUpload(true)}
+            hidden={!can('kuadran.manage')}
             className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-2xs cursor-pointer"
           >
             <Upload size={14} className="text-slate-500" />

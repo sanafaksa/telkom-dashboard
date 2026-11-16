@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -39,6 +40,7 @@ class AuditLogTest extends TestCase
     {
         return User::factory()->create([
             'email'    => 'admin@telkom.co.id',
+            'nip'      => '880001',
             'password' => Hash::make('rahasia123'),
             'role'     => 'admin',
         ]);
@@ -46,10 +48,12 @@ class AuditLogTest extends TestCase
 
     public function test_login_berhasil_dan_gagal_tercatat(): void
     {
+        Http::fake(['challenges.cloudflare.com/*' => Http::response(['success' => true])]);
         $admin = $this->admin();
+        $body  = ['nip' => '880001', 'cf-turnstile-response' => 'dummy-token'];
 
-        $this->postJson('/api/auth/login', ['login' => 'admin@telkom.co.id', 'password' => 'rahasia123'])->assertOk();
-        $this->postJson('/api/auth/login', ['login' => 'admin@telkom.co.id', 'password' => 'salah'])->assertStatus(422);
+        $this->postJson('/api/auth/login', $body + ['password' => 'rahasia123'])->assertOk();
+        $this->postJson('/api/auth/login', $body + ['password' => 'salah'])->assertStatus(422);
 
         $this->assertDatabaseHas('audit_logs', ['action' => 'auth.login', 'user_id' => $admin->id]);
         $this->assertDatabaseHas('audit_logs', ['action' => 'auth.login_failed', 'user_id' => $admin->id]);
@@ -63,7 +67,7 @@ class AuditLogTest extends TestCase
     {
         Storage::fake('local');
         $admin = $this->admin();
-        Sanctum::actingAs($admin);
+        Sanctum::actingAs($admin, ['*']);
 
         $row = ['S1','A','AM1','DGS','202611','LANJUT','COMPLETE',1,1000];
         $this->upload($row, '2026-10-26')->assertCreated();
@@ -85,7 +89,7 @@ class AuditLogTest extends TestCase
     public function test_upload_gagal_tercatat(): void
     {
         Storage::fake('local');
-        Sanctum::actingAs($this->admin());
+        Sanctum::actingAs($this->admin(), ['*']);
 
         $this->upload(['S1','A','AM1','XYZ','202611','LANJUT','COMPLETE',1,1000], '2026-11-02')->assertStatus(422);
 
@@ -96,10 +100,10 @@ class AuditLogTest extends TestCase
 
     public function test_hanya_admin_yang_bisa_lihat_log(): void
     {
-        Sanctum::actingAs(User::factory()->create(['role' => 'viewer']));
+        Sanctum::actingAs(User::factory()->create(['role' => 'user']), ['*']);
         $this->getJson('/api/audit-logs')->assertForbidden();
 
-        Sanctum::actingAs($this->admin());
+        Sanctum::actingAs($this->admin(), ['*']);
         $this->getJson('/api/audit-logs')->assertOk()->assertJsonStructure(['data', 'current_page', 'last_page']);
     }
 }

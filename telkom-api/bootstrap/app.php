@@ -18,7 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
     $middleware->trustProxies(at: ['127.0.0.1', '::1']);
 
     $middleware->alias([
-            'role' => \App\Http\Middleware\EnsureRole::class,
+        'role'       => \App\Http\Middleware\EnsureRole::class,
+        'permission' => \App\Http\Middleware\EnsurePermission::class,
+        'active'     => \App\Http\Middleware\EnsureActive::class,
+        'session'    => \App\Http\Middleware\EnsureSessionToken::class,
     ]);
 })
 

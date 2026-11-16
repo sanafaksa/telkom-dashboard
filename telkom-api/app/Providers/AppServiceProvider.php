@@ -2,37 +2,36 @@
 
 namespace App\Providers;
 
+use App\Support\Settings;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Sanctum\PersonalAccessToken;
 use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
-        // Idle timeout: token sesi berakhir bila tidak dipakai selama idle_minutes.
-        // Setiap request valid memperpanjang expires_at, jadi hanya sesi yang benar-benar diam yang berakhir.
-        Sanctum::authenticateAccessTokensUsing(function (PersonalAccessToken $token, bool $isValid) {
-            if (! $isValid) {
-                return false;
-            }
+        // Login: dibatasi per NIP+IP (jumlahnya diatur Super Admin) dan per IP.
+        RateLimiter::for('login', function (Request $request) {
+            $max = max(3, (int) Settings::get('login_max_attempts'));
+            $nip = strtolower(trim((string) $request->input('nip')));
 
-            $token->forceFill([
-                'expires_at' => now()->addMinutes((int) config('sanctum.idle_minutes', 15)),
-            ])->save();
-
-            return true;
+            return [
+                Limit::perMinute($max)->by('login:' . $nip . '|' . $request->ip()),
+                Limit::perMinute($max * 4)->by('login-ip:' . $request->ip()),
+            ];
         });
+
+        // Seluruh endpoint administrasi.
+        RateLimiter::for('admin', fn (Request $request) => Limit::perMinute(120)
+            ->by('admin:' . ($request->user()?->id ?: $request->ip())));
     }
 }

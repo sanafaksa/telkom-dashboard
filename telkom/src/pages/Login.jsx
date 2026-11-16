@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import DotGlow from '../components/DotGlow';
 import {
-  Mail,
+  IdCard,
   Lock,
   Eye,
   EyeOff,
@@ -12,10 +11,27 @@ import {
   AlertCircle,
   Loader2,
   KeyRound,
-  Moon
+  Moon,
+  User
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { login } from '../features/auth/auth';
+
+// Badge verified ala centang biru Twitter: lingkaran bergelombang dengan tanda centang putih.
+const VERIFIED_POINTS = Array.from({ length: 120 }, (_, i) => {
+  const t = (i / 120) * 2 * Math.PI;
+  const r = 10 + 0.6 * Math.cos(12 * t);
+  return `${(12 + r * Math.cos(t)).toFixed(2)},${(12 + r * Math.sin(t)).toFixed(2)}`;
+}).join(' ');
+
+function VerifiedBadge({ size = 16, className = '' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} aria-label="Terverifikasi" role="img">
+      <polygon points={VERIFIED_POINTS} fill="#1D9BF0" />
+      <path d="M7.5 12.5l3 3 6-6.5" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 export default function Login() {
   const { isDark, toggleTheme } = useTheme();
@@ -32,6 +48,8 @@ export default function Login() {
   const [turnstileToken, setTurnstileToken] = useState('');
   const turnstileRef = useRef(null);   // elemen <div> tempat widget dirender
   const widgetIdRef = useRef(null);    // id widget dari turnstile.render()
+
+  const logoRef = useRef(null);        // wrapper logo background (untuk glow kursor)
 
   useEffect(() => {
     const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
@@ -84,15 +102,39 @@ export default function Login() {
     setTimeout(() => {
       setAuthStatus('opening_up');
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate('/home');
       }, 750);
     }, 150);
+  };
+
+  // Glow logo: dihitung dari posisi kursor di seluruh panel kiri (bukan dari elemen di bawah kursor),
+  // jadi tetap akurat walaupun kursor sedang di atas teks. Area glow mengikuti kursor di dalam logo.
+  const updateLogoGlow = (e) => {
+    // Glow dot: posisi kursor relatif ke panel kiri (elemen yang menerima event)
+    const panel = e.currentTarget;
+    const pr = panel.getBoundingClientRect();
+    panel.style.setProperty('--gx', `${e.clientX - pr.left}px`);
+    panel.style.setProperty('--gy', `${e.clientY - pr.top}px`);
+    panel.style.setProperty('--dotglow', '1');
+
+    const el = logoRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    el.style.setProperty('--mx', `${e.clientX - r.left}px`);
+    el.style.setProperty('--my', `${e.clientY - r.top}px`);
+    el.style.setProperty('--glow', inside ? '1' : '0');
+  };
+
+  const hideLogoGlow = (e) => {
+    e.currentTarget.style.setProperty('--dotglow', '0');
+    logoRef.current?.style.setProperty('--glow', '0');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email.trim()) {
-      setError('Silakan masukkan email Telkom atau NIK Anda.');
+      setError('Silakan masukkan NIP Anda.');
       return;
     }
     if (!password.trim()) {
@@ -117,7 +159,7 @@ export default function Login() {
       setAuthStatus('idle');
       resetTurnstile(); // token Turnstile hanya bisa dipakai sekali
       if (err?.status === 422) {
-        setError(err.data?.errors?.login?.[0] ?? err.message);
+        setError(err.data?.errors?.nip?.[0] ?? Object.values(err.data?.errors ?? {})[0]?.[0] ?? err.message);
       } else if (err?.status === 429) {
         setError('Terlalu banyak percobaan login. Coba lagi dalam 1 menit.');
       } else if (err?.status) {
@@ -156,11 +198,11 @@ export default function Login() {
           <div className="absolute -inset-10 bg-blue-400/20 rounded-full blur-3xl animate-pulse pointer-events-none" />
 
           {/* Logo Brand */}
-          <div className="relative z-10 flex items-center justify-center size-20 rounded-2xl bg-white border border-slate-200/80 shadow-xl mb-5">
+          <div className="relative z-10 flex items-center justify-center size-20 rounded-2xl bg-gradient-to-br from-[#061438] via-[#0A266E] to-[#1242B5] border border-white/15 shadow-xl mb-5">
             <img
-              src="/telkom-logo.png"
-              alt="Telkom Logo"
-              className="h-10 object-contain drop-shadow-sm"
+              src="/solaris-gradient-blue.svg"
+              alt="Solaris Logo"
+              className="h-12 w-auto object-contain drop-shadow-sm"
             />
           </div>
 
@@ -199,6 +241,8 @@ export default function Login() {
         {/* LEFT DOOR WING: Enterprise Hero (Slides Left)                     */}
         {/* ================================================================= */}
         <div
+          onPointerMove={updateLogoGlow}
+          onPointerLeave={hideLogoGlow}
           className={`relative hidden lg:flex lg:w-1/2 flex-col justify-between p-10 xl:p-14 overflow-hidden bg-gradient-to-br from-[#061438] via-[#0A266E] to-[#1242B5] text-white will-change-transform transition-transform duration-[750ms] ease-[cubic-bezier(0.65,0,0.35,1)] ${
             isTransitioning ? '-translate-x-full' : 'translate-x-0'
           }`}
@@ -216,33 +260,74 @@ export default function Login() {
                 : 'opacity-40'
             }`}
           />
-          {/* Subtle Background Tech Grid */}
-          <DotGlow className="absolute inset-0" rgb="56,189,248" baseAlpha={0.18} />
-
-          {/* Ambient Lighting Orbs */}
+          {/* Grid dot: dot dasar selalu terlihat; dot biru hanya muncul di sekitar kursor (CSS, tanpa canvas) */}
           <div
-            className="absolute -top-24 -left-24 size-[420px] rounded-full bg-blue-500/20 blur-[100px] pointer-events-none"
-            style={{ animation: 'pulseGlow 7s infinite ease-in-out' }}
+            aria-hidden="true"
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.22) 1.3px, transparent 1.6px)',
+              backgroundSize: '28px 28px',
+            }}
           />
           <div
-            className="absolute bottom-10 right-10 size-[450px] rounded-full bg-cyan-400/15 blur-[120px] pointer-events-none"
-            style={{ animation: 'pulseGlow 9s infinite ease-in-out' }}
+            aria-hidden="true"
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundImage: 'radial-gradient(circle, rgba(191,219,254,1) 1.8px, rgba(96,165,250,0.9) 2.1px, transparent 2.5px)',
+              backgroundSize: '28px 28px',
+              WebkitMaskImage: 'radial-gradient(circle 200px at var(--gx, 50%) var(--gy, 50%), rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.45) 30%, rgba(0,0,0,0.15) 60%, transparent 100%)',
+              maskImage: 'radial-gradient(circle 200px at var(--gx, 50%) var(--gy, 50%), rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.45) 30%, rgba(0,0,0,0.15) 60%, transparent 100%)',
+              opacity: 'var(--dotglow, 0)',
+              transition: 'opacity 300ms ease',
+            }}
           />
-          <div className="absolute top-1/2 left-1/3 size-72 rounded-full bg-indigo-500/15 blur-3xl pointer-events-none" />
 
-          {/* Top Brand */}
-          <div className="relative z-10">
-            <span className="text-2xl sm:text-3xl font-black tracking-widest text-white select-none">
-              SOLARIS
-            </span>
+          {/* Logo gradient biru sebagai background (gambar asli, tanpa dot).
+              Saat hover, hanya area di bawah kursor yang menyala (lapisan glow di-mask radial). */}
+          <div
+            ref={logoRef}
+            className="absolute top-1/2 left-1/2 w-[min(40vw,520px)]"
+            style={{ transform: 'translate(-50%, -50%)', '--mx': '50%', '--my': '50%', '--glow': '0' }}
+          >
+            <img
+              src="/solaris-gradient-blue.svg"
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+              className="block w-full h-auto opacity-0 select-none"
+            />
+            <img
+              src="/solaris-gradient-blue.svg"
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+              className="absolute inset-0 w-full h-full pointer-events-none select-none"
+              style={{
+                opacity: 'var(--glow)',
+                transition: 'opacity 300ms ease',
+                filter: 'brightness(1.3) drop-shadow(0 0 22px rgba(96,165,250,0.7))',
+                WebkitMaskImage: 'radial-gradient(ellipse 150px 115px at var(--mx) var(--my), rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 30%, rgba(0,0,0,0.18) 60%, transparent 100%)',
+                maskImage: 'radial-gradient(ellipse 150px 115px at var(--mx) var(--my), rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 30%, rgba(0,0,0,0.18) 60%, transparent 100%)',
+              }}
+            />
           </div>
 
           {/* Center Content: Headline & Visual Branding */}
-          <div className="relative z-10 my-auto py-8">
-            <h1 className="text-4xl xl:text-5xl font-black tracking-tight text-white mb-3">
-              SOLARIS
+          <div className="relative z-10 max-w-xl my-auto py-8">
+            <h1 className="flex items-center gap-4 xl:gap-5 mb-4" aria-label="SOLARIS">
+              <img
+                src="/solaris-gradient-blue.png"
+                alt=""
+                aria-hidden="true"
+                className="h-14 xl:h-16 w-auto shrink-0 select-none"
+                draggable={false}
+              />
+              <span className="h-12 xl:h-14 w-px bg-white/35 shrink-0" aria-hidden="true" />
+              <span className="text-5xl xl:text-6xl font-black tracking-wide leading-none bg-gradient-to-r from-[#F7FBFF] via-[#A9D0FF] to-[#68ACFF] bg-clip-text text-transparent">
+                SOLARIS
+              </span>
             </h1>
-            <h2 className="text-2xl xl:text-3xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-200 to-white leading-snug">
+            <h2 className="text-xl xl:text-2xl font-bold tracking-tight text-sky-300 leading-snug">
               Solo Leadership And Regional Insight System
             </h2>
             <p className="mt-5 text-sm xl:text-base text-blue-100/80 leading-relaxed max-w-lg font-normal">
@@ -253,8 +338,8 @@ export default function Login() {
           {/* Bottom Security Assurance */}
           <div className="relative z-10 pt-5 border-t border-white/15 flex items-center justify-between text-xs text-blue-200/80">
             <div className="flex items-center gap-2">
-              <ShieldCheck size={16} className="text-emerald-400 shrink-0" />
-              <span>Enkripsi 256-Bit SSL • Telkom SSO Ready</span>
+              <VerifiedBadge size={16} className="shrink-0" />
+              <span>Verified</span>
             </div>
             <div className="flex items-center gap-2 text-[11px]">
               <span className="size-1.5 rounded-full bg-emerald-400" />
@@ -291,22 +376,6 @@ export default function Login() {
           <div className="absolute top-0 right-0 size-72 bg-blue-200/30 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 size-60 bg-indigo-100/50 rounded-full blur-2xl pointer-events-none" />
 
-          {/* Theme Toggle Button (Coming Soon) */}
-          <div className="absolute top-5 right-5 sm:top-7 sm:right-7 z-20">
-            <button
-              type="button"
-              onClick={toggleTheme}
-              aria-label="Mode Gelap (Coming Soon)"
-              title="Mode Gelap (Coming Soon)"
-              className="relative size-9 rounded-full border border-slate-200/80 bg-white/90 text-slate-600 hover:bg-white grid place-items-center cursor-pointer shadow-2xs hover:scale-105 active:scale-95 transition-all"
-            >
-              <Moon size={15} />
-              <span className="absolute -top-1 -right-1 text-[7.5px] font-extrabold tracking-wider bg-amber-500 text-white px-1 py-[1px] rounded-full uppercase shadow-2xs leading-none">
-                SOON
-              </span>
-            </button>
-          </div>
-
           {/* Mobile Top Brand Header */}
           <div className="lg:hidden relative z-10 flex items-center justify-between pb-4 mb-2 border-b border-slate-200/80">
             <div className="flex items-center gap-2.5">
@@ -326,10 +395,10 @@ export default function Login() {
 
           {/* Centered Login Card */}
           <div className="relative z-10 max-w-[430px] w-full mx-auto my-auto py-2">
-            <div className="bg-white/90 backdrop-blur-xl rounded-3xl border border-white/80 shadow-[0_20px_50px_rgba(8,62,158,0.08)] p-7 sm:p-9 transition-all">
+            <div className="bg-white rounded-[20px] border border-slate-200 shadow-[0_25px_50px_-12px_rgba(15,23,42,0.18)] p-7 sm:p-10 transition-all">
               {/* Form Title & Badge */}
               <div className="mb-7">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50/90 border border-blue-200/60 text-[#1447B8] text-xs font-bold mb-3 shadow-2xs">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-[#1447B8] text-xs font-semibold mb-4">
                   <KeyRound size={13} className="text-[#1447B8]" />
                   <span>Portal Akses Solaris Dashboard</span>
                 </div>
@@ -337,7 +406,7 @@ export default function Login() {
                   Selamat Datang
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1.5 leading-relaxed">
-                  Silakan masukkan email Telkom atau NIK Anda untuk mengakses dashboard operasional.
+                  Silakan masuk dengan NIP dan kata sandi Anda. Dashboard yang tampil mengikuti role akun.
                 </p>
               </div>
 
@@ -354,20 +423,28 @@ export default function Login() {
                 {/* Email / NIK */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                    Email Telkom / NIK
+                    NIP
                   </label>
                   <div className="relative flex items-center group">
                     <div className="absolute left-3.5 text-slate-400 group-focus-within:text-[#1D56D6] transition-colors pointer-events-none">
-                      <Mail size={17} />
+                      <IdCard size={17} />
                     </div>
                     <input
                       type="text"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       disabled={isVerifying || isGranted}
-                      placeholder="contoh: executive.lead@telkom.co.id"
-                      className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200/90 bg-slate-50/60 hover:bg-white text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#2563EB] focus:ring-4 focus:ring-blue-500/15 transition-all shadow-2xs font-medium"
+                      placeholder="Masukkan NIP Anda"
+                      autoComplete="username"
+                      inputMode="numeric"
+                      className="w-full pl-11 pr-12 py-3 text-xs sm:text-sm rounded-xl border border-slate-200 bg-slate-50 hover:bg-white text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#2563EB] focus:ring-4 focus:ring-blue-500/15 transition-all font-medium"
                     />
+                    <div
+                      aria-hidden="true"
+                      className="absolute right-3 size-6 rounded-full bg-slate-200 text-slate-600 grid place-items-center pointer-events-none"
+                    >
+                      <User size={13} />
+                    </div>
                   </div>
                 </div>
 
@@ -395,7 +472,8 @@ export default function Login() {
                       onChange={(e) => setPassword(e.target.value)}
                       disabled={isVerifying || isGranted}
                       placeholder="Masukkan kata sandi Anda"
-                      className="w-full pl-10 pr-11 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200/90 bg-slate-50/60 hover:bg-white text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#2563EB] focus:ring-4 focus:ring-blue-500/15 transition-all shadow-2xs font-medium"
+                      autoComplete="current-password"
+                      className="w-full pl-11 pr-12 py-3 text-xs sm:text-sm rounded-xl border border-slate-200 bg-slate-50 hover:bg-white text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#2563EB] focus:ring-4 focus:ring-blue-500/15 transition-all font-medium"
                     />
                     <button
                       type="button"
@@ -431,18 +509,18 @@ export default function Login() {
                 <button
                   type="submit"
                   disabled={isVerifying || isGranted}
-                  className={`w-full mt-3 py-3 px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-lg active:scale-[0.99] select-none ${
+                  className={`w-full mt-3 py-3.5 px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-lg shadow-slate-900/10 active:scale-[0.99] select-none ${
                     isGranted
                       ? 'bg-emerald-600 text-white shadow-emerald-600/30'
                       : isVerifying
                       ? 'bg-[#1447B8] text-white opacity-90 cursor-wait'
-                      : 'bg-gradient-to-r from-[#1447B8] via-[#1D56D6] to-[#2563EB] hover:from-[#0E3A9E] hover:to-[#1D4ED8] text-white shadow-blue-600/25 hover:shadow-blue-600/40'
+                      : 'bg-[#1E293B] hover:bg-[#334155] text-white border border-[#334155]'
                   }`}
                 >
                   {isVerifying ? (
                     <>
                       <Loader2 size={16} className="animate-spin text-white" />
-                      <span>Memverifikasi Kredensial SSO...</span>
+                      <span>Memverifikasi NIP & kata sandi...</span>
                     </>
                   ) : isGranted ? (
                     <>
@@ -474,12 +552,32 @@ export default function Login() {
             </div>
           </div>
 
+
           {/* Footer Copyright */}
           <div className="relative z-10 pt-4 text-center text-xs text-slate-500 border-t border-slate-200/60">
             <p>© 2026 PT Telkom Indonesia (Persero) Tbk. Seluruh hak cipta dilindungi.</p>
           </div>
         </div>
       </div>
+
+      {/* ==================================================================== */}
+      {/* THEME TOGGLE (pojok kanan atas halaman; mode gelap menyusul)         */}
+      {/* ==================================================================== */}
+      <div className="absolute top-5 right-5 z-40">
+        <button
+          type="button"
+          onClick={toggleTheme}
+          aria-label="Mode Gelap (Coming Soon)"
+          title="Mode Gelap (Coming Soon)"
+          className="relative size-10 rounded-full border border-slate-200 bg-white/80 text-slate-600 hover:bg-white grid place-items-center cursor-pointer shadow-sm hover:scale-105 active:scale-95 transition-all"
+        >
+          <Moon size={16} />
+          <span className="absolute -top-1 -right-1 text-[7.5px] font-extrabold tracking-wider bg-amber-500 text-white px-1 py-[1px] rounded-full uppercase shadow-sm leading-none">
+            SOON
+          </span>
+        </button>
+      </div>
+
 
       {/* ==================================================================== */}
       {/* MODAL HELPDESK / LUPA KATA SANDI                                     */}
@@ -503,7 +601,7 @@ export default function Login() {
 
             <div className="space-y-3 text-xs text-slate-600 bg-slate-50 p-4 rounded-2xl border border-slate-200/80 mb-5">
               <p className="leading-relaxed">
-                Untuk menjaga standar keamanan data eksekutif, reset kata sandi dan pembukaan blokir akun dilakukan melalui saluran resmi IT SSO Telkom:
+                Kata sandi dibuat dan direset oleh Admin atau Super Admin SOLARIS. Hubungi administrator Anda, atau saluran berikut:
               </p>
               <div className="pt-2 border-t border-slate-200/60 space-y-1.5 font-medium text-slate-700">
                 <div className="flex justify-between">

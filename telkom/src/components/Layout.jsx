@@ -33,7 +33,8 @@ import {
   Moon
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-import { getUser, logout } from '../features/auth/auth';
+import { getUser, logout, refreshUser, ROLE_LABEL, ROLE_TONE } from '../features/auth/auth';
+import { visibleNav, KUADRAN_SUB } from '../nav';
 
 const initials = (name = '') =>
   name
@@ -42,13 +43,6 @@ const initials = (name = '') =>
     .slice(0, 2)
     .map((w) => w[0].toUpperCase())
     .join('') || 'U';
-
-const sub = [
-  ['moving', 'Kuadran Moving'],
-  ['witel', 'Witel Performance'],
-  ['telda', 'Telda Performance'],
-  ['segment', 'Segment Performance']
-];
 
 function SidebarItem({ to, icon: Icon, children, hasSub, isOpen, onToggle, end, isActiveOverride, showPlus }) {
   return (
@@ -104,6 +98,8 @@ function Sidebar({ close, onCollapse }) {
   const location = useLocation();
   const isKuadranRoute = location.pathname.startsWith('/kuadran');
   const [openKuadran, setOpenKuadran] = useState(false);
+  // Super Admin & Admin: logo gradient biru. Role lain: logo putih.
+  const isTopRole = ['super_admin', 'admin'].includes(getUser()?.role);
 
   return (
     <nav
@@ -127,8 +123,22 @@ function Sidebar({ close, onCollapse }) {
 
       {/* Brand Header */}
       <div className="flex items-center justify-between px-2 pt-1 pb-4 mb-1">
-        <NavLink to="/dashboard" className="flex items-center gap-2 group select-none py-1">
-          <span className="text-xl font-black tracking-widest text-white group-hover:text-blue-100 transition-colors">
+        <NavLink to="/home" className="flex items-center gap-3 group select-none py-1">
+          <img
+            src={isTopRole ? '/solaris-gradient-blue.svg' : '/solaris-white-transparent.svg'}
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+            className="h-10 w-auto shrink-0"
+          />
+          <span className="h-7 w-px bg-white/35 shrink-0" aria-hidden="true" />
+          <span
+            className={`text-xl font-black tracking-wide leading-none transition-colors ${
+              isTopRole
+                ? 'bg-gradient-to-r from-[#F7FBFF] via-[#A9D0FF] to-[#68ACFF] bg-clip-text text-transparent'
+                : 'text-white group-hover:text-blue-100'
+            }`}
+          >
             SOLARIS
           </span>
         </NavLink>
@@ -148,71 +158,70 @@ function Sidebar({ close, onCollapse }) {
         )}
       </div>
 
-      {/* Navigation Links */}
-      <div className="space-y-1.5">
-        <SidebarItem to="/dashboard" icon={Home} end>
-          Dashboard
-        </SidebarItem>
+      {/* Navigation Links (difilter sesuai permission role) */}
+      <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1 pb-2 space-y-3 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.3)_transparent]">
+        {visibleNav().map((group, gi) => (
+          <div key={group.section} className="space-y-1.5">
+            {gi > 0 && (
+              <p className="px-4 pt-1 text-[10px] font-bold uppercase tracking-widest text-white/50">
+                {group.section}
+              </p>
+            )}
+            {group.items.map((item) =>
+              item.kuadran ? (
+                <div key={item.to}>
+                  <SidebarItem
+                    to={item.to}
+                    icon={item.icon}
+                    hasSub
+                    showPlus
+                    isOpen={openKuadran}
+                    isActiveOverride={isKuadranRoute}
+                    onToggle={() => setOpenKuadran(!openKuadran)}
+                  >
+                    {item.label}
+                  </SidebarItem>
 
-        <SidebarItem to="/edk-monitoring" icon={BarChart2}>
-          EDK Monitoring
-        </SidebarItem>
-
-        <SidebarItem to="/monitoring-order-sjt" icon={ClipboardList}>
-          Monitoring Order SJT
-        </SidebarItem>
-
-        <SidebarItem to="/koreksi-jurbal-psak" icon={Receipt}>
-          Koreksi & Jurbal PSAK
-        </SidebarItem>
-
-        <SidebarItem
-          to="/kuadran"
-          icon={LayoutGrid}
-          hasSub
-          showPlus
-          isOpen={openKuadran}
-          isActiveOverride={isKuadranRoute}
-          onToggle={() => setOpenKuadran(!openKuadran)}
-        >
-          Kuadran SJT
-        </SidebarItem>
-
-        {openKuadran && (
-          <div className="ml-6 pl-3 border-l border-white/25 space-y-1 py-1">
-            {sub.map(([k, l]) => (
-              <NavLink
-                key={k}
-                to={'/kuadran/' + k}
-                className={({ isActive }) =>
-                  `group flex items-center gap-2 text-xs py-2 px-3.5 rounded-full transition-all ${isActive
-                    ? 'text-[#1E50BA] font-bold bg-[#DCE7FC] shadow-xs'
-                    : 'text-white/85 hover:text-white hover:bg-white/10 font-medium'
-                  }`
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    {isActive ? (
-                      <ArrowRight size={14} strokeWidth={2.5} className="text-[#1E50BA] shrink-0" />
-                    ) : (
-                      <Folder size={14} className="text-white/85 group-hover:text-white shrink-0" />
-                    )}
-                    <span className="truncate">{l}</span>
-                  </>
-                )}
-              </NavLink>
-            ))}
+                  {openKuadran && (
+                    <div className="ml-6 pl-3 border-l border-white/25 space-y-1 py-1 mt-1.5">
+                      {KUADRAN_SUB.map(([k, l]) => (
+                        <NavLink
+                          key={k}
+                          to={'/kuadran/' + k}
+                          className={({ isActive }) =>
+                            `group flex items-center gap-2 text-xs py-2 px-3.5 rounded-full transition-all ${isActive
+                              ? 'text-[#1E50BA] font-bold bg-[#DCE7FC] shadow-xs'
+                              : 'text-white/85 hover:text-white hover:bg-white/10 font-medium'
+                            }`
+                          }
+                        >
+                          {({ isActive }) => (
+                            <>
+                              {isActive ? (
+                                <ArrowRight size={14} strokeWidth={2.5} className="text-[#1E50BA] shrink-0" />
+                              ) : (
+                                <Folder size={14} className="text-white/85 group-hover:text-white shrink-0" />
+                              )}
+                              <span className="truncate">{l}</span>
+                            </>
+                          )}
+                        </NavLink>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <SidebarItem key={item.to} to={item.to} icon={item.icon} end={item.end}>
+                  {item.label}
+                </SidebarItem>
+              ),
+            )}
           </div>
-        )}
-
-        <SidebarItem to="/support-needed" icon={FileText}>
-          MoM & Support Needed
-        </SidebarItem>
+        ))}
       </div>
 
       {/* Sidebar Footer */}
-      <div className="mt-auto pt-3.5 border-t border-white/20 flex items-center justify-between px-2 text-[11px]">
+      <div className="shrink-0 pt-3.5 border-t border-white/20 flex items-center justify-between px-2 text-[11px]">
                 <button
           type="button"
           onClick={logout}
@@ -232,18 +241,10 @@ function Sidebar({ close, onCollapse }) {
 }
 
 /* ── Mini Sidebar (collapsed) ────────────────────────────── */
-const MINI_NAV = [
-  { to: '/dashboard', icon: Home, label: 'Dashboard', end: true },
-  { to: '/edk-monitoring', icon: BarChart2, label: 'EDK Monitoring' },
-  { to: '/monitoring-order-sjt', icon: ClipboardList, label: 'Monitoring Order SJT' },
-  { to: '/koreksi-jurbal-psak', icon: Receipt, label: 'Koreksi & Jurbal PSAK' },
-  { to: '/kuadran', icon: LayoutGrid, label: 'Kuadran SJT', isKuadran: true },
-  { to: '/support-needed', icon: FileText, label: 'Catatan MoM & Support' },
-];
-
 function CollapsedSidebar({ onExpand }) {
   const location = useLocation();
   const isKuadranRoute = location.pathname.startsWith('/kuadran');
+  const miniNav = visibleNav().flatMap((g) => g.items);
 
   return (
     <nav
@@ -272,8 +273,8 @@ function CollapsedSidebar({ onExpand }) {
       </button>
 
       {/* Nav icons */}
-      <div className="flex flex-col gap-0.5 flex-1 w-full items-center">
-        {MINI_NAV.map(({ to, icon: Icon, label, end, isKuadran }) => {
+      <div className="flex flex-col gap-0.5 flex-1 min-h-0 w-full items-center overflow-y-auto overflow-x-hidden [scrollbar-width:none]">
+        {miniNav.map(({ to, icon: Icon, label, end, kuadran: isKuadran }) => {
           const active = isKuadran ? isKuadranRoute : undefined;
           return (
             <NavLink
@@ -283,7 +284,7 @@ function CollapsedSidebar({ onExpand }) {
               title={label}
               className={({ isActive }) => {
                 const on = active !== undefined ? active : isActive;
-                return `relative group size-10 rounded-2xl grid place-items-center transition-all ${on
+                return `relative group size-10 shrink-0 rounded-2xl grid place-items-center transition-all ${on
                   ? 'bg-[#EBF0FD] text-[#235CE5]'
                   : 'text-slate-400 hover:bg-slate-100 hover:text-[#06246A]'
                   }`;
@@ -332,13 +333,7 @@ function CollapsedSidebar({ onExpand }) {
 }
 
 // Search index — data yang bisa dicari
-const SEARCH_INDEX = [
-  // Halaman
-  { type: 'Halaman', label: 'Dashboard', desc: 'Executive Overview', to: '/dashboard' },
-  { type: 'Halaman', label: 'EDK Monitoring', desc: 'Evaluasi Data Kinerja', to: '/edk-monitoring' },
-  { type: 'Halaman', label: 'Monitoring Order SJT', desc: 'Dashboard Monitoring Order SJT 2026 — Witel Solo Jateng Timur', to: '/monitoring-order-sjt' },
-  { type: 'Halaman', label: 'Koreksi & Jurbal PSAK', desc: 'Reverse, Correction & koreksi per tipe PSAK — Witel Solo JT', to: '/koreksi-jurbal-psak' },
-  { type: 'Halaman', label: 'MoM & Support Needed', desc: 'Minutes of Meeting & Support Needed', to: '/support-needed' },
+const STATIC_SEARCH = [
   // Kuadran
   { type: 'Kuadran', label: 'Kuadran Moving', desc: 'Analisis pergerakan kuadran SJT', to: '/kuadran/moving' },
   { type: 'Kuadran', label: 'Witel Performance', desc: 'Performa per Witel', to: '/kuadran/witel' },
@@ -361,6 +356,26 @@ const SEARCH_INDEX = [
   { type: 'KPI', label: 'Kuadran 1 — Tanpa Tagihan & Tanpa Usage', desc: 'Pelanggan KW1', to: '/kuadran/moving' },
   { type: 'KPI', label: 'Kuadran 4 — Dengan Tagihan & Dengan Usage', desc: 'Pelanggan KW4', to: '/kuadran/moving' },
 ];
+
+// Pencarian hanya menampilkan tujuan yang boleh diakses role pengguna.
+const SEARCH_PERM = [
+  ['/kuadran', 'kuadran.view'],
+  ['/edk-monitoring', 'edk.view'],
+  ['/monitoring-order-sjt', 'order_sjt.view'],
+];
+
+function buildSearchIndex() {
+  const groups = visibleNav();
+  const paths = groups.flatMap((g) => g.items.map((i) => i.to));
+  const pages = groups.flatMap((g) =>
+    g.items.map((i) => ({ type: 'Halaman', label: i.label, desc: i.desc ?? g.section, to: i.to })),
+  );
+  const extra = STATIC_SEARCH.filter((item) => {
+    const rule = SEARCH_PERM.find(([prefix]) => item.to.startsWith(prefix));
+    return !rule || paths.includes(rule[0]);
+  });
+  return [...pages, ...extra];
+}
 
 const TYPE_ICON = {
   Halaman: FileIcon,
@@ -391,7 +406,17 @@ function formatDate(date) {
 export default function Layout({ children }) {
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const user = getUser();
+  const [user, setUser] = useState(getUser);
+  const searchIndex = buildSearchIndex();
+
+  // Role & permission selalu diambil ulang dari server saat layout dimuat,
+  // sehingga perubahan oleh Super Admin langsung berlaku tanpa login ulang.
+  useEffect(() => {
+    const sync = () => setUser(getUser());
+    window.addEventListener('solaris:user', sync);
+    refreshUser().catch(() => {});
+    return () => window.removeEventListener('solaris:user', sync);
+  }, []);
   const [d, setD] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -404,7 +429,7 @@ export default function Layout({ children }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef(null);
   const searchResults = searchQ.trim().length > 0
-    ? SEARCH_INDEX.filter(item =>
+    ? searchIndex.filter(item =>
       item.label.toLowerCase().includes(searchQ.toLowerCase()) ||
       item.desc.toLowerCase().includes(searchQ.toLowerCase()) ||
       item.type.toLowerCase().includes(searchQ.toLowerCase())
@@ -481,9 +506,9 @@ export default function Layout({ children }) {
         <div className="relative group shrink-0">
           <button
             type="button"
-            onClick={logout}
+            onClick={() => navigate('/profile')}
             className="flex items-center gap-2.5 p-1 rounded-full hover:bg-slate-100/70 transition-colors cursor-pointer"
-            title="Klik untuk keluar / ganti akun"
+            title="Profile Settings"
           >
             <span className="size-8 rounded-full bg-[#2563EB] text-white grid place-items-center text-xs font-bold shrink-0 shadow-xs">
               {initials(user?.name)}
@@ -493,14 +518,14 @@ export default function Layout({ children }) {
                 <b className="text-xs font-bold text-slate-800">{user?.name ?? 'Pengguna'}</b>
                 <span
                   className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full ${
-                    user?.role === 'admin' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
+                    ROLE_TONE[user?.role] ?? 'bg-slate-100 text-slate-500'
                   }`}
                 >
-                  {user?.role ?? '-'}
+                  {ROLE_LABEL[user?.role] ?? user?.role ?? '-'}
                 </span>
                 <ChevronDown size={13} className="text-slate-400 group-hover:text-slate-600 transition-colors" />
               </div>
-              <p className="text-[11px] text-slate-400">{user?.email ?? ''}</p>
+              <p className="text-[11px] text-slate-400">{user?.nip ? `NIP ${user.nip}` : (user?.email ?? '')}</p>
             </div>
           </button>
         </div>
@@ -686,6 +711,13 @@ export default function Layout({ children }) {
           </span>
         </div>
       </header>
+
+      {user?.announcement && (
+        <div className="mx-4 md:mx-8 mt-2 flex items-start gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-medium text-amber-800">
+          <BellRing size={14} className="mt-0.5 shrink-0" />
+          <span>{user.announcement}</span>
+        </div>
+      )}
 
       <main className="p-4 md:p-8 max-w-[1440px] mx-auto page-enter">{children}</main>
     </div>

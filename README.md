@@ -58,10 +58,12 @@ Dashboard ini dikembangkan untuk mempermudah monitoring dan pengambilan keputusa
 ## 🚀 Fitur Utama
 
 ### 1. 🔐 Login & Hak Akses
-- Login menggunakan **email Telkom atau NIK** + kata sandi (token **Laravel Sanctum**).
-- Sesi 12 jam, atau 30 hari bila mencentang *"Ingat sesi saya"*.
-- Dua role: **admin** (boleh upload & rollback) dan **viewer** (hanya melihat, export, dan copy).
-- Semua halaman dashboard wajib login; token kedaluwarsa otomatis diarahkan kembali ke halaman login.
+- Login menggunakan **NIP + kata sandi** (tanpa OTP; token **Laravel Sanctum**, password di-hash bcrypt).
+- Sesi 12 jam, atau 30 hari bila mencentang *"Ingat sesi saya"* (durasi bisa diubah di *Authentication Settings*).
+- Lima role: **Super Admin**, **Admin**, **Staff**, **Support**, **User** — lihat [Hak Akses (Role)](#-hak-akses-role).
+- Setelah login, pengguna diarahkan ke **Beranda** yang isi dan sidebar-nya mengikuti permission role.
+- Otorisasi dilakukan di backend pada setiap request (role dibaca dari database, bukan dari client).
+- Semua halaman dashboard wajib login; token kedaluwarsa/dicabut otomatis diarahkan kembali ke halaman login.
 
 ### 2. 📌 Executive Overview (`/dashboard`)
 - **Hierarki Eksekusi Agenda & Follow Up**: Kartu status ringkasan (Total Agenda, Pending/Not Yet, On Progress, Done).
@@ -299,14 +301,19 @@ DB_DATABASE=edk_monitoring
 DB_USERNAME=root
 DB_PASSWORD=
 
-# Akun admin pertama (dipakai oleh EdkUserSeeder) — GANTI nilainya
-ADMIN_NAME="Admin EDK"
-ADMIN_EMAIL=admin@telkom.co.id
-ADMIN_NIK=123456
-ADMIN_PASSWORD=GantiDenganPasswordKuat
+# Akun awal (dipakai oleh EdkUserSeeder) — GANTI nilainya. Login memakai NIP.
+SUPER_ADMIN_NAME="Super Admin"
+SUPER_ADMIN_NIP=900001
+SUPER_ADMIN_PASSWORD=GantiDenganPasswordKuat1
+ADMIN_NAME="Admin"
+ADMIN_NIP=123456
+ADMIN_PASSWORD=GantiDenganPasswordKuat2
+
+# Cloudflare Turnstile untuk halaman login
+TURNSTILE_SECRET_KEY=
 ```
 
-**2.5. Jalankan migration & buat akun admin**
+**2.5. Jalankan migration & buat akun awal**
 
 ```bash
 php artisan migrate
@@ -316,13 +323,17 @@ php artisan migrate
 php artisan db:seed --class=EdkUserSeeder
 ```
 
-**2.6. (Opsional) Buat akun viewer**
-
-Contoh untuk manager yang hanya perlu melihat dashboard:
+Atau buat / naikkan Super Admin secara interaktif (password diketik tersembunyi):
 
 ```bash
-php artisan tinker --execute="App\Models\User::create(['name'=>'Manager EDK','email'=>'manager@telkom.co.id','password'=>bcrypt('PasswordManager123'),'role'=>'viewer']);"
+php artisan solaris:super-admin 900001 --name="Nama Developer"
 ```
+
+> **Upgrade dari versi lama:** migration mengganti kolom `nik` menjadi `nip`, role `superadmin` → `super_admin`, dan `viewer` → `user`. Akun yang belum punya NIP tidak bisa login sampai NIP-nya diisi lewat **User Management**. Jalankan `solaris:super-admin` sekali setelah migrate agar ada minimal satu Super Admin.
+
+**2.6. Akun lainnya**
+
+Akun Admin, Staff, Support, dan User dibuat lewat menu **User Management** (Admin / Super Admin), bukan lewat tinker.
 
 **2.7. Atur CORS**
 
@@ -385,7 +396,7 @@ http://localhost:5173
 ### 4. Login Pertama Kali
 
 1. Buka `http://localhost:5173` → otomatis diarahkan ke halaman **Login**.
-2. Masukkan **email** atau **NIK** dan **password** admin sesuai `ADMIN_*` di `telkom-api/.env`.
+2. Masukkan **NIP** dan **password** sesuai `SUPER_ADMIN_*` / `ADMIN_*` di `telkom-api/.env`.
 3. Buka menu **EDK Monitoring** → klik **Upload Report** → pilih file Excel (lihat [Format File Upload EDK](#-format-file-upload-edk)) → isi tanggal laporan → **Upload**.
 4. Tabel, kartu KPI, dan filter langsung terisi.
 
@@ -444,20 +455,36 @@ http://localhost:5173
 
 ## 👥 Hak Akses (Role)
 
-| Aksi | admin | viewer |
-|---|:---:|:---:|
-| Melihat dashboard, filter, tab | ✅ | ✅ |
-| Export, Copy Table/Picture/Link | ✅ | ✅ |
-| Melihat Riwayat Upload & snapshot lama | ✅ | ✅ |
-| Upload Report | ✅ | ❌ |
-| Aktifkan snapshot (rollback) | ✅ | ❌ |
-| Melihat Log Aktivitas | ✅ | ❌ |
+Lima role tetap; permission tiap role disimpan di database (`role_permissions`) dan bisa diubah Super Admin lewat menu **Role & Permission**. Tabel berikut adalah bawaan:
 
-Mengubah role user:
+| Akses | Super Admin | Admin | Staff | Support | User |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Beranda & Profile Settings | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Ganti password sendiri (selain itu hanya lewat Admin / Super Admin) | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Executive Overview (Dashboard) | ✅ | ✅ | ✅ | ✅ | ✅ |
+| EDK: melihat & export | ✅ | ✅ | ✅ | ❌ | ✅ |
+| EDK: upload & rollback | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Monitoring Order SJT, Koreksi & Jurbal PSAK, Kuadran (lihat) | ✅ | ✅ | ✅ | ❌ | ✅ |
+| Kuadran: upload / hapus data | ✅ | ✅ | ✅ | ❌ | ❌ |
+| MoM & Support Needed: melihat | ✅ | ✅ | ✅ | ✅ | ✅ |
+| MoM & Support Needed: tambah / edit / hapus | ✅ | ✅ | ✅ | ✅ | ❌ |
+| User Management (lihat, tambah, edit, reset password, aktif/nonaktif) | ✅ | ✅ ¹ | ❌ | ❌ | ❌ |
+| Audit Logs | ✅ semua | ✅ terbatas ² | ❌ | ❌ | ❌ |
+| Hapus pengguna, Admin Management, Role & Permission | ✅ | ❌ | ❌ | ❌ | ❌ |
+| System Configuration, Authentication Settings, Email Configuration | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Security Center, Database Management, API Management | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Backup & Restore, System Monitoring, Developer Tools | ✅ | ❌ | ❌ | ❌ | ❌ |
 
-```bash
-php artisan tinker --execute="App\Models\User::where('email','manager@telkom.co.id')->update(['role'=>'admin']);"
-```
+¹ Admin hanya bisa mengelola akun Staff, Support, dan User. Admin tidak bisa membuat/mengubah Admin atau Super Admin, dan tidak bisa menaikkan role siapa pun (termasuk dirinya).
+² Tanpa aktivitas Super Admin dan tanpa aksi tingkat sistem (role, settings, backup, developer tools, API key, sesi).
+
+Aturan yang selalu berlaku di backend:
+
+- Permission bertanda *Sistem* tidak bisa diberikan ke role selain Super Admin.
+- Tidak ada yang bisa mengubah role, menonaktifkan, atau menghapus akunnya sendiri.
+- Minimal satu Super Admin harus tetap aktif (penurunan/penonaktifan/penghapusan Super Admin aktif terakhir ditolak).
+- Menonaktifkan akun atau mereset password langsung mengakhiri semua sesi akun tersebut.
+- Perubahan penting (akun, role, permission, pengaturan, backup, API key, sesi) dicatat di Audit Logs.
 
 ---
 
@@ -467,19 +494,25 @@ Semua endpoint berawalan `/api`. Selain `auth/login`, semua wajib header `Author
 
 | Method | Endpoint | Akses | Fungsi |
 |---|---|---|---|
-| POST | `/auth/login` | publik | Login (`login` = email/NIK, `password`, `remember`). Maks 5x/menit |
-| GET | `/auth/me` | login | Data user yang sedang login |
+| POST | `/auth/login` | publik | Login (`nip`, `password`, `remember`, token Turnstile). Maks 5x/menit per NIP+IP |
+| GET | `/auth/me` | login | Data user + role + daftar permission |
 | POST | `/auth/logout` | login | Hapus token |
-| GET | `/edk/uploads` | login | Riwayat upload |
-| POST | `/edk/uploads` | admin | Upload `file` (.xlsx) + `report_date` |
-| POST | `/edk/uploads/{id}/activate` | admin | Aktifkan snapshot (rollback) |
-| GET | `/edk/template` | login | Download template Excel |
-| GET | `/edk/summary/{by}` | login | `by` = `segmen` \| `periode` \| `am` \| `cc` |
-| GET | `/edk/cards` | login | Kartu KPI + persentase vs upload sebelumnya |
-| GET | `/edk/options` | login | Opsi dropdown filter |
-| GET | `/edk/top-customers` | login | Top N pelanggan (`limit`, `sort`) |
-| GET | `/edk/export` | login | `by` + `format` (`xlsx` \| `csv`) |
-| GET | `/audit-logs` | admin | Log aktivitas (paginasi) |
+| GET/PUT | `/profile`, `/profile/password` | login | Profil sendiri, ganti password (wajib password lama) |
+| GET | `/edk/uploads`, `/edk/summary/{by}`, `/edk/cards`, `/edk/options`, `/edk/top-customers`, `/edk/template` | `edk.view` | Data EDK |
+| POST | `/edk/uploads`, `/edk/uploads/{id}/activate` | `edk.upload` | Upload & rollback snapshot |
+| GET | `/edk/export` | `edk.export` | `by` + `format` (`xlsx` \| `csv`) |
+| GET | `/kuadran` | `kuadran.view` | Ringkasan kuadran |
+| POST/DELETE | `/kuadran/sync`, `/kuadran/{bulan}` | `kuadran.manage` | Simpan / hapus data kuadran |
+| GET | `/mom-support` | `mom.view` atau `dashboard.view` | Daftar MoM |
+| POST/PUT/DELETE | `/mom-support/*` | `mom.manage` | Kelola MoM |
+| GET | `/audit-logs` | `audit.view` / `audit.view_all` | Log aktivitas (paginasi, filter) |
+| GET | `/admin/overview` | `admin.dashboard` | Ringkasan dashboard administrasi |
+| * | `/admin/users/*` | `users.*` | User & Admin Management |
+| GET/PUT | `/admin/roles`, `/admin/roles/{role}` | `roles.manage` | Matriks role & permission |
+| GET/PUT | `/admin/settings/{general\|auth\|mail}` | `system.config` / `auth.settings` / `email.config` | Pengaturan sistem |
+| * | `/admin/security/*`, `/admin/database/*`, `/admin/api-keys/*`, `/admin/backups/*`, `/admin/monitoring`, `/admin/dev/*` | Super Admin | Fitur sistem |
+
+Kolom *Akses* berisi permission yang diperiksa middleware `permission:` di `routes/api.php`.
 
 **Parameter filter bersama** (endpoint `/edk/*`): `upload_id`, `periode` (`old` = sebelum tahun laporan), `segmen`, `am`, `flag`, `q`. Nilai multi dipisah koma, contoh `?segmen=DGS,DPS&periode=old,202611`.
 
@@ -500,7 +533,8 @@ Semua endpoint berawalan `/api`. Selain `auth/login`, semua wajib header `Author
 |---|---|
 | `php artisan serve` | Menjalankan server API di `http://127.0.0.1:8000` |
 | `php artisan migrate` | Menjalankan migration database |
-| `php artisan db:seed --class=EdkUserSeeder` | Membuat / memperbarui akun admin dari `.env` |
+| `php artisan db:seed --class=EdkUserSeeder` | Membuat / memperbarui akun Super Admin & Admin dari `.env` |
+| `php artisan solaris:super-admin <NIP>` | Membuat Super Admin, atau menaikkan akun ber-NIP itu menjadi Super Admin |
 | `php artisan test` | Menjalankan seluruh test |
 | `php artisan route:list --path=api` | Melihat daftar endpoint |
 | `php artisan optimize:clear` | Membersihkan cache config, route, dan view |
@@ -534,7 +568,8 @@ Test mencakup: upload & validasi file, flag antar snapshot, rollback, konsistens
 |---|---|
 | Halaman putih / error `No QueryClient set` | `main.jsx` harus membungkus `<App />` dengan `QueryClientProvider`, `ThemeProvider`, dan `BrowserRouter` dalam **satu** elemen di `render(...)` |
 | Selalu kembali ke halaman login / `401 Unauthenticated` | Token kedaluwarsa atau belum login. Login ulang |
-| `403 Anda tidak punya akses` saat upload | Akun ber-role `viewer`. Ubah ke `admin` (lihat [Hak Akses](#-hak-akses-role)) |
+| `403 Anda tidak punya akses` | Role akun tidak memiliki permission untuk aksi itu. Minta Admin mengganti role, atau Super Admin menambah permission (lihat [Hak Akses](#-hak-akses-role)) |
+| Tidak bisa login setelah upgrade | Login kini memakai NIP. Isi NIP akun lewat **User Management**, atau jalankan `php artisan solaris:super-admin <NIP>` |
 | Error CORS di console browser | Cek `allowed_origins` di `config/cors.php`, lalu `php artisan optimize:clear` |
 | `Tidak dapat terhubung ke server` | `php artisan serve` belum berjalan, atau `VITE_API_URL` salah (restart `npm run dev` setelah ubah `.env`) |
 | Upload file besar gagal / `413` | Naikkan `upload_max_filesize` dan `post_max_size` (≥ 12M) di `php.ini`, lalu restart server |
