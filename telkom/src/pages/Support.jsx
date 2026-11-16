@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { can } from '../features/auth/auth';
 import {
   Filter,
@@ -106,6 +107,35 @@ export default function Support() {
   const [uicFilter, setUicFilter] = useState('Semua');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+
+  // Tautan dari Dashboard & pencarian global: ?uic= ?q= ?status= mengatur filter tabel,
+  // dan #support-agenda-card / #support-detail-card menggulir ke bagian yang dituju.
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const uicParam = searchParams.get('uic');
+    const qParam = searchParams.get('q');
+    const statusParam = searchParams.get('status');
+    if (uicParam === null && qParam === null && statusParam === null) return;
+    setUicFilter(UIC_FILTER_OPTIONS.some((o) => o.value === uicParam) ? uicParam : 'Semua');
+    setSearchQ(qParam ?? '');
+    setStatusFilter(['DONE', 'IN PROGRESS', 'BELUM FU'].includes(statusParam) ? statusParam : 'Semua');
+    setAgendaFilter('Semua');
+    setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
+  useEffect(() => {
+    const id = location.hash.slice(1);
+    if (!id) return undefined;
+    const t = setTimeout(() => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.style.scrollMarginTop = '96px';
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
 
   // Modals state
   const [showUpload, setShowUpload] = useState(false);

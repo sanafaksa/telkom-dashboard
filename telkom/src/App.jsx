@@ -47,6 +47,7 @@ const Login = P('Login');
 const Users = A('Users');
 const Roles = A('Roles');
 const Maintenance = A('Maintenance');
+const Inbox = A('Inbox');
 const AuditLogs = A('AuditLogs');
 const SettingsPage = A('SettingsPage');
 const Security = A('Security');
@@ -101,9 +102,10 @@ export default function App() {
                     <Route path="/admin" element={<Navigate to="/home" replace />} />
                     {guarded('/admin/users', 'users.view', <Users key="users" scope="users" />)}
                     {guarded('/admin/admins', 'admins.manage', <Users key="admins" scope="admins" />)}
-                    {guarded('/admin/roles', 'roles.manage', <Roles />)}
+                    {guarded('/admin/roles', ['roles.manage', 'roles.custom'], <Roles />)}
                     {guarded('/admin/audit-logs', ['audit.view', 'audit.view_all'], <AuditLogs />)}
                     {guarded('/admin/maintenance', 'maintenance.manage', <Maintenance />)}
+                    {guarded('/admin/inbox', 'inbox.manage', <Inbox />)}
 
                     {/* Sistem (Super Admin) */}
                     {guarded('/admin/system-config', 'system.config', <SettingsPage key="general" group="general" />)}

@@ -18,7 +18,7 @@ class SessionIdleTest extends TestCase
         $this->mockTurnstile();
 
         $res = $this->postJson('/api/auth/login', [
-            'login' => $user->email,
+            'nip' => $user->nip,
             'password' => 'rahasia-123',
             'cf-turnstile-response' => 'ok',
         ])->assertOk();

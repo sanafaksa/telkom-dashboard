@@ -72,11 +72,15 @@ class RoleController extends Controller
     {
         abort_unless(isset(Rbac::roles()[$role]), 404);
         abort_if($role === Rbac::SUPER_ADMIN, 403, 'Permission Super Admin tidak dapat diubah.');
-        abort_if(Rbac::isSystem($role) && ! $request->user()->isSuperAdmin(), 403, 'Role bawaan hanya dapat diubah Super Admin.');
+        // Admin mengatur role selain Super Admin dan Admin. Role Admin hanya dapat diubah Super Admin.
+        $actor = $request->user();
+        abort_if($role === Rbac::ADMIN && ! $actor->isSuperAdmin(), 403, 'Role Admin hanya dapat diubah Super Admin.');
+        abort_if(Rbac::isSystem($role) && ! $actor->isSuperAdmin() && $actor->role !== Rbac::ADMIN, 403, 'Role bawaan hanya dapat diubah Admin atau Super Admin.');
 
+        // Permission yang valid mengikuti batas per role (termasuk backup.manage untuk Support).
         $data = $request->validate([
             'permissions'   => 'present|array',
-            'permissions.*' => ['string', Rule::in(Rbac::grantable())],
+            'permissions.*' => ['string', Rule::in(Rbac::grantableFor($role))],
         ]);
 
         $before = Rbac::permissionsFor($role);
@@ -107,15 +111,16 @@ class RoleController extends Controller
         return response()->json(['message' => "Role {$label} dihapus. {$moved} akun dipindahkan ke role User."]);
     }
 
-    /** Verifikasi password Super Admin yang sedang login sebelum matriks role bawaan boleh diubah. */
+    /** Verifikasi password akun Super Admin / Admin yang sedang login sebelum role bawaan boleh diubah. */
     public function verifyPassword(Request $request)
     {
-        abort_unless($request->user()->isSuperAdmin(), 403, 'Hanya Super Admin yang dapat membuka kunci.');
+        $actor = $request->user();
+        abort_unless($actor->isSuperAdmin() || $actor->role === Rbac::ADMIN, 403, 'Hanya Super Admin dan Admin yang dapat membuka kunci.');
 
         $data = $request->validate(['password' => 'required|string|max:255']);
 
-        if (! Hash::check($data['password'], $request->user()->password)) {
-            throw ValidationException::withMessages(['password' => 'Kata sandi Super Admin salah.']);
+        if (! Hash::check($data['password'], $actor->password)) {
+            throw ValidationException::withMessages(['password' => 'Kata sandi Anda salah.']);
         }
 
         return response()->json(['verified' => true]);

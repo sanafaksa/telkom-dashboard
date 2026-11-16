@@ -39,11 +39,11 @@ class SystemAdminTest extends TestCase
     public function test_settings_tersimpan_dan_tercatat(): void
     {
         $this->putJson('/api/admin/settings/auth', [
-            'session_hours' => 4, 'remember_days' => 7, 'login_max_attempts' => 3,
+            'session_idle_minutes' => 20, 'login_max_attempts' => 3,
             'password_min_length' => 12, 'single_session' => true,
         ])->assertOk();
 
-        $this->assertSame(4, Settings::get('session_hours'));
+        $this->assertSame(20, Settings::get('session_idle_minutes'));
         $this->assertTrue(Settings::get('single_session'));
         $this->assertDatabaseHas('audit_logs', ['action' => 'settings.updated']);
 
@@ -51,7 +51,7 @@ class SystemAdminTest extends TestCase
         $this->postJson('/api/admin/users', ['name' => 'A', 'nip' => '71001', 'role' => 'user', 'password' => 'Pendek123'])
             ->assertStatus(422)->assertJsonValidationErrors('password');
 
-        $this->putJson('/api/admin/settings/auth', ['session_hours' => 9999])->assertStatus(422);
+        $this->putJson('/api/admin/settings/auth', ['session_idle_minutes' => 9999])->assertStatus(422);
     }
 
     public function test_pengumuman_muncul_di_payload_user(): void

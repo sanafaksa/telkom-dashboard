@@ -336,13 +336,8 @@ export default function ShareDropdown({
           throw new Error('ClipboardItem not supported');
         }
       } catch {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `solaris-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}.png`;
-        a.click();
-        URL.revokeObjectURL(url);
-        showFeedback(`Gambar ${label} diunduh sebagai file PNG!`, 'picture');
+        // Hanya salin ke clipboard, tidak mengunduh file
+        showFeedback('Browser tidak bisa menyalin gambar ke clipboard');
       }
     } catch (err) {
       console.error(err);

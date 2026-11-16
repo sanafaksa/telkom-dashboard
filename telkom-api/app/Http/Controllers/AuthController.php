@@ -20,7 +20,6 @@ class AuthController extends Controller
         $data = $request->validate([
             'nip'                    => 'required|string|max:30',
             'password'               => 'required|string|max:255',
-            'remember'               => 'boolean',
             'cf-turnstile-response'  => 'required|string',
         ]);
 
@@ -61,15 +60,13 @@ class AuthController extends Controller
             $user->tokens()->where('name', User::SESSION_TOKEN)->delete();
         }
 
-        $remember  = (bool) ($data['remember'] ?? false);
-        $expiresAt = $remember
-            ? now()->addDays(Settings::get('remember_days'))
-            : now()->addHours(Settings::get('session_hours'));
+        // Idle timeout yang sama untuk semua role (lihat AppServiceProvider).
+        $expiresAt = now()->addMinutes(Settings::get('session_idle_minutes'));
         $token = $user->createToken(User::SESSION_TOKEN, ['*'], $expiresAt)->plainTextToken;
 
         $user->forceFill(['last_login_at' => now()])->save();
 
-        Audit::log('auth.login', null, ['remember' => $remember], $user);
+        Audit::log('auth.login', null, [], $user);
 
         return response()->json([
             'token'      => $token,

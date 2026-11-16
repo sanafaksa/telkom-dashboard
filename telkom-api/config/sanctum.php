@@ -54,16 +54,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Idle Timeout (menit)
-    |--------------------------------------------------------------------------
-    | Sesi berakhir jika tidak ada request ke API selama nilai ini.
-    | Setiap request yang berhasil memperpanjang sesi sebesar nilai ini.
-    */
-
-    'idle_minutes' => (int) env('SANCTUM_IDLE_MINUTES', 15),
-
-    /*
-    |--------------------------------------------------------------------------
     | Token Prefix
     |--------------------------------------------------------------------------
     |

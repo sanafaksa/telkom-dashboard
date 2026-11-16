@@ -1,4 +1,4 @@
-import { useMemo, useState, Fragment, useRef, useEffect } from 'react';
+import { useMemo, useState, Fragment, useRef, useEffect, useLayoutEffect } from 'react';
 import { clearDraft, clearDraftFiles, loadDraft, loadDraftFiles, saveDraft, saveDraftFiles, useOpenDraftIntent } from '../lib/draft';
 
 const EDK_DRAFT_FILES = 'edk-upload-files';
@@ -81,6 +81,7 @@ const toTitleCase = (str) => {
 
 const MODE_TO_TAB = { Segmen: 'segmen', 'Periode EDK': 'periode', 'Nama AM': 'am', Status: 'cc' };
 const TAB_TO_MODE = { segmen: 'Segmen', periode: 'Periode EDK', am: 'Nama AM', cc: 'Status' };
+
 const STATUS_TABS = [
   { value: 'lanjut', label: 'Lanjut' },
   { value: 'tidak_lanjut', label: 'Tidak Lanjut' },
@@ -101,10 +102,143 @@ const splitList = (v) => (v ? String(v).split(',').filter(Boolean) : []);
 
 const sumBy = (items, key) => items.reduce((acc, it) => acc + (it[key] || 0), 0);
 
+// Subtotal per kolom pada baris "Subtotal Segmen" (dijumlah dari baris AM di grup).
+const AMOUNT_KEYS = ['la', 'lpa', 'ta', 'tpa', 'k_auto_a', 'k_prog_a', 'ba', 'ta2'];
+const SUBTOTAL_BORDER = {
+  lpa: 'border-r border-slate-300',
+  tpa: 'border-r border-slate-300',
+  k_prog_a: 'border-r border-slate-300',
+  ba: 'border-r border-slate-300',
+  ta2: '',
+};
+
+const subtotalCell = (items, key) => {
+  const value = sumBy(items, key);
+  const isAmount = AMOUNT_KEYS.includes(key);
+  const border = SUBTOTAL_BORDER[key] ?? 'border-r border-slate-200';
+  return (
+    <td
+      key={key}
+      className={`px-3 py-2 tabular-nums text-xs font-bold text-[#1D4ED8] ${isAmount ? 'text-right' : 'text-center'} ${border}`}
+    >
+      {isAmount ? formatRupiah(value) : cellFmt(value)}
+    </td>
+  );
+};
+
 const todayLocal = () => {
   const d = new Date();
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 };
+
+/**
+ * Header tabel yang "freeze" saat halaman di-scroll.
+ * Tabel dibiarkan tampil penuh (tanpa scroll vertikal di dalamnya), jadi thead yang menempel
+ * dibuat sebagai salinan fixed tepat di bawah bar Last Update. Scroll horizontal disinkronkan
+ * dengan tabel asli dan lebar kolom diambil dari header asli, supaya kolomnya tetap sejajar.
+ */
+function FloatingTableHead({ tableRef, wrapRef, barRef }) {
+  const floatRef = useRef(null);
+  const hostRef = useRef(null);
+  const htmlRef = useRef('');
+  const lastKeyRef = useRef('');
+  const [active, setActive] = useState(false);
+  const [box, setBox] = useState({ top: 0, left: 0, width: 0, height: 0 });
+
+  const update = () => {
+    const table = tableRef.current;
+    const wrap = wrapRef.current;
+    const bar = barRef.current;
+    const thead = table?.tHead;
+    const host = hostRef.current;
+    if (!table || !wrap || !bar || !thead || !host) return;
+
+    // Posisi bar saat menempel: header aplikasi (64px, sticky) + tinggi bar. Tidak memakai posisi bar saat ini.
+    const top = 64 + bar.offsetHeight;
+    const headRect = thead.getBoundingClientRect();
+    const tableRect = table.getBoundingClientRect();
+    const wrapRect = wrap.getBoundingClientRect();
+    const show = headRect.top < top && tableRect.bottom > top + headRect.height;
+
+    const key = `${show}|${Math.round(top)}|${Math.round(wrapRect.left)}|${Math.round(wrapRect.width)}|${Math.round(headRect.height)}`;
+    if (key !== lastKeyRef.current) {
+      lastKeyRef.current = key;
+      setActive(show);
+      setBox({ top, left: wrapRect.left, width: wrapRect.width, height: headRect.height });
+    }
+    if (!show) return;
+
+    if (htmlRef.current !== thead.outerHTML) {
+      htmlRef.current = thead.outerHTML;
+      host.innerHTML = `<table class="${table.className}" style="table-layout:fixed;background:white"><colgroup></colgroup>${thead.outerHTML}</table>`;
+    }
+
+    // Lebar kolom diambil dari baris isi yang strukturnya rata (tanpa colspan), supaya header
+    // beku selalu sejajar dengan kolom tabel meskipun header bertingkat (rowspan/colspan).
+    const colCount = Array.from(thead.rows[0].cells).reduce((sum, c) => sum + c.colSpan, 0);
+    const bodyRow = Array.from(table.tBodies[0]?.rows ?? []).find(
+      (r) => r.cells.length === colCount && Array.from(r.cells).every((c) => c.colSpan === 1),
+    );
+    const source = bodyRow ? bodyRow.cells : thead.rows[thead.rows.length - 1].cells;
+    const widths = Array.from(source, (c) => c.getBoundingClientRect().width);
+    const cloneTable = host.querySelector('table');
+    const colgroup = host.querySelector('colgroup');
+    if (colgroup.children.length !== widths.length) {
+      colgroup.innerHTML = widths.map(() => '<col>').join('');
+    }
+    Array.from(colgroup.children).forEach((col, i) => {
+      col.style.width = `${widths[i]}px`;
+    });
+    cloneTable.style.width = `${tableRect.width}px`;
+  };
+
+  // Jalankan setiap render (perubahan data/mode bisa mengubah header).
+  useEffect(() => {
+    update();
+  });
+
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    const syncX = () => {
+      if (floatRef.current && wrap) floatRef.current.scrollLeft = wrap.scrollLeft;
+    };
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    wrap?.addEventListener('scroll', syncX, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+      wrap?.removeEventListener('scroll', syncX);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (active && floatRef.current && wrapRef.current) {
+      floatRef.current.scrollLeft = wrapRef.current.scrollLeft;
+    }
+  }, [active, box]);
+
+  return (
+    <div
+      ref={floatRef}
+      aria-hidden="true"
+      style={{
+        position: 'fixed',
+        top: box.top,
+        left: box.left,
+        width: box.width,
+        height: box.height,
+        overflow: 'hidden',
+        zIndex: 30,
+        display: active ? 'block' : 'none',
+        clipPath: 'inset(0)',
+      }}
+      className="bg-white shadow-[0_2px_8px_-2px_rgba(0,0,0,0.12)]"
+    >
+      <div ref={hostRef} />
+    </div>
+  );
+}
 
 function StatusPanel({
   status,
@@ -113,6 +247,7 @@ function StatusPanel({
   onProgressChange,
   rows,
   totalAbonemen,
+  lastUpdate,
   isLoading,
   error,
   pageIndex,
@@ -125,6 +260,55 @@ function StatusPanel({
   onCloseDetail,
   onDashboardModeChange
 }) {
+  const barRef = useRef(null);
+
+  // Popup detail mengikuti tombol mata yang diklik: ke bawah jika ruang cukup, kalau tidak ke atas.
+  const anchorRef = useRef(null);
+  const popupRef = useRef(null);
+  const [popupPos, setPopupPos] = useState(null);
+  const placePopup = () => {
+    const anchor = anchorRef.current;
+    if (!anchor?.isConnected) return;
+    const r = anchor.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const gap = 8;
+    const margin = 16;
+    const width = Math.min(768, vw - margin * 2);
+    const left = Math.min(Math.max(r.right - width, margin), vw - width - margin);
+    const spaceBelow = vh - r.bottom - gap - margin;
+    const spaceAbove = r.top - gap - margin;
+    const down = spaceBelow >= 320 || spaceBelow >= spaceAbove;
+    setPopupPos({
+      left,
+      width,
+      maxHeight: Math.max(200, down ? spaceBelow : spaceAbove),
+      ...(down ? { top: r.bottom + gap } : { bottom: vh - r.top + gap })
+    });
+  };
+  useLayoutEffect(() => {
+    if (!detailKey) return undefined;
+    placePopup();
+    window.addEventListener('scroll', placePopup, true);
+    window.addEventListener('resize', placePopup);
+    return () => {
+      window.removeEventListener('scroll', placePopup, true);
+      window.removeEventListener('resize', placePopup);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailKey]);
+
+  // Header tabel menempel tepat di bawah bar Last Update (header aplikasi 64px + tinggi bar).
+  const [headTop, setHeadTop] = useState(140);
+  useEffect(() => {
+    const measure = () => {
+      const h = barRef.current?.getBoundingClientRect().height;
+      if (h) setHeadTop(64 + h);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
   const visibleRows = rows.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
   const statusLabel = STATUS_TABS.find((item) => item.value === status)?.label ?? status;
@@ -136,8 +320,14 @@ function StatusPanel({
   }[value] ?? value);
 
   return (
-    <section className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
-      <div className="px-5 pt-4 flex justify-end">
+    <section id="edk-status-section" className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
+      <div ref={barRef} className="sticky top-16 z-40 rounded-t-2xl bg-white px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4 text-xs">
+        <div className="flex items-center gap-2.5">
+          <span className="size-2.5 rounded-full bg-[#2563EB]" />
+          <span className="text-slate-500 font-medium">Last Update :</span>
+          <b className="font-bold text-slate-800">{lastUpdate ? formatLastUpdate(lastUpdate) : 'Belum ada update'}</b>
+          {isLoading && <span className="text-slate-400">Memuat data…</span>}
+        </div>
         <div className="flex items-center gap-1 bg-slate-100/90 p-1.5 rounded-xl border border-slate-200/80">
           {['Segmen', 'Periode EDK', 'Nama AM', 'Status'].map((item) => (
             <button
@@ -159,8 +349,6 @@ function StatusPanel({
           </div>
           <div className="text-left sm:text-right">
             <p className="text-2xl md:text-[26px] font-extrabold tracking-tight mt-0.5">Rp {formatRupiahShort(totalAbonemen)}</p>
-
-            <p className="text-2xl md:text-[26px] font-extrabold tracking-tight mt-0.5">Rp {Number(totalAbonemen || 0).toLocaleString('id-ID')}</p>
           </div>
         </div>
       </div>
@@ -203,9 +391,9 @@ function StatusPanel({
       ) : rows.length === 0 ? (
         <div className="px-5 py-16 text-center text-sm text-slate-400">Tidak ada pelanggan pada kombinasi Status dan Progress ini.</div>
       ) : (
-        <div className="overflow-auto max-h-[70vh]">
+        <div style={{ overflow: 'visible' }}>
           <table className="w-full min-w-[760px] text-xs">
-            <thead className="sticky top-0 z-10 bg-slate-50 text-slate-600">
+            <thead className="sticky z-10 bg-slate-50 text-slate-600" style={{ top: headTop }}>
               <tr>
                 <th className="px-5 py-3 text-center font-bold w-12">#</th>
                 <th className="px-4 py-3 text-left font-bold">Nama Pelanggan / Akun Entitas</th>
@@ -240,7 +428,7 @@ function StatusPanel({
                     </div>
                   </td>
                   <td className="px-5 py-3 text-center">
-                    <button type="button" onClick={() => onOpenDetail(row.customer_key ?? row.nama_pelanggan)} className="inline-flex items-center justify-center size-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-blue-50 hover:text-blue-700 cursor-pointer" title="Lihat detail">
+                    <button type="button" onClick={(e) => { anchorRef.current = e.currentTarget; onOpenDetail(row.customer_key ?? row.nama_pelanggan); }} className="inline-flex items-center justify-center size-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-blue-50 hover:text-blue-700 cursor-pointer" title="Lihat detail">
                       <Eye size={14} />
                     </button>
                   </td>
@@ -264,17 +452,23 @@ function StatusPanel({
       </div>
 
       {detailKey && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40" onClick={onCloseDetail} />
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[80vh] overflow-hidden">
+        <div className="fixed inset-0 z-[70]" onClick={onCloseDetail}>
+          <div
+            ref={popupRef}
+            onClick={(e) => e.stopPropagation()}
+            style={popupPos ? { position: 'fixed', ...popupPos } : { position: 'fixed', visibility: 'hidden' }}
+            className="bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col border border-slate-100"
+          >
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <div><h3 className="font-bold text-slate-900">Detail Pelanggan</h3><p className="text-xs text-slate-500 mt-1">{detailKey}</p></div>
               <button type="button" onClick={onCloseDetail} className="size-8 grid place-items-center rounded-lg hover:bg-slate-100 cursor-pointer"><X size={16} /></button>
             </div>
-            <div className="p-5 overflow-auto max-h-[60vh]">
+            <div className="overflow-auto flex-1 min-h-[160px]">
+              <div className="px-5 pb-5">
               {detailQuery.isFetching ? <p className="py-10 text-center text-sm text-slate-400">Memuat detail…</p> : detailQuery.error ? <p className="py-10 text-center text-sm text-rose-600">{detailQuery.error.message}</p> : detailQuery.data?.rows?.length ? (
-                <table className="w-full text-xs"><thead className="bg-slate-50"><tr><th className="px-3 py-2 text-left">SID</th><th className="px-3 py-2 text-left">Periode</th><th className="px-3 py-2 text-left">Status</th><th className="px-3 py-2 text-right">Order</th><th className="px-3 py-2 text-right">Abonemen</th></tr></thead><tbody>{detailQuery.data.rows.map((item) => <tr key={`${item.sid}-${item.periode_edk}`} className="border-t border-slate-100"><td className="px-3 py-2">{item.sid}</td><td className="px-3 py-2">{item.periode_edk ?? '-'}</td><td className="px-3 py-2">{item.status_utama} · {item.status_detail}</td><td className="px-3 py-2 text-right">{item.order_qty}</td><td className="px-3 py-2 text-right">{formatRupiah(item.abonemen)}</td></tr>)}</tbody></table>
+                <table className="w-full text-xs"><thead className="sticky top-0 z-10 bg-slate-50"><tr><th className="px-3 py-2 text-left">SID</th><th className="px-3 py-2 text-left">Periode</th><th className="px-3 py-2 text-left">Status</th><th className="px-3 py-2 text-right">Order</th><th className="px-3 py-2 text-right">Abonemen</th></tr></thead><tbody>{detailQuery.data.rows.map((item) => <tr key={`${item.sid}-${item.periode_edk}`} className="border-t border-slate-100"><td className="px-3 py-2">{item.sid}</td><td className="px-3 py-2">{item.periode_edk ?? '-'}</td><td className="px-3 py-2">{item.status_utama} · {item.status_detail}</td><td className="px-3 py-2 text-right">{item.order_qty}</td><td className="px-3 py-2 text-right">{formatRupiah(item.abonemen)}</td></tr>)}</tbody></table>
               ) : <p className="py-10 text-center text-sm text-slate-400">Detail tidak ditemukan.</p>}
+              </div>
             </div>
           </div>
         </div>
@@ -631,6 +825,24 @@ export default function Edk() {
   const [statusPageSize, setStatusPageSize] = useState(5);
   const [statusPageIndex, setStatusPageIndex] = useState(0);
   const [detailKey, setDetailKey] = useState(null);
+  const barRef = useRef(null);
+  const wrapRef = useRef(null);
+  const tableRef = useRef(null);
+  const [collapsedAmGroups, setCollapsedAmGroups] = useState({});
+  // Grup yang sedang animasi tutup: baris AM tetap dirender sampai animasi selesai.
+  const [hidingAmGroups, setHidingAmGroups] = useState({});
+  const toggleAmGroup = (name) => {
+    if (collapsedAmGroups[name]) {
+      setCollapsedAmGroups((prev) => ({ ...prev, [name]: false }));
+      return;
+    }
+    if (hidingAmGroups[name]) return;
+    setHidingAmGroups((prev) => ({ ...prev, [name]: true }));
+    setTimeout(() => {
+      setCollapsedAmGroups((prev) => ({ ...prev, [name]: true }));
+      setHidingAmGroups((prev) => ({ ...prev, [name]: false }));
+    }, 200);
+  };
 
   // ── Opsi dropdown dari /edk/options ──
   const { data: options } = useEdkOptions(filters.upload_id);
@@ -892,7 +1104,7 @@ export default function Edk() {
           {/* Salin & Bagikan Dropdown Button */}
           <ShareDropdown
             buttonLabel="Salin & Bagikan"
-            captureSelector="#edk-main-content"
+            captureSelector="#edk-capture-area"
             getLink={getReportLink}
           />
         </div>
@@ -915,8 +1127,10 @@ export default function Edk() {
         </div>
       )}
 
+      {/* Area yang difoto saat Salin & Bagikan → Copy as Picture: dari card KPI sampai tabel */}
+      <div id="edk-capture-area" className="space-y-4">
       {/* 2. KPI Cards (Dinamis Bereaksi Terhadap Filter) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div id="edk-cards-section" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {/* Total Order */}
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs">
           <p className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">
@@ -970,7 +1184,7 @@ export default function Edk() {
 
       {/* 3. Filter Toolbar */}
       <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs">
-        <div className="flex flex-wrap items-end gap-3 w-full">
+        <div className="flex flex-wrap items-end gap-2 w-full">
           <FilterDropdown
             label="Bulan Populasi EDK"
             options={populationOptions.map((item) => item.label)}
@@ -984,7 +1198,7 @@ export default function Edk() {
             isSort
             disabled={populationOptions.length === 0}
             placeholder={populationOptions.length === 0 ? 'Belum ada populasi sukses' : 'Pilih populasi'}
-            className="flex-1 min-w-[190px]"
+            className="flex-auto"
           />
 
 
@@ -994,7 +1208,7 @@ export default function Edk() {
             selected={selectedPeriode}
             onChange={setSelectedPeriode}
             multiColumn
-            className="flex-1 min-w-[130px]"
+            className="flex-auto"
           />
 
           <FilterDropdown
@@ -1002,7 +1216,7 @@ export default function Edk() {
             options={filterOptions.segmen}
             selected={selectedSegmen}
             onChange={handleSegmenFilterChange}
-            className="flex-1 min-w-[110px]"
+            className="flex-auto"
           />
 
           <FilterDropdown
@@ -1010,7 +1224,7 @@ export default function Edk() {
             options={filterOptions.namaAm}
             selected={selectedNamaAm}
             onChange={setSelectedNamaAm}
-            className="flex-1 min-w-[130px]"
+            className="flex-auto"
           />
 
           <FilterDropdown
@@ -1018,7 +1232,7 @@ export default function Edk() {
             options={filterOptions.flagging}
             selected={selectedFlagging}
             onChange={setSelectedFlagging}
-            className="flex-1 min-w-[150px]"
+            className="flex-auto"
           />
 
           {/* Tampilkan Sort / Nama Pelanggan hanya pada mode selain Nama AM */}
@@ -1029,12 +1243,28 @@ export default function Edk() {
               selected={[sortOrder]}
               onChange={(val) => setSortOrder(val[0] || 'Sort by')}
               isSort
-              className="flex-1 min-w-[130px]"
+              className="flex-auto"
             />
           )}
 
+          <button
+            type="button"
+            onClick={resetFilters}
+            className={`font-semibold text-xs px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer h-[32px] shrink-0 whitespace-nowrap ${
+              hasActiveFilters
+                ? 'bg-blue-50 text-[#1D4ED8] border border-blue-200 hover:bg-blue-100 shadow-2xs font-bold'
+                : 'bg-white hover:bg-slate-50 border border-slate-200/90 text-slate-600 shadow-2xs'
+            }`}
+          >
+            <RotateCcw size={13} className={hasActiveFilters ? 'text-[#1D4ED8]' : 'text-slate-500'} />
+            <span className="whitespace-nowrap">Reset Filter</span>
+            {hasActiveFilters && (
+              <span className="size-1.5 rounded-full bg-[#1D4ED8]" />
+            )}
+          </button>
+
           {isStatusView && (
-            <label className="flex-1 min-w-[190px]">
+            <label className="flex-auto min-w-[160px]">
               <span className="block text-[11px] font-semibold text-slate-500 mb-1">Cari Nama Pelanggan</span>
               <input
                 type="search"
@@ -1050,22 +1280,6 @@ export default function Edk() {
               />
             </label>
           )}
-
-          <button
-            type="button"
-            onClick={resetFilters}
-            className={`font-semibold text-xs px-3.5 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer h-[32px] shrink-0 ${
-              hasActiveFilters
-                ? 'bg-blue-50 text-[#1D4ED8] border border-blue-200 hover:bg-blue-100 shadow-2xs font-bold'
-                : 'bg-white hover:bg-slate-50 border border-slate-200/90 text-slate-600 shadow-2xs'
-            }`}
-          >
-            <RotateCcw size={13} className={hasActiveFilters ? 'text-[#1D4ED8]' : 'text-slate-500'} />
-            <span className="whitespace-nowrap">Reset Filter</span>
-            {hasActiveFilters && (
-              <span className="size-1.5 rounded-full bg-[#1D4ED8]" />
-            )}
-          </button>
         </div>
       </div>
 
@@ -1078,6 +1292,7 @@ export default function Edk() {
           onProgressChange={handleStatusProgressChange}
           rows={top10List}
           totalAbonemen={top10TotalAbonemen}
+          lastUpdate={lastUpdate}
           isLoading={topQ.isFetching}
           error={topQ.error}
           pageIndex={statusPageIndex}
@@ -1094,9 +1309,9 @@ export default function Edk() {
           onDashboardModeChange={handleModeChange}
         />
       ) : (
-      <section className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+      <section id="edk-table-section" className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
         {/* Table Header Status Bar */}
-        <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4 text-xs">
+        <div ref={barRef} className="sticky top-16 z-40 rounded-t-2xl bg-white px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4 text-xs">
           <div className="flex items-center gap-2.5">
             <span className="size-2.5 rounded-full bg-[#2563EB]" />
             <span className="text-slate-500 font-medium">Last Update :</span>
@@ -1164,10 +1379,11 @@ export default function Edk() {
         )}
 
         {/* Table Container */}
-        <div className={`overflow-auto max-h-[70vh] w-full ${isTop10View ? 'border-t border-slate-200/90' : ''}`}>
-          <table className="w-full min-w-[1550px] text-xs border-collapse border-spacing-0">
+        <div ref={wrapRef} className="relative z-0 m-5 overflow-auto max-h-none w-auto rounded-xl border border-slate-200 bg-white">
+          <FloatingTableHead tableRef={tableRef} wrapRef={wrapRef} barRef={barRef} />
+          <table ref={tableRef} className="w-full min-w-[1550px] text-xs border-collapse border-spacing-0 [&_td]:!border-slate-100 [&_th]:!border-slate-200">
             {/* z-20: header di atas sel kolom kiri (z-10). Corner cell th sticky-left memakai z-30 di dalam header. */}
-            <thead className="sticky top-0 z-20 bg-white">
+            <thead className="bg-white">
               {/* ======================================================== */}
               {/* MODE A: TOP 10 PELANGGAN (NAMA CC) */}
               {/* ======================================================== */}
@@ -1759,16 +1975,22 @@ export default function Edk() {
                       <tr className="h-10 bg-slate-50/70 border-b border-slate-200">
                         <td className="px-3.5 py-2 text-left sticky left-0 z-10 bg-slate-50 border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
                           <div className="flex items-center gap-2">
-                            <span className="size-4 rounded bg-[#1D4ED8] text-white flex items-center justify-center font-bold text-[10px] leading-none shrink-0 shadow-2xs">
-                              −
-                            </span>
+                            <button
+                              type="button"
+                              onClick={() => toggleAmGroup(group.name)}
+                              aria-expanded={!collapsedAmGroups[group.name]}
+                              aria-label={collapsedAmGroups[group.name] ? `Tampilkan AM ${group.name}` : `Sembunyikan AM ${group.name}`}
+                              className="size-4 rounded bg-[#1D4ED8] text-white flex items-center justify-center font-bold text-[10px] leading-none shrink-0 shadow-2xs cursor-pointer hover:bg-[#1E40AF]"
+                            >
+                              {collapsedAmGroups[group.name] ? '+' : '−'}
+                            </button>
                             <span className="font-bold text-xs text-[#1D4ED8]">Subtotal {group.name}</span>
                             <span className="text-[11px] text-slate-500 font-normal">({group.items.length} Account Manager)</span>
                           </div>
                         </td>
 
                         {/* Middle blank cells under Lanjut & Tidak Lanjut: 8 kolom */}
-                        <td colSpan={8} className="border-r border-slate-300" />
+                        {['lc', 'la', 'lp', 'lpa', 'tc', 'ta', 'tp', 'tpa'].map((k) => subtotalCell(group.items, k))}
 
                         {/* Konfirmasi AM Subtotals (4 kolom) */}
                         <td className="px-3 py-2 text-center tabular-nums text-xs font-bold text-[#1D4ED8] border-r border-slate-200">
@@ -1785,15 +2007,20 @@ export default function Edk() {
                         </td>
 
                         {/* Bukan Witel Solo JT empty for subtotal header (2 kolom) */}
-                        <td colSpan={2} className="border-r border-slate-300" />
+                        {['b', 'ba'].map((k) => subtotalCell(group.items, k))}
 
                         {/* Total EDK empty for subtotal header (2 kolom) */}
-                        <td colSpan={2} />
+                        {['to', 'ta2'].map((k) => subtotalCell(group.items, k))}
                       </tr>
 
                       {/* Member Rows */}
-                      {group.items.map((am) => (
-                        <tr key={am.l} className="h-10 border-b border-slate-100 hover:bg-blue-50/40 transition-colors bg-white">
+                      {!collapsedAmGroups[group.name] && group.items.map((am) => (
+                        <tr
+                          key={am.l}
+                          className={`h-10 border-b border-slate-100 hover:bg-blue-50/40 transition-colors bg-white ${
+                            hidingAmGroups[group.name] ? 'animate-[amRowOut_0.2s_ease-in_forwards]' : 'animate-[amRowIn_0.22s_ease-out]'
+                          }`}
+                        >
                           <td className="px-3.5 py-2 text-left sticky left-0 z-10 bg-white border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.08)] whitespace-nowrap">
                             <div className="flex items-center gap-2 pl-3">
                               <span className="size-1.5 rounded-full bg-[#1D4ED8] inline-block shrink-0" />
@@ -2273,6 +2500,7 @@ export default function Edk() {
         </div>
       </section>
       )}
+      </div>
 
       {/* Upload Report Modal */}
       <UploadModal

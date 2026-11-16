@@ -67,6 +67,17 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Collapse/expand baris AM (Nama AM). Sengaja tanpa prefers-reduced-motion: selalu berjalan. */
+@keyframes amRowIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes amRowOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-6px); }
+}
+
 @keyframes wiggle {
   0%, 100% { transform: rotate(-8deg); }
   50% { transform: rotate(8deg); }
@@ -92,8 +103,9 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Tanpa "forwards": transform yang tertahan membuat elemen fixed (header beku tabel) salah posisi. */
 .page-enter {
-  animation: slideUpIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slideUpIn 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .login-grid-pattern {

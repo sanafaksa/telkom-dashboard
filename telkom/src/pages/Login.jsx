@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { login } from '../features/auth/auth';
+import HelpRequestForm from '../components/HelpRequestForm';
 
 // Badge verified ala centang biru Twitter: lingkaran bergelombang dengan tanda centang putih.
 const VERIFIED_POINTS = Array.from({ length: 120 }, (_, i) => {
@@ -39,7 +40,6 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [authStatus, setAuthStatus] = useState('idle'); // 'idle' | 'verifying' | 'granted' | 'opening_up'
   const [error, setError] = useState('');
   const [forgotModal, setForgotModal] = useState(false);
@@ -153,7 +153,7 @@ export default function Login() {
     setAuthStatus('verifying');
 
     try {
-      await login(email.trim(), password, rememberMe, turnstileToken);
+      await login(email.trim(), password, turnstileToken);
       startLoginSequence();
     } catch (err) {
       setAuthStatus('idle');
@@ -486,22 +486,6 @@ export default function Login() {
                   </div>
                 </div>
 
-                {/* Remember Me */}
-                <div className="flex items-center justify-between pt-1">
-                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      disabled={isVerifying || isGranted}
-                      className="size-4 rounded border-slate-300 text-[#1447B8] focus:ring-[#2563EB] cursor-pointer"
-                    />
-                    <span className="text-xs text-slate-600 font-medium">
-                      Ingat sesi saya di perangkat ini
-                    </span>
-                  </label>
-                </div>
-
                 {/* Cloudflare Turnstile */}
                 <div ref={turnstileRef} className="flex justify-center" />
 
@@ -598,6 +582,8 @@ export default function Login() {
                 </p>
               </div>
             </div>
+
+            <HelpRequestForm />
 
             <div className="space-y-3 text-xs text-slate-600 bg-slate-50 p-4 rounded-2xl border border-slate-200/80 mb-5">
               <p className="leading-relaxed">

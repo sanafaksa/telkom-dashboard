@@ -6,7 +6,7 @@ import { can, getUser } from '../../features/auth/auth';
 import { Btn, Card, errText, Field, inputCls, Modal, Notice, Page, Query, RoleBadge } from '../../features/admin/kit';
 
 const IDLE_LOCK_MS = 5 * 60 * 1000;
-const SUPPORT_EXTRA = ['audit.view', 'maintenance.manage'];
+const SUPPORT_EXTRA = ['audit.view', 'maintenance.manage', 'inbox.manage', 'backup.manage'];
 
 const draftFrom = (data) => Object.fromEntries(data.roles.map((r) => [r.key, new Set(r.permissions)]));
 
@@ -26,6 +26,9 @@ const restricted = (roleKey, p) => {
   return ['staff', 'support', 'user'].includes(roleKey);
 };
 
+// Permission grup Sistem hanya untuk Super Admin, kecuali yang boleh diberikan ke Support (backup.manage).
+const superLocked = (roleKey, p) => p.super_only && !(roleKey === 'support' && SUPPORT_EXTRA.includes(p.key));
+
 function UnlockModal({ onClose, onVerified }) {
   const [password, setPassword] = useState('');
 
@@ -42,7 +45,7 @@ function UnlockModal({ onClose, onVerified }) {
   return (
     <Modal
       title="Buka Kunci Akses"
-      sub="Masukkan kata sandi Super Admin Anda untuk mengubah role bawaan."
+      sub="Masukkan kata sandi akun Anda untuk mengubah role bawaan."
       onClose={onClose}
       footer={
         <>
@@ -54,7 +57,7 @@ function UnlockModal({ onClose, onVerified }) {
       }
     >
       <form onSubmit={submit} className="space-y-4">
-        <Field label="Kata sandi Super Admin">
+        <Field label="Kata sandi Anda">
           <input
             type="password"
             autoFocus
@@ -119,13 +122,18 @@ function Matrix({ data }) {
   const [msg, setMsg] = useState(null);
   const [activity, setActivity] = useState(0);
 
-  const isSuper = getUser()?.role === 'super_admin';
+  const role = getUser()?.role;
+  const isSuper = role === 'super_admin';
+  const isAdmin = role === 'admin';
+  const canUnlock = isSuper || isAdmin;
   const canCustom = can('roles.custom');
 
-  // Role bawaan hanya bisa diubah Super Admin yang sudah membuka kunci. Role buatan bisa diubah Admin langsung.
+  // Role bawaan (selain Super Admin dan Admin) dikunci: Super Admin & Admin harus membuka kunci dengan kata sandi sendiri.
+  // Role Admin hanya bisa diubah Super Admin. Role buatan bisa diubah langsung oleh yang punya roles.custom.
   const canEdit = (r) => {
     if (r.key === 'super_admin') return false;
-    if (r.is_system) return isSuper && !isLocked;
+    if (r.key === 'admin') return isSuper && !isLocked;
+    if (r.is_system) return canUnlock && !isLocked;
     return canCustom;
   };
 
@@ -186,7 +194,7 @@ function Matrix({ data }) {
   }, [isLocked, activity]);
 
   const grantableKeysFor = (roleKey) =>
-    data.permissions.filter((p) => !p.super_only && !restricted(roleKey, p)).map((p) => p.key);
+    data.permissions.filter((p) => !superLocked(roleKey, p) && !restricted(roleKey, p)).map((p) => p.key);
   const allChecked = (roleKey) => grantableKeysFor(roleKey).every((k) => draft[roleKey]?.has(k));
   const toggleAllFor = (roleKey) =>
     setDraft((d) => ({ ...d, [roleKey]: allChecked(roleKey) ? new Set() : new Set(grantableKeysFor(roleKey)) }));
@@ -255,7 +263,7 @@ function Matrix({ data }) {
                           <code className="ml-2 text-[10px] text-slate-400">{p.key}</code>
                         </td>
                         {data.roles.map((r) => {
-                          const locked = r.locked || p.super_only || restricted(r.key, p);
+                          const locked = r.locked || superLocked(r.key, p) || restricted(r.key, p);
                           const checked = r.locked ? true : !locked && !!draft[r.key]?.has(p.key);
                           return (
                             <td key={r.key} className="px-3 py-2 text-center">
@@ -290,7 +298,7 @@ function Matrix({ data }) {
 
       <div className="sticky bottom-4 z-20 mt-6 flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white/95 px-6 py-3.5 shadow-lg backdrop-blur-md">
         <div className="flex flex-wrap items-center gap-3 text-xs text-mute">
-          {isSuper &&
+          {canUnlock &&
             (isLocked ? (
               <Btn icon={Lock} onClick={() => setShowUnlock(true)}>
                 Buka Kunci Akses
@@ -303,11 +311,11 @@ function Matrix({ data }) {
           <span>
             {changed.length
               ? `${changed.length} role berubah belum disimpan.`
-              : isSuper && isLocked
-              ? 'Role bawaan terkunci. Buka kunci untuk mengubahnya.'
-              : isSuper
+              : canUnlock && isLocked
+              ? 'Role bawaan terkunci. Buka kunci dengan kata sandi Anda untuk mengubahnya.'
+              : canUnlock
               ? `Tidak ada perubahan. Terkunci otomatis setelah ${IDLE_LOCK_MS / 60000} menit tanpa aktivitas.`
-              : 'Role buatan Anda bisa diatur langsung. Role bawaan hanya dapat diubah Super Admin.'}
+              : 'Atur permission semua role selain Super Admin dan Admin. Perubahan berlaku pada request berikutnya.'}
           </span>
         </div>
         <Btn
@@ -327,7 +335,7 @@ function Matrix({ data }) {
           onVerified={() => {
             setIsLocked(false);
             setShowUnlock(false);
-            setMsg({ tone: 'ok', text: 'Akses dibuka. Anda dapat mengubah role bawaan.' });
+            setMsg({ tone: 'ok', text: 'Akses dibuka. Anda dapat mengubah role bawaan selain Super Admin.' });
           }}
         />
       )}

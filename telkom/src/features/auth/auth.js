@@ -57,11 +57,10 @@ export async function refreshUser() {
   return user;
 }
 
-export async function login(nip, password, remember = false, turnstileToken = '') {
+export async function login(nip, password, turnstileToken = '') {
   const res = await apiPost('/auth/login', {
     nip,
     password,
-    remember,
     'cf-turnstile-response': turnstileToken,
   });
   localStorage.setItem(TOKEN_KEY, res.token);

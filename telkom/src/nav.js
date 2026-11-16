@@ -11,6 +11,7 @@ import {
   KeyRound,
   ScrollText,
   Wrench,
+  Inbox,
   Fingerprint,
   ShieldAlert,
   Database,
@@ -46,9 +47,10 @@ export const NAV = [
     items: [
       { to: '/admin/users', icon: Users, label: 'User Management', desc: 'Kelola akun pengguna', perm: 'users.view' },
       { to: '/admin/admins', icon: ShieldCheck, label: 'Admin Management', desc: 'Kelola Admin & Super Admin', perm: 'admins.manage' },
-      { to: '/admin/roles', icon: KeyRound, label: 'Role & Permission', desc: 'Atur permission tiap role', perm: 'roles.manage' },
+      { to: '/admin/roles', icon: KeyRound, label: 'Role & Permission', desc: 'Atur permission tiap role', perm: ['roles.manage', 'roles.custom'] },
       { to: '/admin/audit-logs', icon: ScrollText, label: 'Audit Logs', desc: 'Riwayat aktivitas sistem', perm: ['audit.view', 'audit.view_all'] },
       { to: '/admin/maintenance', icon: Wrench, label: 'Mode Pemeliharaan', desc: 'Atur maintenance sistem', perm: 'maintenance.manage' },
+      { to: '/admin/inbox', icon: Inbox, label: 'Kotak Masuk Aduan', desc: 'Aduan lupa kata sandi', perm: 'inbox.manage' },
     ],
   },
   {

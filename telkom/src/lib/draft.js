@@ -33,7 +33,8 @@ export const DRAFT_CATALOG = {
 
 function scopedKey(key) {
   const user = getUser();
-  const owner = user?.email || user?.nik || 'anon';
+  // Payload login memakai "nip" (bukan "nik"). Tanpa ini, user yang tidak punya email berbagi draft "anon".
+  const owner = user?.email || user?.nip || 'anon';
   return `${PREFIX}:${owner}:${key}`;
 }
 

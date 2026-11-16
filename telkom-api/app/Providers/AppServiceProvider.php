@@ -30,6 +30,20 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        // Idle timeout untuk semua role (termasuk Super Admin dan Admin): token berakhir bila tidak dipakai
+        // selama session_idle_minutes (Authentication Settings). Setiap request valid memperpanjang expires_at.
+        Sanctum::authenticateAccessTokensUsing(function (PersonalAccessToken $token, bool $isValid) {
+            if (! $isValid) {
+                return false;
+            }
+
+            $token->forceFill([
+                'expires_at' => now()->addMinutes(Settings::get('session_idle_minutes')),
+            ])->save();
+
+            return true;
+        });
+
         // Seluruh endpoint administrasi.
         RateLimiter::for('admin', fn (Request $request) => Limit::perMinute(120)
             ->by('admin:' . ($request->user()?->id ?: $request->ip())));

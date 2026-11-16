@@ -9,9 +9,9 @@ import {
   ArrowRight,
   Check
 } from 'lucide-react';
-import {flow, witel, uic, activity} from '../data/dashboardData';
-import {exportCSV, ShareDropdown} from '../components/ui';
+import {ShareDropdown} from '../components/ui';
 import {loadSavedSupportData, fetchSupportFromApi, normalizeStatus} from '../data/supportParser';
+import {buildDashboardStats, UIC_FILTER_VALUES} from '../lib/supportInsights';
 
 const PAGE_SIZE = 6;
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
@@ -73,6 +73,19 @@ export default function Dashboard() {
     };
   }, []);
 
+  // Semua angka kartu dihitung dari data MoM Support (database), bukan data contoh statis
+  const stats = useMemo(() => buildDashboardStats(momItems), [momItems]);
+  const flow = {total: stats.total, pending: stats.pending, progress: stats.progress, done: stats.done};
+  const denom = flow.total || 1;
+  const witel = stats.witel;
+  const uic = stats.uic;
+
+  // Tautan ke Support Needed dengan filter UIC / pencarian yang sama dengan nama di kartu
+  const bottleneckLink = (name) =>
+    UIC_FILTER_VALUES.includes(name)
+      ? `/support-needed?uic=${encodeURIComponent(name)}#support-detail-card`
+      : `/support-needed?q=${encodeURIComponent(name)}#support-detail-card`;
+
   // Terbaru dulu: urut tanggal rapat desc, lalu id desc
   const rows = useMemo(
     () =>
@@ -117,7 +130,7 @@ export default function Dashboard() {
         <div data-html2canvas-ignore="true" className="flex items-center gap-2.5 flex-wrap">
           <ShareDropdown buttonLabel="Salin & Bagikan" />
           <button
-            onClick={() => exportCSV(activity, 'executive_summary_regional_3')}
+            onClick={() => navigate('/support-needed#support-agenda-card')}
             className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-lg flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
           >
             <FileText size={15} className="text-slate-500" />
@@ -125,7 +138,7 @@ export default function Dashboard() {
           </button>
 
           <button
-            onClick={() => alert('Jadwal meeting operasional Regional 3 telah terupdate.')}
+            onClick={() => navigate('/support-needed#support-detail-card')}
             className="bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
           >
             <CalendarDays size={15} />
@@ -191,16 +204,16 @@ export default function Dashboard() {
 
               {/* Segmented bar */}
               <div className="flex h-2 rounded-full overflow-hidden w-full bg-slate-100 gap-0.5">
-                <div className="bg-[#CBD5E1] h-full" style={{width: `${Math.round((flow.pending / flow.total) * 100)}%`}} />
-                <div className="bg-[#2563EB] h-full" style={{width: `${Math.round((flow.progress / flow.total) * 100)}%`}} />
-                <div className="bg-[#10B981] h-full" style={{width: `${Math.round((flow.done / flow.total) * 100)}%`}} />
+                <div className="bg-[#CBD5E1] h-full" style={{width: `${Math.round((flow.pending / denom) * 100)}%`}} />
+                <div className="bg-[#2563EB] h-full" style={{width: `${Math.round((flow.progress / denom) * 100)}%`}} />
+                <div className="bg-[#10B981] h-full" style={{width: `${Math.round((flow.done / denom) * 100)}%`}} />
               </div>
 
               {/* Segment labels */}
               <div className="flex items-center justify-between text-[11px] text-slate-400 mt-2">
-                <span>{Math.round((flow.pending / flow.total) * 100)}% Belum Dimulai</span>
-                <span>{Math.round((flow.progress / flow.total) * 100)}% Berjalan</span>
-                <span>{Math.round((flow.done / flow.total) * 100)}% Tuntas</span>
+                <span>{Math.round((flow.pending / denom) * 100)}% Belum Dimulai</span>
+                <span>{Math.round((flow.progress / denom) * 100)}% Berjalan</span>
+                <span>{Math.round((flow.done / denom) * 100)}% Tuntas</span>
               </div>
             </div>
           </div>
@@ -227,7 +240,7 @@ export default function Dashboard() {
                     Cabang 2 — PENDING / NOT YET
                   </span>
                   <span className="bg-[#0F172A] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    60% Mayoritas
+                    {stats.pctPending}% Mayoritas
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-400 mt-1">
@@ -253,7 +266,7 @@ export default function Dashboard() {
                     Cabang 3 — ON PROGRESS
                   </span>
                   <span className="bg-[#0F172A] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    13% In-Flight
+                    {stats.pctProgress}% In-Flight
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-400 mt-1">
@@ -279,7 +292,7 @@ export default function Dashboard() {
                     Cabang 3 — SELESAI (DONE)
                   </span>
                   <span className="bg-[#0F172A] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    27% Total
+                    {stats.pctDone}% Total
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-400 mt-1">
@@ -343,14 +356,12 @@ export default function Dashboard() {
                 <div className="flex-1 mx-4 h-2 bg-slate-100 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-[#2563EB] rounded-full transition-all duration-500"
-                    style={{width: `${(item.v / 70) * 100}%`}}
+                    style={{width: `${(item.v / stats.uicMax) * 100}%`}}
                   />
                 </div>
                 <span className="w-8 text-right font-semibold text-slate-700">{item.v}</span>
                 <button
-                  onClick={() => {
-                    setQ(item.n);
-                  }}
+                  onClick={() => navigate(bottleneckLink(item.n))}
                   className="w-32 text-right text-slate-500 hover:text-blue-600 transition-colors flex items-center justify-end gap-1 cursor-pointer font-medium"
                 >
                   <span>Lihat Bottleneck</span>

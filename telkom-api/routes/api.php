@@ -30,6 +30,9 @@ use Illuminate\Support\Facades\Route;
 // ===== Auth (NIP + password) =====
 Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
+// Aduan lupa kata sandi dari halaman login (publik, dibatasi throttle)
+Route::post('auth/help-request', [\App\Http\Controllers\HelpRequestController::class, 'store'])->middleware('throttle:5,1');
+
 // Status sistem publik untuk notifikasi pemeliharaan (polling dari frontend, tanpa login)
 Route::get('system/status', [\App\Http\Controllers\SystemStatusController::class, 'show'])->middleware('throttle:120,1');
 
@@ -104,6 +107,12 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
             Route::put('maintenance', [\App\Http\Controllers\Admin\MaintenanceController::class, 'update']);
         });
 
+        // Kotak masuk aduan lupa kata sandi (Admin & Support)
+        Route::middleware('permission:inbox.manage')->group(function () {
+            Route::get('help-requests', [\App\Http\Controllers\Admin\HelpRequestController::class, 'index']);
+            Route::patch('help-requests/{helpRequest}', [\App\Http\Controllers\Admin\HelpRequestController::class, 'update']);
+        });
+
         Route::get('overview', [OverviewController::class, 'index'])->middleware('permission:admin.dashboard');
 
         // User Management & Admin Management
@@ -124,7 +133,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::post('roles', [RoleController::class, 'store'])->middleware('permission:roles.custom');
         Route::delete('roles/{role}', [RoleController::class, 'destroy'])->middleware('permission:roles.custom');
         Route::post('roles/verify-password', [RoleController::class, 'verifyPassword'])
-            ->middleware(['permission:roles.manage', 'throttle:10,1']);
+            ->middleware(['permission:roles.manage,roles.custom', 'throttle:10,1']);
 
         // System Configuration / Authentication Settings / Email Configuration
         // (permission per grup dicek di SettingController)

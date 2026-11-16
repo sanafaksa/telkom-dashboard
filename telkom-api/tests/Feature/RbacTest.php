@@ -185,6 +185,33 @@ class RbacTest extends TestCase
         $this->postJson('/api/mom-support/reset')->assertForbidden();
     }
 
+    public function test_admin_mengatur_permission_semua_role_kecuali_super_admin(): void
+    {
+        $this->actAs('admin');
+
+        $this->putJson('/api/admin/roles/staff', ['permissions' => ['dashboard.view', 'mom.view']])
+            ->assertOk()
+            ->assertJsonPath('permissions', ['dashboard.view', 'mom.view']);
+        $this->putJson('/api/admin/roles/support', ['permissions' => ['dashboard.view']])->assertOk();
+
+        // Permission Sistem tetap khusus Super Admin, dan role Super Admin tidak bisa diubah.
+        $this->putJson('/api/admin/roles/staff', ['permissions' => ['dev.tools']])->assertStatus(422);
+        $this->putJson('/api/admin/roles/super_admin', ['permissions' => []])->assertForbidden();
+
+        // Role Admin (termasuk miliknya sendiri) hanya bisa diubah Super Admin.
+        $this->putJson('/api/admin/roles/admin', ['permissions' => ['dashboard.view']])->assertForbidden();
+    }
+
+    public function test_admin_membuka_kunci_dengan_password_sendiri(): void
+    {
+        $admin = $this->user('admin', ['password' => Hash::make('Lama12345')]);
+        Sanctum::actingAs($admin, ['*']);
+
+        $this->postJson('/api/admin/roles/verify-password', ['password' => 'salah'])->assertStatus(422);
+        $this->postJson('/api/admin/roles/verify-password', ['password' => 'Lama12345'])
+            ->assertOk()->assertJsonPath('verified', true);
+    }
+
     // ===== Admin =====
 
     public function test_admin_mengelola_pengguna_biasa(): void

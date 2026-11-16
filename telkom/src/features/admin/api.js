@@ -26,6 +26,9 @@ export const adminApi = {
 
   auditLogs: (params) => apiGet('/audit-logs', params),
 
+  helpRequests: (status) => apiGet('/admin/help-requests', { status }),
+  updateHelpRequest: (id, status) => apiPatch(`/admin/help-requests/${id}`, { status }),
+
   maintenance: () => apiGet('/admin/maintenance'),
   saveMaintenance: (body) => apiPut('/admin/maintenance', body),
 

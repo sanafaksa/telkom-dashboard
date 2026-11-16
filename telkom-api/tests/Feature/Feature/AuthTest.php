@@ -115,11 +115,11 @@ class AuthTest extends TestCase
     {
         $this->fakeTurnstile();
         $this->makeUser();
-        Settings::put(['session_hours' => 2]);
+        Settings::put(['session_idle_minutes' => 30]);
 
         $expires = $this->login()->assertOk()->json('expires_at');
 
-        $this->assertEqualsWithDelta(now()->addHours(2)->timestamp, strtotime($expires), 5);
+        $this->assertEqualsWithDelta(now()->addMinutes(30)->timestamp, strtotime($expires), 5);
     }
 
     public function test_mode_pemeliharaan_hanya_meloloskan_super_admin(): void

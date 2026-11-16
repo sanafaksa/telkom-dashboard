@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import DotGlow from './DotGlow';
 import { SystemBanners } from './SystemStatusGate';
@@ -36,6 +36,13 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { getUser, logout, refreshUser, ROLE_LABEL, ROLE_TONE } from '../features/auth/auth';
 import { visibleNav, KUADRAN_SUB } from '../nav';
+import { loadSavedSupportData, fetchSupportFromApi } from '../data/supportParser';
+import {
+  buildNotifications,
+  buildSupportSearchEntries,
+  loadNotifState,
+  saveNotifState
+} from '../lib/supportInsights';
 
 const initials = (name = '') =>
   name
@@ -383,6 +390,10 @@ const TYPE_ICON = {
   Kuadran: GridIcon,
   Witel: MapPin,
   KPI: KpiIcon,
+  Agenda: FileIcon,
+  Witel: MapPin,
+  UIC: KpiIcon,
+  'Action Plan': FileIcon,
 };
 
 const TYPE_COLOR = {
@@ -390,14 +401,11 @@ const TYPE_COLOR = {
   Kuadran: 'text-[#235CE5] bg-[#235CE5]/10',
   Witel: 'text-[#1E50BA] bg-[#DCE7FC]',
   KPI: 'text-[#2563EB] bg-[#EBF0FD]',
+  Agenda: 'text-[#0B1E48] bg-[#0B1E48]/10',
+  Witel: 'text-[#1E50BA] bg-[#DCE7FC]',
+  UIC: 'text-[#235CE5] bg-[#235CE5]/10',
+  'Action Plan': 'text-[#06246A] bg-[#06246A]/10',
 };
-
-const NOTIFS = [
-  { id: 1, title: 'KPI Witel Bandung turun', desc: 'Pencapaian revenue turun 12% dari target bulan ini.', time: '5 mnt lalu', read: false },
-  { id: 2, title: 'Laporan MoM tersedia', desc: 'Laporan Minutes of Meeting Regional 3 sudah bisa diunduh.', time: '1 jam lalu', read: false },
-  { id: 3, title: 'Update Kuadran SJT', desc: 'Data kuadran moving telah diperbarui untuk Q4 2025.', time: '3 jam lalu', read: true },
-  { id: 4, title: 'Agenda Lintas Witel', desc: 'Rapat evaluasi EDK dijadwalkan besok pukul 09.00 WIB.', time: 'Kemarin', read: true },
-];
 
 function formatDate(date) {
   return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -408,7 +416,67 @@ export default function Layout({ children }) {
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [user, setUser] = useState(getUser);
-  const searchIndex = buildSearchIndex();
+  const userKey = user?.nip || user?.email || '';
+
+  // Data MoM Support (cache lokal dulu, lalu database) jadi sumber pencarian dan notifikasi
+  const [momItems, setMomItems] = useState(() => loadSavedSupportData());
+  const [notifState, setNotifState] = useState(() => loadNotifState(userKey));
+  useEffect(() => {
+    let active = true;
+    fetchSupportFromApi().then((items) => {
+      if (!active || !Array.isArray(items)) return;
+      setMomItems(items);
+      // Pertama kali dibuka: anggap semua data yang ada sudah dilihat, supaya tidak dianggap "baru"
+      setNotifState((prev) => {
+        if (prev.lastSeenId !== null) return prev;
+        const next = { ...prev, lastSeenId: buildNotifications(items).maxId };
+        saveNotifState(userKey, next);
+        return next;
+      });
+    });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const searchIndex = useMemo(
+    () => [...buildSearchIndex(), ...buildSupportSearchEntries(momItems)],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [momItems, user]
+  );
+
+  const notifComputed = useMemo(
+    () => buildNotifications(momItems, { lastSeenId: notifState.lastSeenId }),
+    [momItems, notifState.lastSeenId]
+  );
+  const notifs = notifComputed.list
+    .filter((n) => !notifState.dismissed.includes(n.id))
+    .map((n) => ({ ...n, read: notifState.read.includes(n.id) }));
+
+  const updateNotifState = (fn) =>
+    setNotifState((prev) => {
+      const next = fn(prev);
+      saveNotifState(userKey, next);
+      return next;
+    });
+  const openNotif = (n) => {
+    updateNotifState((prev) => ({
+      ...prev,
+      read: prev.read.includes(n.id) ? prev.read : [...prev.read, n.id],
+      ...(n.id.startsWith('new-') ? { lastSeenId: notifComputed.maxId } : {})
+    }));
+    setNotifOpen(false);
+    navigate(n.to);
+  };
+  const markAllRead = () =>
+    updateNotifState((prev) => ({
+      ...prev,
+      read: [...new Set([...prev.read, ...notifs.map((n) => n.id)])],
+      lastSeenId: notifComputed.maxId
+    }));
+  const dismissNotif = (id) =>
+    updateNotifState((prev) => ({ ...prev, dismissed: [...new Set([...prev.dismissed, id])] }));
 
   // Role & permission selalu diambil ulang dari server saat layout dimuat,
   // sehingga perubahan oleh Super Admin langsung berlaku tanpa login ulang.
@@ -421,7 +489,6 @@ export default function Layout({ children }) {
   const [d, setD] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notifs, setNotifs] = useState(NOTIFS);
   const [today] = useState(new Date());
   const notifRef = useRef(null);
 
@@ -494,7 +561,7 @@ export default function Layout({ children }) {
 
       {/* Header */}
       <header
-        className={`sticky top-0 z-20 px-4 md:px-8 h-16 flex items-center gap-3 transition-all duration-200 bg-[#F6F8FC] ${
+        className={`sticky top-0 z-[60] px-4 md:px-8 h-16 flex items-center gap-3 transition-all duration-200 bg-[#F6F8FC] ${
           scrolled ? 'border-b border-slate-200/90 shadow-xs' : ''
         }`}
       >
@@ -638,7 +705,7 @@ export default function Layout({ children }) {
                   <span className="text-xs font-bold text-slate-800">Notifikasi</span>
                   {unreadCount > 0 && (
                     <button
-                      onClick={() => setNotifs(n => n.map(x => ({ ...x, read: true })))}
+                      onClick={markAllRead}
                       className="text-[11px] text-blue-600 hover:text-blue-800 font-medium transition-colors cursor-pointer"
                     >
                       Tandai semua dibaca
@@ -654,7 +721,8 @@ export default function Layout({ children }) {
                     notifs.map(n => (
                       <li
                         key={n.id}
-                        className={`flex gap-3 px-4 py-3 hover:bg-slate-50 transition-colors ${!n.read ? 'bg-blue-50/40' : ''}`}
+                        onClick={() => openNotif(n)}
+                        className={`flex gap-3 px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer ${!n.read ? 'bg-blue-50/40' : ''}`}
                       >
                         <span className={`mt-0.5 size-2 rounded-full shrink-0 ${!n.read ? 'bg-blue-500' : 'bg-transparent'}`} />
                         <div className="flex-1 min-w-0">
@@ -665,7 +733,7 @@ export default function Layout({ children }) {
                           <span className="text-[10px] text-slate-400 mt-1 block">{n.time}</span>
                         </div>
                         <button
-                          onClick={() => setNotifs(prev => prev.filter(x => x.id !== n.id))}
+                          onClick={(e) => { e.stopPropagation(); dismissNotif(n.id); }}
                           className="shrink-0 text-slate-300 hover:text-slate-500 transition-colors cursor-pointer mt-0.5"
                           title="Hapus"
                         >

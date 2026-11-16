@@ -55,6 +55,7 @@ class Rbac
         'users.toggle_active'  => ['Mengaktifkan / menonaktifkan pengguna', 'Administrasi', false],
         'audit.view'           => ['Melihat audit log (terbatas)', 'Administrasi', false],
         'maintenance.manage'   => ['Mengatur mode pemeliharaan', 'Administrasi', false],
+        'inbox.manage'         => ['Mengelola kotak masuk aduan lupa kata sandi', 'Administrasi', false],
         'roles.custom'         => ['Membuat & mengatur role buatan', 'Administrasi', false],
 
         'users.delete'         => ['Menghapus pengguna', 'Sistem', true],
@@ -78,12 +79,16 @@ class Rbac
             'kuadran.view', 'kuadran.manage', 'mom.view', 'mom.manage',
             'admin.dashboard', 'users.view', 'users.create', 'users.update',
             'users.reset_password', 'users.toggle_active', 'audit.view', 'maintenance.manage', 'roles.custom',
+            'inbox.manage',
         ],
         self::STAFF => [
             'dashboard.view', 'edk.view', 'edk.upload', 'edk.export', 'order_sjt.view', 'psak.view',
             'kuadran.view', 'kuadran.manage', 'mom.view', 'mom.manage',
         ],
-        self::SUPPORT => ['dashboard.view', 'mom.view', 'mom.manage', 'audit.view', 'maintenance.manage'],
+        self::SUPPORT => [
+            'dashboard.view', 'mom.view', 'mom.manage', 'audit.view', 'maintenance.manage',
+            'inbox.manage', 'backup.manage',
+        ],
         self::USER    => [
             'dashboard.view', 'edk.view', 'edk.export', 'order_sjt.view', 'psak.view', 'kuadran.view', 'mom.view',
         ],
@@ -92,8 +97,11 @@ class Rbac
     /** Scope yang boleh diberikan ke API key integrasi (hanya baca). */
     public const API_ABILITIES = ['dashboard.view', 'edk.view', 'edk.export', 'kuadran.view', 'mom.view'];
 
-    /** Permission Administrasi yang boleh diberikan ke Support (troubleshooting, di bawah Admin). */
-    public const SUPPORT_EXTRA = ['audit.view', 'maintenance.manage'];
+    /**
+     * Permission di luar grup Operasional yang boleh diberikan ke Support (troubleshooting, di bawah Admin).
+     * Termasuk backup.manage, yang masuk grup Sistem tapi bisa diberikan khusus ke Support.
+     */
+    public const SUPPORT_EXTRA = ['audit.view', 'maintenance.manage', 'inbox.manage', 'backup.manage'];
 
     private const CACHE_KEY       = 'rbac.matrix';
     private const ROLES_CACHE_KEY = 'rbac.roles';
@@ -170,7 +178,8 @@ class Rbac
     public static function matrix(): array
     {
         return Cache::rememberForever(self::CACHE_KEY, function () {
-            $matrix = array_fill_keys(self::regularRoles(), []);
+            // Semua role kecuali Super Admin (yang selalu punya seluruh permission).
+            $matrix = array_fill_keys(array_values(array_diff(self::roleKeys(), [self::SUPER_ADMIN])), []);
             foreach (DB::table('role_permissions')->get(['role', 'permission']) as $row) {
                 if (isset($matrix[$row->role])) {
                     $matrix[$row->role][] = $row->permission;
