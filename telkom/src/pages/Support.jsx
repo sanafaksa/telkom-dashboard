@@ -3,6 +3,8 @@ import { can } from '../features/auth/auth';
 import {
   Filter,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Download,
   Menu,
   Upload,
@@ -103,7 +105,7 @@ export default function Support() {
   const [agendaFilter, setAgendaFilter] = useState('Semua');
   const [uicFilter, setUicFilter] = useState('Semua');
   const [page, setPage] = useState(1);
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
 
   // Modals state
   const [showUpload, setShowUpload] = useState(false);
@@ -1060,32 +1062,61 @@ export default function Support() {
           </table>
         </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between pt-4 mt-2">
-            <span className="text-xs text-slate-500">
-              Halaman {page} dari {totalPages}
-            </span>
+        {/* Pagination (gaya sama dengan footer EDK Monitoring) */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 mt-2 border-t border-slate-100 text-xs text-slate-500">
+          <div>
+            Menampilkan{' '}
+            <span className="font-bold text-slate-800">
+              {filteredPlans.length > 0 ? (page - 1) * pageSize + 1 : 0}–{Math.min(page * pageSize, filteredPlans.length)}
+            </span>{' '}
+            dari <span className="font-bold text-slate-800">{filteredPlans.length}</span> data
+          </div>
+
+          <div className="flex items-center gap-3.5">
+            <div className="flex items-center gap-2">
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setPage(1);
+                }}
+                aria-label="Jumlah data per halaman"
+                className="bg-white border border-slate-200/90 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+              >
+                {[10, 25, 50, 100].map((ps) => (
+                  <option key={ps} value={ps}>
+                    {ps}
+                  </option>
+                ))}
+              </select>
+              <span className="text-slate-500">data per halaman</span>
+            </div>
+
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-white font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 cursor-pointer"
+                aria-label="Halaman sebelumnya"
+                className="size-8 rounded-xl border border-slate-200/90 bg-white flex items-center justify-center text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 cursor-pointer transition-colors"
               >
-                Sebelumnya
+                <ChevronLeft size={14} />
               </button>
+              <span className="px-2 font-semibold text-slate-700">
+                {page} / {totalPages}
+              </span>
               <button
                 type="button"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-white font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 cursor-pointer"
+                aria-label="Halaman berikutnya"
+                className="size-8 rounded-xl border border-slate-200/90 bg-white flex items-center justify-center text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 cursor-pointer transition-colors"
               >
-                Selanjutnya
+                <ChevronRight size={14} />
               </button>
             </div>
           </div>
-        )}
+        </div>
       </section>
 
       {/* 6. Upload Modal */}
