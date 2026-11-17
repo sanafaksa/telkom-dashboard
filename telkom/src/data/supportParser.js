@@ -173,6 +173,31 @@ export function formatSupportDate(rawVal) {
   return str;
 }
 
+// Tanggal pengganti untuk deadline mingguan "W3 Sep 2026": titik tengah minggu tersebut.
+const WEEK_DEADLINE_DAY = { 1: 4, 2: 11, 3: 18, 4: 25, 5: 30 };
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/**
+ * Deadline dalam format "18 Sep 2026".
+ * "W3 Sep 2026" (minggu ke-3) dipetakan ke tanggal tengah minggu (lihat WEEK_DEADLINE_DAY).
+ * Tanggal dd/mm/yyyy dan serial Excel juga diubah ke format yang sama.
+ */
+export function normalizeDeadline(raw) {
+  const str = String(raw ?? '').trim();
+  if (!str) return '';
+
+  const week = str.match(/^W([1-5])\s+([A-Za-z]{3})[a-z]*\.?\s+(\d{4})$/i);
+  if (week) {
+    const month = MONTH_SHORT.find((m) => m.toLowerCase() === week[2].toLowerCase());
+    return month ? `${WEEK_DEADLINE_DAY[week[1]]} ${month} ${week[3]}` : str;
+  }
+
+  const dmy = formatSupportDate(str).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (dmy) return `${Number(dmy[1])} ${MONTH_SHORT[Number(dmy[2]) - 1]} ${dmy[3]}`;
+
+  return str;
+}
+
 /**
  * Parses raw CSV string into structured Action Plan items.
  * Handles filled-down rows (where parent meeting data is only on the first row).
@@ -250,7 +275,7 @@ export function parseSupportCSV(csvString) {
         destinasiFu: destinasiFu && destinasiFu !== '-' ? destinasiFu : '-',
         supportNeeded:
           supportNeeded && supportNeeded !== '-' ? supportNeeded : '-',
-        deadline: deadline || '-',
+        deadline: normalizeDeadline(deadline) || '-',
         status: normalizeStatus(status),
         notes: notes || ''
       });
@@ -369,7 +394,7 @@ function parseWorksheetToActionPlans(worksheet, sheetName) {
       uic: uic || 'PRQ',
       destinasiFu: getCol('DESTINASI FU', 'FU UIC') || '-',
       supportNeeded: supportNeeded || '-',
-      deadline: formatSupportDate(deadline) || '-',
+      deadline: normalizeDeadline(deadline) || '-',
       status: normalizeStatus(statusRaw),
       notes: notes || ''
     });
@@ -661,9 +686,31 @@ export async function fetchSupportFromApi() {
   return result.ok ? result.items : null;
 }
 
+/**
+ * Dipanggil setelah data MoM berubah di database (sync, edit, tambah, hapus).
+ * Halaman lain yang menampilkan data MoM (Dashboard, notifikasi) memuat ulang dari server.
+ */
+export const SUPPORT_CHANGED_EVENT = 'solaris:mom-support-changed';
+
+function notifySupportChanged() {
+  window.dispatchEvent(new Event(SUPPORT_CHANGED_EVENT));
+}
+
+/** Pesan error dari respons Laravel: error validasi pertama, lalu message, lalu teks umum. */
+async function apiError(res, fallback) {
+  const data = await res.json().catch(() => null);
+  const firstFieldError = data?.errors ? Object.values(data.errors).flat()[0] : null;
+  return new Error(firstFieldError ?? data?.message ?? `${fallback} (${res.status}).`);
+}
+
+/**
+ * Kirim hasil baca Excel/CSV ke database. Gagal = error dilempar (tidak ada data yang
+ * hanya disimpan di browser), sehingga pengguna melihat alasannya dan bisa mencoba lagi.
+ */
 export async function syncSupportToApi(items, filename = 'Notulensi Rapat GM.xlsx', sheetName = 'Notulensi Tracker', mode = 'replace') {
+  let res;
   try {
-    const res = await fetch(`${API_BASE}/mom-support/sync`, {
+    res = await fetch(`${API_BASE}/mom-support/sync`, {
       method: 'POST',
       headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({
@@ -673,15 +720,22 @@ export async function syncSupportToApi(items, filename = 'Notulensi Rapat GM.xls
         items
       })
     });
-    if (!res.ok) return null;
-    const json = await res.json();
-    if (json && json.success && Array.isArray(json.items)) {
-      saveSupportData(json.items);
-    }
-    return json;
   } catch {
-    return null;
+    throw new Error('Tidak bisa terhubung ke server. Periksa koneksi lalu coba lagi.');
   }
+  if (res.status === 401) {
+    window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+    throw new Error('Sesi berakhir. Silakan login ulang.');
+  }
+  if (!res.ok) throw await apiError(res, 'Gagal menyimpan ke database');
+
+  const json = await res.json();
+  if (!json?.success || !Array.isArray(json.items)) {
+    throw new Error('Respons server tidak sesuai. Data belum tersimpan ke database.');
+  }
+  saveSupportData(json.items);
+  notifySupportChanged();
+  return json;
 }
 
 export async function updateSupportItemApi(item) {
@@ -693,11 +747,10 @@ export async function updateSupportItemApi(item) {
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(item)
   });
-  if (!res.ok) {
-    const data = await res.json().catch(() => null);
-    throw new Error(data?.message ?? `Gagal menyimpan ke server (${res.status}).`);
-  }
-  return res.json();
+  if (!res.ok) throw await apiError(res, 'Gagal menyimpan ke server');
+  const json = await res.json();
+  notifySupportChanged();
+  return json;
 }
 
 /** Tambah satu rapat beserta banyak butir action plan. Mengembalikan { no, items } dari database. */
@@ -717,6 +770,7 @@ export async function createSupportBatchApi(payload) {
     err.serverErrors = serverErrors;
     throw err;
   }
+  notifySupportChanged();
   return data;
 }
 
@@ -740,11 +794,10 @@ export async function deleteSupportItemApi(id) {
     method: 'DELETE',
     headers: authHeaders()
   });
-  if (!res.ok) {
-    const data = await res.json().catch(() => null);
-    throw new Error(data?.message ?? `Gagal menghapus data di server (${res.status}).`);
-  }
-  return res.json();
+  if (!res.ok) throw await apiError(res, 'Gagal menghapus data di server');
+  const json = await res.json();
+  notifySupportChanged();
+  return json;
 }
 
 export async function resetSupportApi() {

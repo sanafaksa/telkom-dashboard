@@ -44,9 +44,9 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::prefix('profile')->middleware('session')->group(function () {
         Route::get('/', [ProfileController::class, 'show']);
         Route::put('/', [ProfileController::class, 'update']);
-        // Aturan tetap (bukan permission yang bisa diubah): hanya Admin & Super Admin yang
-        // boleh mengganti password. Password Staff/Support/User direset lewat User Management.
-        Route::put('password', [ProfileController::class, 'password'])->middleware(['role:admin', 'throttle:10,1']);
+        // Aturan tetap (bukan permission yang bisa diubah): hanya Super Admin, Admin, dan Support
+        // yang boleh mengganti password. Password Staff/User dikelola Admin & Support lewat User Management.
+        Route::put('password', [ProfileController::class, 'password'])->middleware(['role:admin,support', 'throttle:10,1']);
         Route::post('sessions/revoke-others', [ProfileController::class, 'revokeOtherSessions']);
         Route::delete('sessions/{id}', [ProfileController::class, 'revokeSession'])->whereNumber('id');
     });

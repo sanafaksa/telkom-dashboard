@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Search } from 'lucide-react';
 import { adminApi } from '../../features/admin/api';
+import { ROLE_LABEL } from '../../features/auth/auth';
 import { Badge, Card, DataTable, fmtDate, inputCls, Page, Pager, Query, RoleBadge } from '../../features/admin/kit';
 
 const CATEGORIES = [
   ['', 'Semua aksi'],
   ['auth', 'Login & logout'],
   ['user', 'Pengguna'],
+  ['password', 'Ubah password'],
   ['profile', 'Profil'],
   ['role', 'Role & permission'],
   ['settings', 'Pengaturan'],
@@ -98,7 +100,29 @@ export default function AuditLogs() {
                 {
                   key: 'subject',
                   label: 'Objek',
-                  render: (l) => (l.subject_type ? `${l.subject_type} #${l.subject_id}` : '—'),
+                  render: (l) => {
+                    if (l.subject_label) {
+                      return (
+                        <span>
+                          <b className="font-semibold text-slate-800">{l.subject_label}</b>
+                          <span className="block text-[11px] text-mute">
+                            {ROLE_LABEL[l.subject_role] ?? l.subject_role}
+                            {l.subject_id ? ` · User #${l.subject_id}` : ''}
+                          </span>
+                        </span>
+                      );
+                    }
+                    if (l.subject_type) return `${l.subject_type} #${l.subject_id}`;
+                    if (l.meta?.name) {
+                      return (
+                        <span>
+                          <b className="font-semibold text-slate-800">{l.meta.name}</b>
+                          <span className="block text-[11px] text-mute">Akun sudah dihapus</span>
+                        </span>
+                      );
+                    }
+                    return '—';
+                  },
                   className: 'whitespace-nowrap',
                 },
                 {

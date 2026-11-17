@@ -26,6 +26,7 @@ class UserController extends Controller
         $actor = $request->user();
 
         $page = User::query()
+            ->with('passwordChangedBy:id,name,nip,email,role')
             // Admin tidak melihat akun Super Admin
             ->when(! $actor->isSuperAdmin(), fn ($q) => $q->where('role', '!=', Rbac::SUPER_ADMIN))
             ->when($data['q'] ?? null, fn ($q, $v) => $q->where(fn ($w) => $w
@@ -77,6 +78,7 @@ class UserController extends Controller
         ]);
         $user->role      = $data['role'];
         $user->is_active = $data['is_active'] ?? true;
+        $user->markPasswordChanged($actor->id);
         $user->save();
 
         Audit::log('user.created', $user, ['nip' => $user->nip, 'role' => $user->role]);
@@ -169,6 +171,7 @@ class UserController extends Controller
         ]);
 
         $user->password = $data['password'];
+        $user->markPasswordChanged($actor->id);
         $user->save();
         $user->tokens()->where('name', User::SESSION_TOKEN)->delete();   // paksa login ulang
 
@@ -213,10 +216,11 @@ class UserController extends Controller
     public static function present(User $u, User $actor): array
     {
         return [
-            ...$u->only(['id', 'name', 'nip', 'email', 'role', 'is_active', 'last_login_at', 'created_at']),
-            'role_label' => Rbac::label($u->role),
-            'is_self'    => $u->id === $actor->id,
-            'can_manage' => Rbac::canManage($actor, $u),
+            ...$u->only(['id', 'name', 'nip', 'email', 'role', 'is_active', 'last_login_at', 'created_at', 'password_changed_at']),
+            'role_label'         => Rbac::label($u->role),
+            'is_self'            => $u->id === $actor->id,
+            'can_manage'         => Rbac::canManage($actor, $u),
+            'password_changed_by' => Rbac::displayActor($u->passwordChangedBy, $actor),
         ];
     }
 }

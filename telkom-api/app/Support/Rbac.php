@@ -88,6 +88,7 @@ class Rbac
         self::SUPPORT => [
             'dashboard.view', 'mom.view', 'mom.manage', 'audit.view', 'maintenance.manage',
             'inbox.manage', 'backup.manage',
+            'users.view', 'users.create', 'users.update', 'users.reset_password', 'users.toggle_active',
         ],
         self::USER    => [
             'dashboard.view', 'edk.view', 'edk.export', 'order_sjt.view', 'psak.view', 'kuadran.view', 'mom.view',
@@ -100,8 +101,12 @@ class Rbac
     /**
      * Permission di luar grup Operasional yang boleh diberikan ke Support (troubleshooting, di bawah Admin).
      * Termasuk backup.manage, yang masuk grup Sistem tapi bisa diberikan khusus ke Support.
+     * users.* membuat Support bisa mengelola Staff, User, dan Support (User Management seperti Admin).
      */
-    public const SUPPORT_EXTRA = ['audit.view', 'maintenance.manage', 'inbox.manage', 'backup.manage'];
+    public const SUPPORT_EXTRA = [
+        'audit.view', 'maintenance.manage', 'inbox.manage', 'backup.manage',
+        'users.view', 'users.create', 'users.update', 'users.reset_password', 'users.toggle_active',
+    ];
 
     private const CACHE_KEY       = 'rbac.matrix';
     private const ROLES_CACHE_KEY = 'rbac.roles';
@@ -267,12 +272,41 @@ class Rbac
 
     // ===== Aturan pengelolaan pengguna (anti privilege escalation) =====
 
-    /** Role yang boleh diberikan $actor kepada pengguna lain. Super Admin tidak pernah bisa diberikan. */
+    /**
+     * Role yang boleh diberikan $actor kepada pengguna lain. Super Admin tidak pernah bisa diberikan.
+     * Support hanya memberi role bawaan (Staff, Support, User): role buatan bisa memuat permission
+     * yang tidak dimiliki Support.
+     */
     public static function assignableRoles(User $actor): array
     {
-        return $actor->isSuperAdmin()
-            ? array_values(array_merge([self::ADMIN], self::regularRoles()))
-            : self::regularRoles();
+        if ($actor->isSuperAdmin()) {
+            return array_values(array_merge([self::ADMIN], self::regularRoles()));
+        }
+
+        if ($actor->role === self::SUPPORT) {
+            return [self::STAFF, self::SUPPORT, self::USER];
+        }
+
+        return self::regularRoles();
+    }
+
+    /**
+     * Data pelaku yang boleh dilihat $viewer. Aktivitas Super Admin tampil sebagai "Admin"
+     * untuk viewer selain Super Admin.
+     *
+     * @return array{id: ?int, name: string, nip: ?string, email: ?string, role: string}|null
+     */
+    public static function displayActor(?User $who, User $viewer): ?array
+    {
+        if (! $who) {
+            return null;
+        }
+
+        if ($who->isSuperAdmin() && ! $viewer->isSuperAdmin()) {
+            return ['id' => null, 'name' => self::label(self::ADMIN), 'nip' => null, 'email' => null, 'role' => self::ADMIN];
+        }
+
+        return ['id' => $who->id, 'name' => $who->name, 'nip' => $who->nip, 'email' => $who->email, 'role' => $who->role];
     }
 
     /** Apakah $actor boleh mengubah akun $target (di luar pengecekan permission). */

@@ -133,12 +133,12 @@ export default function Profile() {
         {(d) => (
           <>
             <ProfileForm user={d.user} onSaved={reload} />
-            {['super_admin', 'admin'].includes(d.user.role) ? (
+            {['super_admin', 'admin', 'support'].includes(d.user.role) ? (
               <PasswordForm onChanged={reload} />
             ) : (
               <Card title="Password">
                 <p className="p-5 text-xs text-mute">
-                  Password akun Anda dikelola oleh Admin. Hubungi Admin atau Super Admin bila perlu mengganti atau mereset password.
+                  Password dikelola oleh Admin dan IT Support. Hubungi mereka untuk ubah password.
                 </p>
               </Card>
             )}

@@ -200,9 +200,10 @@ export default function Support() {
     }));
   };
 
-  // Save changes to item, close modal, and update list + localStorage + MySQL
+  // Simpan perubahan ke database dulu. Tampilan baru diperbarui setelah database berhasil,
+  // jadi tidak ada perubahan yang hanya hidup di browser. Mengembalikan true bila tersimpan.
   const handleSaveAll = async () => {
-    if (!detailItem) return;
+    if (!detailItem) return false;
 
     const updatedData = {
       ...detailItem,
@@ -217,23 +218,27 @@ export default function Support() {
       updatedData.supportNeeded = '-';
     }
 
+    let saved;
+    try {
+      saved = await updateSupportItemApi(updatedData);
+    } catch (err) {
+      alert(`Perubahan belum tersimpan ke database. Coba simpan lagi.\n${err.message}`);
+      return false;
+    }
+
+    const serverItem = saved?.item ?? updatedData;
     setActionPlans((prev) =>
       prev.map((item) => {
         const isMatch =
           (item.id !== undefined && item.id === detailItem.id) ||
           (item.no === detailItem.no && item.actionPlan === detailItem.actionPlan);
-        return isMatch ? updatedData : item;
+        return isMatch ? serverItem : item;
       })
     );
 
-    // Sync single edited row to MySQL database
-    updateSupportItemApi(updatedData).catch((err) => {
-      alert(`Perubahan hanya tersimpan di browser ini, belum di database.\n${err.message}`);
-    });
-
-
     setDetailItem(null);
     setEditFormData({});
+    return true;
   };
 
   // Tambah rapat + banyak butir action plan: simpan ke MySQL dengan NO rapat yang sama, lalu tampilkan di daftar
@@ -250,7 +255,7 @@ export default function Support() {
   };
 
   // Enter di Action Plan saat edit: simpan perubahan, lalu buka form tambah action plan untuk rapat yang sama
-  const openAddActionFromEdit = () => {
+  const openAddActionFromEdit = async () => {
     const src = { ...detailItem, ...editFormData };
     const m = String(src.tgl || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
     const tglIso = m ? `${m[3]}-${m[2]}-${m[1]}` : new Date().toISOString().slice(0, 10);
@@ -258,7 +263,8 @@ export default function Support() {
       .split(',')
       .map((u) => u.trim())
       .filter((u) => UNIT_OPTIONS.includes(u));
-    handleSaveAll();
+    // Form tambah hanya dibuka kalau perubahan rapat ini sudah tersimpan di database
+    if (!(await handleSaveAll())) return;
     setCreatePrefill({
       no: String(src.no ?? ''),
       meta: {
@@ -408,7 +414,7 @@ export default function Support() {
         throw new Error('File/Sheet tidak memiliki baris action plan yang dapat dibaca. Pastikan memilih sheet yang berisi data notulensi atau tracker.');
       }
 
-      // Sync to MySQL database via Laravel API
+      // Sync ke database. Gagal = error ditampilkan di modal, tanpa mengubah tabel.
       const syncRes = await syncSupportToApi(
         parsed,
         file.name,
@@ -416,19 +422,16 @@ export default function Support() {
         uploadMode
       );
 
-      if (syncRes && syncRes.success && Array.isArray(syncRes.items)) {
-        setActionPlans(syncRes.items);
-        setUploadSuccess(
-          `Berhasil menyinkronkan ${parsed.length} butir Action Plan dari "${file.name}" ke Database MySQL!`
-        );
-      } else {
-        const nextPlans =
-          uploadMode === 'append'
-            ? [...actionPlans, ...parsed.map((it, idx) => ({ ...it, id: actionPlans.length + idx + 1 }))]
-            : parsed;
-        setActionPlans(nextPlans);
-        setUploadSuccess(`Berhasil memuat ${parsed.length} butir Action Plan dari file "${file.name}"!`);
-      }
+      // Tabel langsung menampilkan isi database terbaru. Filter & halaman di-reset supaya data baru terlihat.
+      setActionPlans(syncRes.items);
+      setSearchQ('');
+      setStatusFilter('Semua');
+      setAgendaFilter('Semua');
+      setUicFilter('Semua');
+      setPage(1);
+      setUploadSuccess(
+        `Berhasil menyinkronkan ${syncRes.row_count ?? parsed.length} butir Action Plan dari "${file.name}" ke database.`
+      );
 
       setTimeout(() => {
         setShowUpload(false);
@@ -1391,15 +1394,6 @@ export default function Support() {
 
               {/* Header Right Actions */}
               <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={handleSaveAll}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
-                  title="Simpan semua perubahan"
-                >
-                  <Check size={14} />
-                  <span>Simpan</span>
-                </button>
                 <button
                   type="button"
                   onClick={handleCloseDetail}

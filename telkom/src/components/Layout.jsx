@@ -36,7 +36,7 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { getUser, logout, refreshUser, ROLE_LABEL, ROLE_TONE } from '../features/auth/auth';
 import { visibleNav, KUADRAN_SUB } from '../nav';
-import { loadSavedSupportData, fetchSupportFromApi } from '../data/supportParser';
+import { loadSavedSupportData, fetchSupportFromApi, SUPPORT_CHANGED_EVENT } from '../data/supportParser';
 import {
   buildNotifications,
   buildSupportSearchEntries,
@@ -438,6 +438,21 @@ export default function Layout({ children }) {
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Notifikasi & pencarian ikut diperbarui setiap MoM berubah di database
+  useEffect(() => {
+    let active = true;
+    const reload = () => {
+      fetchSupportFromApi().then((items) => {
+        if (active && Array.isArray(items)) setMomItems(items);
+      });
+    };
+    window.addEventListener(SUPPORT_CHANGED_EVENT, reload);
+    return () => {
+      active = false;
+      window.removeEventListener(SUPPORT_CHANGED_EVENT, reload);
+    };
   }, []);
 
   const searchIndex = useMemo(

@@ -54,8 +54,8 @@ class RbacTest extends TestCase
             ['POST', '/api/mom-support/reset',   200, 200, 200, 200, 403],
             ['DELETE', '/api/kuadran/Jan',       200, 200, 200, 403, 403],
             ['GET', '/api/admin/overview',       200, 200, 403, 403, 403],
-            ['GET', '/api/admin/users',          200, 200, 403, 403, 403],
-            ['GET', '/api/audit-logs',           200, 200, 403, 403, 403],
+            ['GET', '/api/admin/users',          200, 200, 403, 200, 403],
+            ['GET', '/api/audit-logs',           200, 200, 403, 200, 403],
             ['GET', '/api/admin/roles',          200, 403, 403, 403, 403],
             ['GET', '/api/admin/settings/general', 200, 403, 403, 403, 403],
             ['GET', '/api/admin/settings/auth',  200, 403, 403, 403, 403],
@@ -96,7 +96,10 @@ class RbacTest extends TestCase
         $this->getJson('/api/auth/me')
             ->assertOk()
             ->assertJsonPath('role', 'support')
-            ->assertJsonPath('permissions', ['dashboard.view', 'mom.view', 'mom.manage']);
+            ->assertJsonPath('permissions', [
+                'dashboard.view', 'mom.view', 'mom.manage', 'audit.view', 'maintenance.manage', 'inbox.manage', 'backup.manage',
+                'users.view', 'users.create', 'users.update', 'users.reset_password', 'users.toggle_active',
+            ]);
     }
 
     public function test_role_dari_client_tidak_dipercaya(): void
@@ -113,17 +116,22 @@ class RbacTest extends TestCase
 
     // ===== Super Admin =====
 
-    public function test_super_admin_bisa_membuat_semua_role(): void
+    public function test_super_admin_bisa_membuat_semua_role_yang_bisa_diberikan(): void
     {
         $this->actAs('super_admin');
 
-        foreach (Rbac::roleKeys() as $i => $role) {
+        // Super Admin tidak pernah bisa diberikan kepada akun lain.
+        $roles = ['admin', 'staff', 'support', 'user'];
+        foreach ($roles as $i => $role) {
             $this->postJson('/api/admin/users', $this->newUser(['nip' => "80000{$i}", 'role' => $role]))
                 ->assertCreated()
                 ->assertJsonPath('role', $role);
         }
 
-        $this->assertSame(5, AuditLog::where('action', 'user.created')->count());
+        $this->postJson('/api/admin/users', $this->newUser(['nip' => '800009', 'role' => 'super_admin']))
+            ->assertStatus(422);
+
+        $this->assertSame(count($roles), AuditLog::where('action', 'user.created')->count());
         $this->assertTrue(Hash::check('Rahasia123', User::where('nip', '800000')->value('password')));
     }
 
@@ -349,6 +357,50 @@ class RbacTest extends TestCase
 
     public static function regularRoles(): array
     {
-        return [['staff'], ['support'], ['user']];
+        return [['staff'], ['user']];
+    }
+
+    public function test_support_boleh_ganti_password_sendiri_dan_jejaknya_tercatat(): void
+    {
+        $support = $this->user('support', ['password' => Hash::make('Lama12345')]);
+        Sanctum::actingAs($support, ['*']);
+
+        $this->putJson('/api/profile/password', [
+            'current_password' => 'Lama12345', 'password' => 'Baru12345', 'password_confirmation' => 'Baru12345',
+        ])->assertOk();
+
+        $fresh = $support->fresh();
+        $this->assertNotNull($fresh->password_changed_at);
+        $this->assertSame($support->id, $fresh->password_changed_by);
+    }
+
+    public function test_support_tidak_bisa_memberi_role_buatan(): void
+    {
+        $this->assertSame(
+            ['staff', 'support', 'user'],
+            Rbac::assignableRoles(new User(['role' => 'support']))
+        );
+    }
+
+    public function test_support_mengelola_user_dan_jejak_ubah_password_menampilkan_admin_untuk_super_admin(): void
+    {
+        $super  = $this->user('super_admin');
+        $target = $this->user('staff');
+
+        // Super Admin mereset password staff -> jejak tercatat sebagai Super Admin.
+        Sanctum::actingAs($super, ['*']);
+        $this->putJson("/api/admin/users/{$target->id}/password", ['password' => 'PasswordBaru1'])->assertOk();
+
+        // Support melihat daftar user: pelaku ditampilkan sebagai "Admin", bukan nama Super Admin.
+        Sanctum::actingAs($this->user('support'), ['*']);
+        $users = $this->getJson('/api/admin/users')->assertOk()->json('data');
+        $row = collect($users)->firstWhere('id', $target->id);
+        $this->assertSame('Admin', $row['password_changed_by']['name']);
+        $this->assertNotNull($row['password_changed_at']);
+
+        // Audit log terbatas tetap memuat aksi password Super Admin, dengan pelaku "Admin".
+        $log = collect($this->getJson('/api/audit-logs?action=password')->json('data'))->first();
+        $this->assertNotNull($log);
+        $this->assertSame('Admin', $log['user']['name']);
     }
 }

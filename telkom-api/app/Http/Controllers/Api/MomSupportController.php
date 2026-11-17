@@ -31,11 +31,22 @@ class MomSupportController extends Controller
      */
     public function sync(Request $request): JsonResponse
     {
+        // Batas panjang mengikuti kolom mom_action_plans. Data yang melebihi batas ditolak dengan pesan
+        // yang jelas (422), bukan gagal diam-diam di database.
         $payload = $request->validate([
-            'filename'   => 'nullable|string|max:255',
-            'sheet_name' => 'nullable|string|max:100',
-            'mode'       => 'nullable|string|in:replace,append',
-            'items'      => 'required|array|min:1',
+            'filename'              => 'nullable|string|max:255',
+            'sheet_name'            => 'nullable|string|max:100',
+            'mode'                  => 'nullable|string|in:replace,append',
+            'items'                 => 'required|array|min:1',
+            'items.*.no'            => 'nullable|string|max:50',
+            'items.*.tgl'           => 'nullable|string|max:100',
+            'items.*.agenda'        => 'nullable|string|max:120',
+            'items.*.mainTopic'     => 'nullable|string|max:255',
+            'items.*.unitTelda'     => 'nullable|string|max:500',
+            'items.*.uic'           => 'nullable|string|max:150',
+            'items.*.destinasiFu'   => 'nullable|string|max:255',
+            'items.*.deadline'      => 'nullable|string|max:255',
+            'items.*.status'        => 'nullable|string|max:30',
         ]);
 
         $mode = $payload['mode'] ?? 'replace';

@@ -66,6 +66,7 @@ class ProfileController extends Controller
         }
 
         $user->password = $data['password'];
+        $user->markPasswordChanged($user->id);
         $user->save();
 
         // Sesi di perangkat lain diakhiri; sesi ini tetap.

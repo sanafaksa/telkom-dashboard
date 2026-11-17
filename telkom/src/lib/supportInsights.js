@@ -10,11 +10,35 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', '
 // Daftar UIC yang punya opsi filter di halaman Support (harus sama dengan UIC_FILTER_OPTIONS di sana)
 export const UIC_FILTER_VALUES = ['BPPLP', 'ED', 'EVP', 'RLEGS', 'RSMES', 'RSMES & RLEGS', 'RSO', 'RSO 1', 'RSO 2', 'RWS', 'SSGS'];
 
-/** "11/09/2026" (DD/MM/YYYY) → Date, null jika format tidak dikenali */
+// Nama bulan yang dikenali di deadline: format data & form (Inggris) dan label tampilan (Indonesia)
+const DEADLINE_MONTHS = [
+  ['jan'], ['feb'], ['mar'], ['apr'], ['may', 'mei'], ['jun'], ['jul'], ['aug', 'agu'],
+  ['sep'], ['oct', 'okt'], ['nov'], ['dec', 'des'],
+];
+
+/**
+ * Deadline → Date, null jika format tidak dikenali.
+ * Menerima "11/09/2026" (DD/MM/YYYY) dan "11 Sep 2026" (format deadline sekarang).
+ */
 export function parseDmY(value) {
-  const m = String(value || '').trim().match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
-  if (!m) return null;
-  const d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+  const s = String(value || '').trim();
+  let day;
+  let month;
+  let year;
+
+  const dmy = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (dmy) {
+    [, day, month, year] = dmy;
+    month = Number(month) - 1;
+  } else {
+    const named = s.match(/^(\d{1,2}) ([A-Za-z]{3}) (\d{4})$/);
+    if (!named) return null;
+    [, day, , year] = named;
+    month = DEADLINE_MONTHS.findIndex((names) => names.includes(named[2].toLowerCase()));
+    if (month < 0) return null;
+  }
+
+  const d = new Date(Number(year), month, Number(day));
   return Number.isNaN(d.getTime()) ? null : d;
 }
 

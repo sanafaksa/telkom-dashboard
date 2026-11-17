@@ -200,6 +200,20 @@ export default function Users({ scope = 'users' }) {
                     },
                     { key: 'last_login_at', label: 'Login terakhir', render: (u) => fmtDate(u.last_login_at), className: 'whitespace-nowrap' },
                     {
+                      key: 'password_changed_at',
+                      label: 'Password terakhir diubah',
+                      className: 'whitespace-nowrap',
+                      render: (u) =>
+                        u.password_changed_at ? (
+                          <span>
+                            {fmtDate(u.password_changed_at)}
+                            <span className="block text-[11px] text-mute">oleh {u.password_changed_by?.name ?? '-'}</span>
+                          </span>
+                        ) : (
+                          <span className="text-mute">Belum tercatat</span>
+                        ),
+                    },
+                    {
                       key: 'act',
                       label: 'Aksi',
                       className: 'text-right whitespace-nowrap',

@@ -10,7 +10,7 @@ import {
   Check
 } from 'lucide-react';
 import {ShareDropdown} from '../components/ui';
-import {loadSavedSupportData, fetchSupportFromApi, normalizeStatus} from '../data/supportParser';
+import {loadSavedSupportData, fetchSupportFromApi, normalizeStatus, SUPPORT_CHANGED_EVENT} from '../data/supportParser';
 import {buildDashboardStats, UIC_FILTER_VALUES} from '../lib/supportInsights';
 
 const PAGE_SIZE = 6;
@@ -65,11 +65,17 @@ export default function Dashboard() {
   const [momItems, setMomItems] = useState(() => loadSavedSupportData());
   useEffect(() => {
     let active = true;
-    fetchSupportFromApi().then(dbItems => {
-      if (active && Array.isArray(dbItems)) setMomItems(dbItems);
-    });
+    const reload = () => {
+      fetchSupportFromApi().then(dbItems => {
+        if (active && Array.isArray(dbItems)) setMomItems(dbItems);
+      });
+    };
+    reload();
+    // Upload / edit MoM di halaman lain langsung memperbarui angka dan tabel di sini
+    window.addEventListener(SUPPORT_CHANGED_EVENT, reload);
     return () => {
       active = false;
+      window.removeEventListener(SUPPORT_CHANGED_EVENT, reload);
     };
   }, []);
 

@@ -6,6 +6,7 @@ use App\Support\Rbac;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -64,5 +65,18 @@ class User extends Authenticatable
     public function hasPermission(string $permission): bool
     {
         return in_array($permission, $this->permissions(), true);
+    }
+
+    /** Akun yang terakhir mengubah password pengguna ini (Admin, Support, atau pengguna itu sendiri). */
+    public function passwordChangedBy(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'password_changed_by');
+    }
+
+    /** Catat jejak ubah password: waktu dan pelaku. */
+    public function markPasswordChanged(?int $byUserId): void
+    {
+        $this->password_changed_at = now();
+        $this->password_changed_by = $byUserId;
     }
 }
