@@ -41,6 +41,7 @@ class EdkExportTest extends TestCase
         $this->postJson('/api/edk/uploads', [
             'file'        => new UploadedFile($path, 'test.xlsx', null, null, true),
             'report_date' => '2026-11-02',
+            'periode_edk' => '202610',
         ])->assertCreated();
     }
 

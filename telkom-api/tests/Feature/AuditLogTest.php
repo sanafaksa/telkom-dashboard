@@ -33,7 +33,7 @@ class AuditLogTest extends TestCase
 
     private function upload(array $row, string $date)
     {
-        return $this->postJson('/api/edk/uploads', ['file' => $this->xlsx($row), 'report_date' => $date]);
+        return $this->postJson('/api/edk/uploads', ['file' => $this->xlsx($row), 'report_date' => $date, 'periode_edk' => '202610']);
     }
 
     private function admin(): User

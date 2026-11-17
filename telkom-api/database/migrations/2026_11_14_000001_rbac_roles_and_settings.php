@@ -23,7 +23,7 @@ return new class extends Migration {
 
         // Normalisasi role lama: superadmin → super_admin, viewer/lainnya → user.
         DB::table('users')->where('role', 'superadmin')->update(['role' => Rbac::SUPER_ADMIN]);
-        // Tabel roles belum ada di tahap ini (dibuat migration berikutnya), jadi pakai role bawaan.
+        // Pakai daftar role bawaan dari kode, bukan tabel roles (belum dibuat pada tahap migration ini).
         DB::table('users')->whereNotIn('role', array_keys(Rbac::ROLES))->update(['role' => Rbac::USER]);
 
         Schema::create('role_permissions', function (Blueprint $t) {
