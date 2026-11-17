@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { can } from '../features/auth/auth';
 import {
@@ -168,6 +168,28 @@ export default function Support() {
     });
     return () => {
       active = false;
+    };
+  }, []);
+
+  // Sinkronisasi: ambil data terbaru dari database berkala & saat tab dibuka lagi,
+  // supaya perubahan notulen/action plan dari user lain langsung terlihat.
+  // Ditunda saat popup detail terbuka agar isian yang sedang diedit tidak tertimpa.
+  const detailOpenRef = useRef(false);
+  detailOpenRef.current = !!detailItem;
+  useEffect(() => {
+    const refresh = () => {
+      if (detailOpenRef.current || document.hidden) return;
+      fetchSupportFromApi().then((dbItems) => {
+        if (Array.isArray(dbItems) && !detailOpenRef.current) {
+          setActionPlans(dbItems);
+        }
+      });
+    };
+    const timer = setInterval(refresh, 20000);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', refresh);
     };
   }, []);
 
@@ -968,7 +990,7 @@ export default function Support() {
 
         {/* Action Plans Table */}
         <div className="overflow-auto max-h-[70vh] rounded-xl border border-slate-200">
-          <table className="w-full min-w-[1180px] border-collapse text-xs">
+          <table className="w-full min-w-[1420px] border-collapse text-xs">
             <thead className="sticky top-0 z-10 bg-slate-50 shadow-[0_1px_0_0_rgb(226_232_240)]">
               <tr className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 text-left">
                 <th className="py-3.5 px-3 text-center w-12">#</th>
@@ -977,6 +999,7 @@ export default function Support() {
                 <th className="py-3.5 px-4 min-w-[260px]">Rencana Aksi (Action Plan)</th>
                 <th className="py-3.5 px-3 w-42 whitespace-nowrap">UIC &rarr; Destinasi</th>
                 <th className="py-3.5 px-4 min-w-[260px]">Support Needed</th>
+                <th className="py-3.5 px-4 min-w-[260px]">Notulensi (Pembahasan)</th>
                 <th className="py-3.5 px-3 w-28 text-center whitespace-nowrap">Deadline</th>
                 <th className="py-3.5 px-3 w-32 text-center whitespace-nowrap">Status</th>
                 <th className="py-3.5 px-2 w-24 text-center whitespace-nowrap">Aksi</th>
@@ -985,7 +1008,7 @@ export default function Support() {
             <tbody className="divide-y divide-slate-100">
               {paginatedPlans.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-slate-400">
+                  <td colSpan={10} className="py-12 text-center text-slate-400">
                     Tidak ada action plan yang cocok dengan kriteria filter.
                   </td>
                 </tr>
@@ -1045,6 +1068,23 @@ export default function Support() {
                       ) : (
                         <span className="text-slate-400 group-hover/cell:text-blue-600 text-xs italic block pt-1 transition-colors">
                           - <span className="text-[10px] text-slate-400 group-hover/cell:text-blue-600 font-normal">(Klik untuk tambah)</span>
+                        </span>
+                      )}
+                    </td>
+                    <td
+                      className="py-3 px-4 cursor-pointer group/cell"
+                      onClick={() => handleOpenDetail(item)}
+                      title="Klik untuk melihat & mengedit notulensi"
+                    >
+                      {item.pembahasanNotulen && item.pembahasanNotulen.trim() ? (
+                        <div
+                          className="text-slate-700 group-hover/cell:text-blue-700 text-xs leading-relaxed whitespace-pre-line break-words line-clamp-4 transition-colors"
+                        >
+                          {item.pembahasanNotulen}
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 group-hover/cell:text-blue-600 text-xs italic block pt-1 transition-colors">
+                          - <span className="text-[10px] font-normal">(Klik untuk tambah)</span>
                         </span>
                       )}
                     </td>
