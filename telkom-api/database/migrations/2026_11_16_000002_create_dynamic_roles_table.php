@@ -37,7 +37,7 @@ return new class extends Migration {
         Schema::table('role_permissions', fn (Blueprint $t) => $t->string('role', 40)->change());
 
         // Admin dapat membuat dan mengatur role buatannya sendiri.
-        DB::table('role_permissions')->insert(['role' => Rbac::ADMIN, 'permission' => 'roles.custom']);
+        DB::table('role_permissions')->insertOrIgnore(['role' => Rbac::ADMIN, 'permission' => 'roles.custom']);
     }
 
     public function down(): void

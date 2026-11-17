@@ -28,7 +28,7 @@ class EdkUploadTest extends TestCase
 
     private function upload(UploadedFile $file, string $date = '2026-11-02')
     {
-        return $this->postJson('/api/edk/uploads', ['file' => $file, 'report_date' => $date]);
+        return $this->postJson('/api/edk/uploads', ['file' => $file, 'report_date' => $date, 'periode_edk' => '202610']);
     }
 
     private function dummy(): UploadedFile

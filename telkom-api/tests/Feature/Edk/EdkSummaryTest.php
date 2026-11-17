@@ -43,6 +43,7 @@ class EdkSummaryTest extends TestCase
         $this->postJson('/api/edk/uploads', [
             'file'        => new UploadedFile($path, 'test.xlsx', null, null, true),
             'report_date' => $date,
+            'periode_edk' => '202610',
         ])->assertCreated();
     }
 
