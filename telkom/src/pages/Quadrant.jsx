@@ -571,7 +571,7 @@ export default function Quadrant() {
       {/* Upload Modal with Automatic Master-Data-to-Template Summarizer */}
       {showUpload &&
         createPortal(
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-[fadeIn_0.2s_ease-out]">
               <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
                 <div>

@@ -232,7 +232,7 @@ function UploadModal({open,onClose}){
   if(!open) return null;
 
   return createPortal(
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={handleClose}>
+  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={handleClose}>
     <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" aria-hidden/>
     <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-[fadeIn_0.2s_ease-out]" onClick={e=>e.stopPropagation()}>
       {/* Header */}

@@ -1151,7 +1151,7 @@ export default function Support() {
 
       {/* 6. Upload Modal */}
       {showUpload && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-[fadeIn_0.2s_ease-out]">
             <div className="flex items-center justify-between px-6 py-4.5 border-b border-slate-100 bg-white">
               <div className="flex items-center gap-2.5">

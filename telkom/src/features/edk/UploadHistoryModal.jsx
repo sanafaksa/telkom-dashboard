@@ -255,7 +255,7 @@ export default function UploadHistoryModal({ onClose, viewingId, onView, canActi
   const [tab, setTab] = useState('history');
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-4xl overflow-hidden animate-[fadeIn_0.2s_ease-out]">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">

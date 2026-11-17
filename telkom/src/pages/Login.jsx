@@ -567,7 +567,7 @@ export default function Login() {
       {/* MODAL HELPDESK / LUPA KATA SANDI                                     */}
       {/* ==================================================================== */}
       {forgotModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 border border-slate-200 shadow-2xl">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2.5 rounded-2xl bg-blue-50 text-[#1447B8] border border-blue-100">
