@@ -93,6 +93,11 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
             Route::put('{id}', [MomSupportController::class, 'update']);
             Route::delete('{id}', [MomSupportController::class, 'destroy']);
             Route::post('reset', [MomSupportController::class, 'reset']);
+            // Notulensi (rapat) dan action plan-nya
+            Route::put('meetings/{meeting}', [MomSupportController::class, 'updateMeeting']);
+            Route::delete('meetings/{meeting}', [MomSupportController::class, 'destroyMeeting']);
+            Route::post('meetings/{meeting}/actions', [MomSupportController::class, 'addAction']);
+            Route::patch('{id}/support-clear', [MomSupportController::class, 'toggleSupportClear'])->whereNumber('id');
         });
     });
 

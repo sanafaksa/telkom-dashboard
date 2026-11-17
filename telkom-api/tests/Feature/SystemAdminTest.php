@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\MomActionPlan;
+use App\Models\MomMeeting;
 use App\Models\User;
 use App\Services\BackupService;
 use App\Support\Settings;
@@ -141,24 +141,24 @@ class SystemAdminTest extends TestCase
 
     public function test_backup_dan_restore(): void
     {
-        MomActionPlan::create(['no' => '1', 'agenda' => 'ASLI', 'action_plan' => 'Rencana', 'status' => 'OPEN']);
+        MomMeeting::create(['no' => '1', 'tgl' => '01/11/2026', 'agenda' => 'ASLI', 'main_topic' => 'T'])->actionPlans()->create(['action_plan' => 'Rencana', 'status' => 'OPEN']);
 
         $name = $this->postJson('/api/admin/backups', ['note' => 'uji'])->assertCreated()->json('name');
         $this->getJson('/api/admin/backups')->assertOk()->assertJsonPath('backups.0.name', $name);
         $this->get("/api/admin/backups/{$name}/download")->assertOk();
 
         // Data berubah setelah backup.
-        MomActionPlan::query()->update(['agenda' => 'BERUBAH']);
+        MomMeeting::query()->update(['agenda' => 'BERUBAH']);
         User::factory()->create(['role' => 'staff', 'nip' => 'baru-1']);
 
         // Tanpa password / konfirmasi yang benar → ditolak.
         $this->postJson("/api/admin/backups/{$name}/restore", ['password' => 'salah', 'confirm' => $name])->assertStatus(422);
         $this->postJson("/api/admin/backups/{$name}/restore", ['password' => 'Rahasia123', 'confirm' => 'ya'])->assertStatus(422);
-        $this->assertSame('BERUBAH', MomActionPlan::first()->agenda);
+        $this->assertSame('BERUBAH', MomMeeting::first()->agenda);
 
         $this->postJson("/api/admin/backups/{$name}/restore", ['password' => 'Rahasia123', 'confirm' => $name])->assertOk();
 
-        $this->assertSame('ASLI', MomActionPlan::first()->agenda);
+        $this->assertSame('ASLI', MomMeeting::first()->agenda);
         $this->assertDatabaseMissing('users', ['nip' => 'baru-1']);
         $this->assertDatabaseHas('users', ['id' => $this->super->id, 'role' => 'super_admin']);
         $this->assertDatabaseHas('audit_logs', ['action' => 'backup.restored']);

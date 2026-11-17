@@ -33,6 +33,7 @@ export const AGENDA_OPTIONS = ['RAPAT WITEL', 'RAPAT UNIT', 'RAPAT EKSTERNAL'];
 const ALL_UNIT = 'ALL UNIT WITEL SOLO JATENG TIMUR';
 
 export const UNIT_OPTIONS = [
+  ALL_UNIT,
   'PRQ',
   'BS',
   'GS',
@@ -41,8 +42,7 @@ export const UNIT_OPTIONS = [
   'TELDA SRAGEN',
   'TELDA KUDUS',
   'TELDA PATI',
-  'TELDA PURWODADI',
-  ALL_UNIT
+  'TELDA PURWODADI'
 ];
 
 const STATUS_OPTIONS = [
@@ -374,6 +374,7 @@ export default function SupportFormModal({ onClose, onSave, nextNo = '', prefill
 
     const payload = {
       meeting: {
+        // NO rapat dikunci: dikirim hanya untuk menambah butir ke notulensi yang sudah ada; selain itu sistem membuat nomor
         no: prefill?.no || '',
         tgl: isoToDmy(meta.tglIso),
         agenda: meta.agenda,
@@ -460,7 +461,7 @@ export default function SupportFormModal({ onClose, onSave, nextNo = '', prefill
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div>
               <label className={labelCls} htmlFor="sf-no">NO Rapat</label>
-              <input id="sf-no" type="text" value={displayNo} readOnly className={`${inputCls} bg-slate-100 text-slate-500 cursor-not-allowed`} title="Dibuat otomatis" />
+              <input id="sf-no" type="text" value={displayNo} readOnly className={`${inputCls} bg-slate-100 text-slate-500 cursor-not-allowed`} title="Dibuat otomatis oleh sistem" />
             </div>
             <div>
               <label className={labelCls} htmlFor="sf-tgl">Tanggal *</label>

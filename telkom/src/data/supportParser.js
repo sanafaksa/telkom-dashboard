@@ -521,15 +521,20 @@ export function computeSupportMetrics(actionPlans = []) {
   const safePct = (val) =>
     grandTotal > 0 ? `${Math.round((val / grandTotal) * 100)}%` : '0%';
 
-  const openAgendas = agendaList
-    .filter((a) => a.open > 0)
-    .map((a) => a.name)
-    .slice(0, 3)
-    .join(', ');
+  // Catatan memakai angka dan daftar agenda yang sama persis dengan tabel di atasnya (tanpa pemotongan)
+  const perAgenda = (key) =>
+    agendaList
+      .filter((a) => a[key] > 0)
+      .map((a) => `${a.name} (${a[key]})`)
+      .join(', ');
+
+  const noteParts = [];
+  if (totalOpen > 0) noteParts.push(`${totalOpen} action plan berstatus Open/Belum FU: ${perAgenda('open')}`);
+  if (totalDiscuss > 0) noteParts.push(`${totalDiscuss} berstatus Need Discuss: ${perAgenda('discuss')}`);
 
   const noteText =
-    totalOpen > 0
-      ? `Terdapat ${totalOpen} action plan berstatus Open/Belum FU (${openAgendas || 'Semua agenda'}) dan ${totalProgress} on progress yang memerlukan tindak lanjut koordinasi.`
+    noteParts.length > 0
+      ? `Terdapat ${noteParts.join('; ')}${totalProgress > 0 ? ` dan ${totalProgress} on progress` : ''} yang memerlukan tindak lanjut koordinasi.`
       : `Seluruh action plan dalam pengawalan aktif (${totalDone} selesai, ${totalProgress} on progress).`;
 
   const agendaSummary = {
@@ -798,6 +803,81 @@ export async function deleteSupportItemApi(id) {
   const json = await res.json();
   notifySupportChanged();
   return json;
+}
+
+/** Simpan notulensi. Deadline (jika dikirim) berlaku untuk semua action plan di notulensi ini. Mengembalikan { meeting, items }. */
+export async function updateMeetingApi(meetingId, fields) {
+  const res = await fetch(`${API_BASE}/mom-support/meetings/${meetingId}`, {
+    method: 'PUT',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(fields)
+  });
+  if (!res.ok) throw await apiError(res, 'Gagal menyimpan notulensi ke server');
+  const json = await res.json();
+  notifySupportChanged();
+  return json;
+}
+
+/** Tambah action plan ke notulensi yang sudah ada. Mengembalikan item baru. */
+export async function addMeetingActionApi(meetingId, fields) {
+  const res = await fetch(`${API_BASE}/mom-support/meetings/${meetingId}/actions`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(fields)
+  });
+  if (!res.ok) throw await apiError(res, 'Gagal menambah action plan ke server');
+  const json = await res.json();
+  notifySupportChanged();
+  return json.item;
+}
+
+/** Centang / hapus centang "support sudah clear" satu action plan. Mengembalikan item. */
+export async function setSupportClearApi(id, supportClear) {
+  const res = await fetch(`${API_BASE}/mom-support/${id}/support-clear`, {
+    method: 'PATCH',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ supportClear })
+  });
+  if (!res.ok) throw await apiError(res, 'Gagal menyimpan centang ke server');
+  const json = await res.json();
+  notifySupportChanged();
+  return json.item;
+}
+
+/** Hapus notulensi beserta seluruh action plan-nya. */
+export async function deleteMeetingApi(meetingId) {
+  const res = await fetch(`${API_BASE}/mom-support/meetings/${meetingId}`, {
+    method: 'DELETE',
+    headers: authHeaders()
+  });
+  if (!res.ok) throw await apiError(res, 'Gagal menghapus notulensi di server');
+  const json = await res.json();
+  notifySupportChanged();
+  return json;
+}
+
+/** Edit satu action plan (dipakai di popup notulensi). Mengembalikan item. */
+export async function updateActionApi(id, fields) {
+  const res = await fetch(`${API_BASE}/mom-support/${id}`, {
+    method: 'PUT',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(fields)
+  });
+  if (!res.ok) throw await apiError(res, 'Gagal menyimpan action plan ke server');
+  const json = await res.json();
+  notifySupportChanged();
+  return json.item;
+}
+
+/** Hapus satu action plan. */
+export async function deleteActionApi(id) {
+  const res = await fetch(`${API_BASE}/mom-support/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders()
+  });
+  if (!res.ok) throw await apiError(res, 'Gagal menghapus action plan di server');
+  notifySupportChanged();
+  return res.json();
 }
 
 export async function resetSupportApi() {

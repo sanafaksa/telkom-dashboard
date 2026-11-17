@@ -40,8 +40,10 @@ import {
   updateSupportItemApi,
   createSupportBatchApi,
   deleteSupportItemApi,
-  exportSupportExcel
+  exportSupportExcel,
+  SUPPORT_CHANGED_EVENT
 } from '../data/supportParser';
+import NotulensiSection from '../components/NotulensiSection';
 import {
   renderAgendaTableToBlob,
   renderDetailTableToBlob,
@@ -51,7 +53,9 @@ import { exportCSV, ShareDropdown } from '../components/ui';
 import SupportFormModal, { AGENDA_OPTIONS, UNIT_OPTIONS } from '../components/SupportFormModal';
 import { RichText, RichTextarea } from '../components/RichText';
 import { DESTINASI_OPTIONS, DeadlineInput, StatusSelect, UicMultiSelect } from '../components/FormFields';
-import { useOpenDraftIntent } from '../lib/draft';
+import { clearDraft, loadDraft, saveDraft, useOpenDraftIntent } from '../lib/draft';
+import { isSameValues } from '../lib/useDraftForm';
+import UnsavedChangesBar from '../components/UnsavedChangesBar';
 import { createPortal } from "react-dom";
 
 // Pilihan filter UIC (urutan sesuai dropdown dashboard)
@@ -86,6 +90,9 @@ const matchUicFilter = (uicText, filter) => {
   if (filter === 'RSMES & RLEGS') return has('RSMES') && has('RLEGS');
   return has(filter);
 };
+
+// Kunci draft popup action plan (satu draft per butir)
+const draftKeyOf = (item) => `mom-action:${item.id ?? item.actionPlan}`;
 
 export default function Support() {
   // Hanya menyembunyikan tombol; endpoint tulis tetap dijaga permission mom.manage di backend.
@@ -151,6 +158,8 @@ export default function Support() {
   const [detailItem, setDetailItem] = useState(null);
   const [editFormData, setEditFormData] = useState({});
   const [editSuccessMsg, setEditSuccessMsg] = useState('');
+  const [detailRestored, setDetailRestored] = useState(false);
+  const [detailConfirm, setDetailConfirm] = useState(false);
 
   // Form tambah data manual
   const [showCreate, setShowCreate] = useState(false);
@@ -168,6 +177,21 @@ export default function Support() {
     });
     return () => {
       active = false;
+    };
+  }, []);
+
+  // Perubahan dari section Notulensi (edit, deadline, centang) langsung terlihat di tabel ini
+  useEffect(() => {
+    let active = true;
+    const reload = () => {
+      fetchSupportFromApi().then((dbItems) => {
+        if (active && Array.isArray(dbItems) && !detailOpenRef.current) setActionPlans(dbItems);
+      });
+    };
+    window.addEventListener(SUPPORT_CHANGED_EVENT, reload);
+    return () => {
+      active = false;
+      window.removeEventListener(SUPPORT_CHANGED_EVENT, reload);
     };
   }, []);
 
@@ -202,8 +226,13 @@ export default function Support() {
 
   // Open detail modal with all boxes directly editable
   const handleOpenDetail = (item) => {
+    // Draft yang belum disimpan dari sesi sebelumnya dipulihkan
+    const draft = loadDraft(draftKeyOf(item));
+    const restored = !!draft?.value && !isSameValues(draft.value, item);
     setDetailItem(item);
-    setEditFormData({ ...item });
+    setEditFormData(restored ? { ...item, ...draft.value } : { ...item });
+    setDetailRestored(restored);
+    setDetailConfirm(false);
     setEditSuccessMsg('');
   };
 
@@ -212,7 +241,41 @@ export default function Support() {
     setDetailItem(null);
     setEditFormData({});
     setEditSuccessMsg('');
+    setDetailRestored(false);
+    setDetailConfirm(false);
   };
+
+  // Ada perubahan yang belum disimpan ke database = tutup popup harus dikonfirmasi
+  const detailDirty = !!detailItem && !isSameValues(editFormData, detailItem);
+
+  const requestCloseDetail = () => {
+    if (detailDirty) setDetailConfirm(true);
+    else handleCloseDetail();
+  };
+
+  const discardDetailDraft = () => {
+    clearDraft(draftKeyOf(detailItem));
+    setEditFormData({ ...detailItem });
+    setDetailRestored(false);
+    setDetailConfirm(false);
+  };
+
+  const discardAndClose = () => {
+    clearDraft(draftKeyOf(detailItem));
+    handleCloseDetail();
+  };
+
+  // Autosave: perubahan popup disimpan sebagai draft di browser (400 ms setelah berubah).
+  // Kalau sudah sama dengan database, draft dihapus.
+  useEffect(() => {
+    if (!detailItem) return undefined;
+    const key = draftKeyOf(detailItem);
+    const t = setTimeout(() => {
+      if (isSameValues(editFormData, detailItem)) clearDraft(key);
+      else saveDraft(key, editFormData);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [editFormData, detailItem]);
 
   // Update field in edit form
   const handleFieldChange = (field, value) => {
@@ -258,8 +321,11 @@ export default function Support() {
       })
     );
 
+    clearDraft(draftKeyOf(detailItem));
     setDetailItem(null);
     setEditFormData({});
+    setDetailRestored(false);
+    setDetailConfirm(false);
     return true;
   };
 
@@ -335,12 +401,13 @@ export default function Support() {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && detailItem) {
-        handleCloseDetail();
+        requestCloseDetail();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [detailItem]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailItem, detailDirty]);
 
   // Filtered action plan items
   const filteredPlans = useMemo(() => {
@@ -557,6 +624,34 @@ export default function Support() {
     }
   };
 
+  // Fokus ke section Notulensi Rapat (filter agenda/status atau satu notulensi), lalu gulir ke sana
+  const [notulensiFocus, setNotulensiFocus] = useState(null);
+  const focusNotulensi = (focus) => {
+    setNotulensiFocus({ ...focus, nonce: Date.now() });
+    document.getElementById('notulensi-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  // Popup daftar action plan per agenda & status (klik angka di laporan)
+  const [drill, setDrill] = useState(null); // { agenda, status }
+  const drillItems = useMemo(
+    () => (drill ? actionPlans.filter((i) => i.agenda === drill.agenda && i.status === drill.status) : []),
+    [drill, actionPlans]
+  );
+
+  const countBtn = (agenda, status, val, isRed = false) => {
+    if (val === 0) return renderVal(0);
+    return (
+      <button
+        type="button"
+        onClick={() => setDrill({ agenda, status })}
+        title={`Lihat ${status} di ${agenda}`}
+        className="hover:underline underline-offset-2 cursor-pointer"
+      >
+        {renderVal(val, isRed)}
+      </button>
+    );
+  };
+
   const renderVal = (val, isRed = false) => {
     if (val === 0) {
       return <span className="text-slate-300 font-normal">0</span>;
@@ -746,28 +841,35 @@ export default function Support() {
                     {r.no}
                   </td>
                   <td className="py-3 px-3 text-left font-bold text-slate-800">
-                    {r.name}
+                    <button
+                      type="button"
+                      onClick={() => focusNotulensi({ agenda: r.name })}
+                      title="Lihat notulensi agenda ini"
+                      className="text-left hover:text-blue-700 hover:underline underline-offset-2 cursor-pointer"
+                    >
+                      {r.name}
+                    </button>
                   </td>
                   <td className="py-3 px-3 text-center bg-red-50/20">
-                    {renderVal(r.open, true)}
+                    {countBtn(r.name, 'BELUM FU', r.open, true)}
                   </td>
                   <td className="py-3 px-3 text-center bg-red-50/20">
                     {renderPct(r.pctOpen, true)}
                   </td>
                   <td className="py-3 px-3 text-center">
-                    {renderVal(r.discuss)}
+                    {countBtn(r.name, 'NEED DISCUSS', r.discuss)}
                   </td>
                   <td className="py-3 px-3 text-center">
                     {renderPct(r.pctDiscuss)}
                   </td>
                   <td className="py-3 px-3 text-center">
-                    {renderVal(r.progress)}
+                    {countBtn(r.name, 'IN PROGRESS', r.progress)}
                   </td>
                   <td className="py-3 px-3 text-center">
                     {renderPct(r.pctProgress)}
                   </td>
                   <td className="py-3 px-3 text-center">
-                    {renderVal(r.done)}
+                    {countBtn(r.name, 'DONE', r.done)}
                   </td>
                   <td className="py-3 px-3 text-center">
                     {renderPct(r.pctDone)}
@@ -849,12 +951,10 @@ export default function Support() {
           {unitsList.map((u) => (
             <div
               key={u.name}
-              className={`rounded-2xl p-5 bg-white shadow-2xs flex flex-col justify-between ${
-                u.isTop ? 'border-2 border-blue-600' : 'border border-slate-200'
-              }`}
+              className="rounded-2xl p-5 bg-white shadow-2xs flex flex-col justify-between border border-slate-200"
             >
               <div>
-                <p className={`text-[11px] font-bold uppercase tracking-wide ${u.isTop ? 'text-blue-600' : 'text-slate-400'}`}>
+                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
                   {u.category}
                 </p>
                 <h4 className="font-bold text-slate-900 text-sm mt-1 mb-4">
@@ -863,19 +963,15 @@ export default function Support() {
               </div>
               <div className="flex items-end justify-between gap-2">
                 <div>
-                  <span className={`text-3xl font-black leading-none ${u.isTop ? 'text-blue-600' : 'text-slate-900'}`}>
+                  <span className="text-3xl font-black leading-none text-slate-900">
                     {u.count}
                   </span>
-                  <span className={`block text-xs font-bold mt-1 ${u.isTop ? 'text-blue-600' : 'text-slate-900'}`}>
+                  <span className="block text-xs font-bold mt-1 text-slate-900">
                     Action Item
                   </span>
                 </div>
                 <div
-                  className={`text-[11px] font-medium px-2.5 py-2 rounded-xl border flex flex-col gap-1 leading-tight shrink-0 ${
-                    u.isTop
-                      ? 'bg-blue-50 text-blue-700 border-blue-100'
-                      : 'bg-slate-50 text-slate-600 border-slate-100'
-                  }`}
+                  className="text-[11px] font-medium px-2.5 py-2 rounded-xl border flex flex-col gap-1 leading-tight shrink-0 bg-slate-50 text-slate-600 border-slate-100"
                 >
                   {(u.status || '').split(',').map((part, idx) => {
                     const trimmed = part.trim();
@@ -900,6 +996,8 @@ export default function Support() {
       </section>
 
       {/* 5. Card 3: Interactive Detail Action Plans & Support Needed */}
+      <NotulensiSection focus={notulensiFocus} />
+
       <section id="support-detail-card" className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
           <div>
@@ -1381,7 +1479,7 @@ export default function Support() {
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"
           onClick={(e) => {
-            if (e.target === e.currentTarget) handleCloseDetail();
+            if (e.target === e.currentTarget) requestCloseDetail();
           }}
         >
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[92vh] overflow-hidden flex flex-col border border-slate-200 animate-[fadeIn_0.2s_ease-out]">
@@ -1436,7 +1534,7 @@ export default function Support() {
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
-                  onClick={handleCloseDetail}
+                  onClick={requestCloseDetail}
                   className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors"
                   title="Tutup"
                 >
@@ -1631,16 +1729,34 @@ export default function Support() {
               </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
-              <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
-                <Info size={13} className="text-blue-600 shrink-0" />
-                <span>
+            {/* Banner draft yang dipulihkan dari browser */}
+            {detailRestored && (
+              <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-2.5 bg-blue-50 border-t border-blue-100 text-xs text-blue-900">
+                <span>Draft yang belum disimpan dari browser ini dipulihkan.</span>
+                <button type="button" onClick={discardDetailDraft} className="font-semibold text-rose-600 hover:underline cursor-pointer">
+                  Buang draft
+                </button>
+              </div>
+            )}
+
+            {/* Konfirmasi saat akan keluar padahal belum disimpan */}
+            {detailConfirm && (
+              <UnsavedChangesBar onStay={() => setDetailConfirm(false)} onSave={handleSaveAll} onDiscard={discardAndClose} />
+            )}
+
+            {/* Modal Footer: info di atas, tombol aksi di bawah (Hapus kiri, Batal & Simpan kanan) */}
+            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
+                <span className="flex items-center gap-1.5">
+                  <Info size={13} className="text-blue-600 shrink-0" />
                   Semua box dapat diedit langsung. Klik <strong className="text-slate-700 font-semibold">&quot;Simpan Perubahan&quot;</strong> setelah selesai.
                 </span>
+                {detailDirty && (
+                  <span className="font-semibold text-amber-700">Belum disimpan ke database · draft tersimpan otomatis</span>
+                )}
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <button
                   type="button"
                   onClick={() => handleDeleteItem(detailItem)}
@@ -1649,22 +1765,111 @@ export default function Support() {
                   <Trash2 size={13} />
                   Hapus
                 </button>
-                <button
-                  type="button"
-                  onClick={handleCloseDetail}
-                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-xl cursor-pointer transition-colors"
-                >
-                  Batal
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveAll}
-                  className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl cursor-pointer transition-all shadow-md flex items-center gap-1.5"
-                >
-                  <Check size={14} />
-                  Simpan Perubahan
-                </button>
+                <div className="flex items-center gap-2 ml-auto">
+                  <button
+                    type="button"
+                    onClick={requestCloseDetail}
+                    className="px-4 py-2 text-xs font-bold text-slate-600 border border-slate-200 bg-white hover:bg-slate-100 rounded-xl cursor-pointer transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveAll}
+                    className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl cursor-pointer transition-all shadow-md flex items-center gap-1.5"
+                  >
+                    <Check size={14} />
+                    Simpan Perubahan
+                  </button>
+                </div>
               </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Popup detail: daftar action plan per agenda & status, lengkap dengan isinya */}
+      {drill && createPortal(
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setDrill(null);
+          }}
+        >
+          <div className="w-full max-w-5xl max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div className="flex items-start justify-between gap-3 px-6 py-4 border-b border-slate-100">
+              <div className="min-w-0">
+                <h3 className="font-extrabold text-slate-900 text-base">
+                  {drill.status} · {drill.agenda}
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">{drillItems.length} action plan</p>
+              </div>
+              <button type="button" onClick={() => setDrill(null)} title="Tutup" className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-auto">
+              {drillItems.length === 0 ? (
+                <p className="py-12 text-center text-xs text-slate-400">Tidak ada action plan dengan status ini.</p>
+              ) : (
+                <table className="w-full text-xs">
+                  <thead className="sticky top-0 bg-slate-50 text-slate-600">
+                    <tr className="text-left border-b border-slate-200">
+                      <th className="py-2.5 px-3 font-bold">NO</th>
+                      <th className="py-2.5 px-3 font-bold">Tgl</th>
+                      <th className="py-2.5 px-3 font-bold">Main topic</th>
+                      <th className="py-2.5 px-3 font-bold">Action plan</th>
+                      <th className="py-2.5 px-3 font-bold">UIC → Destinasi</th>
+                      <th className="py-2.5 px-3 font-bold">Deadline</th>
+                      <th className="py-2.5 px-3 font-bold">Support needed</th>
+                      <th className="py-2.5 px-3" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {drillItems.map((item) => (
+                      <tr key={item.id} className="align-top hover:bg-blue-50/30">
+                        <td className="py-2.5 px-3 font-bold text-slate-700">{item.no}</td>
+                        <td className="py-2.5 px-3 text-slate-600 whitespace-nowrap">{item.tgl}</td>
+                        <td className="py-2.5 px-3 text-slate-800 font-semibold">{item.mainTopic}</td>
+                        <td className="py-2.5 px-3 text-slate-800 whitespace-pre-line">{item.actionPlan}</td>
+                        <td className="py-2.5 px-3 text-slate-700 whitespace-nowrap">
+                          {item.uic}
+                          {item.destinasiFu && item.destinasiFu !== '-' && <span className="block text-blue-600">→ {item.destinasiFu}</span>}
+                        </td>
+                        <td className="py-2.5 px-3 text-slate-600 whitespace-nowrap">{item.deadline}</td>
+                        <td className="py-2.5 px-3 text-rose-900 whitespace-pre-line">{item.supportNeeded !== '-' ? item.supportNeeded : '-'}</td>
+                        <td className="py-2.5 px-3 text-right">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDrill(null);
+                              focusNotulensi({ meetingId: item.meetingId, agenda: item.agenda });
+                            }}
+                            className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 cursor-pointer whitespace-nowrap"
+                          >
+                            Buka notulensi
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 px-6 py-3.5 border-t border-slate-100 bg-slate-50/60">
+              <button
+                type="button"
+                onClick={() => {
+                  setDrill(null);
+                  focusNotulensi({ agenda: drill.agenda, status: drill.status });
+                }}
+                className="px-4 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 cursor-pointer"
+              >
+                Lihat semua di Notulensi Rapat
+              </button>
             </div>
           </div>
         </div>,
