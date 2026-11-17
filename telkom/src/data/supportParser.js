@@ -198,6 +198,34 @@ export function normalizeDeadline(raw) {
   return str;
 }
 
+// Support needed sebagai checklist: satu baris per kebutuhan, "[ ] teks" = belum clear, "[x] teks" = sudah clear.
+// Teks tanpa penanda (mis. dari Excel) dianggap belum clear.
+const CHECKLIST_MARK = /^\[( |x|X)\]\s?/;
+
+export function parseSupportChecklist(text) {
+  const raw = String(text ?? '').trim();
+  if (!raw || raw === '-') return [];
+  return raw
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const m = line.match(CHECKLIST_MARK);
+      return { text: m ? line.slice(m[0].length) : line, done: !!m && m[1].toLowerCase() === 'x' };
+    });
+}
+
+export function formatSupportChecklist(items) {
+  if (!items.length) return '-';
+  return items.map((it) => `${it.done ? '[x]' : '[ ]'} ${it.text.replace(/\s*\n\s*/g, ' ')}`).join('\n');
+}
+
+/** Teks support needed tanpa penanda checklist, untuk ditampilkan di tabel dan kartu. */
+export function plainSupportText(text) {
+  const items = parseSupportChecklist(text).filter((it) => it.text.trim());
+  return items.length ? items.map((it) => it.text).join('\n') : '-';
+}
+
 /**
  * Parses raw CSV string into structured Action Plan items.
  * Handles filled-down rows (where parent meeting data is only on the first row).

@@ -8,6 +8,7 @@ import { parseDmY } from '../lib/supportInsights';
 import { RichText } from './RichText';
 import {
   SUPPORT_CHANGED_EVENT,
+  plainSupportText,
   addMeetingActionApi,
   deleteActionApi,
   deleteMeetingApi,
@@ -517,7 +518,7 @@ function NotulensiDetailModal({ group, canManage, onClose, onRemoved }) {
                       {item.supportNeeded && item.supportNeeded !== '-' && (
                         <div className={`mt-2 p-2 rounded-lg text-[11px] leading-relaxed whitespace-pre-line break-words ${item.supportClear ? 'bg-emerald-50/70 border border-emerald-200 text-emerald-800' : 'bg-rose-50/80 border border-rose-200/80 text-rose-900'}`}>
                           <span className="font-bold">{item.supportClear ? 'Support clear: ' : 'Support needed: '}</span>
-                          {item.supportNeeded}
+                          {plainSupportText(item.supportNeeded)}
                         </div>
                       )}
                     </div>

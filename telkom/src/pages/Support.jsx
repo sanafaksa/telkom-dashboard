@@ -41,7 +41,10 @@ import {
   createSupportBatchApi,
   deleteSupportItemApi,
   exportSupportExcel,
-  SUPPORT_CHANGED_EVENT
+  SUPPORT_CHANGED_EVENT,
+  parseSupportChecklist,
+  formatSupportChecklist,
+  plainSupportText
 } from '../data/supportParser';
 import NotulensiSection from '../components/NotulensiSection';
 import {
@@ -253,6 +256,11 @@ export default function Support() {
     else handleCloseDetail();
   };
 
+  // Checklist support needed di popup: disimpan sebagai teks "[ ] / [x]" di satu field
+  const detailSupportItems = parseSupportChecklist(editFormData.supportNeeded);
+  const [newSupportText, setNewSupportText] = useState('');
+  const setDetailSupportItems = (next) => handleFieldChange('supportNeeded', formatSupportChecklist(next));
+
   const discardDetailDraft = () => {
     clearDraft(draftKeyOf(detailItem));
     setEditFormData({ ...detailItem });
@@ -365,6 +373,22 @@ export default function Support() {
       }
     });
     setShowCreate(true);
+  };
+
+  // Centang satu kebutuhan dukungan dari tabel: teks checklist diubah lalu disimpan ke database
+  const toggleSupportItem = async (item, index) => {
+    if (!canManage) return;
+    const items = parseSupportChecklist(item.supportNeeded).map((it, i) =>
+      i === index ? { ...it, done: !it.done } : it
+    );
+    const updated = { ...item, supportNeeded: formatSupportChecklist(items) };
+    try {
+      const saved = await updateSupportItemApi(updated);
+      const serverItem = saved?.item ?? updated;
+      setActionPlans((prev) => prev.map((x) => (x.id === item.id ? serverItem : x)));
+    } catch (err) {
+      alert(`Centang belum tersimpan ke database.\n${err.message}`);
+    }
   };
 
   // Hapus butir. Butir yang belum punya id dari database (mis. data lokal) hanya dihapus dari browser.
@@ -1162,9 +1186,31 @@ export default function Support() {
                       {item.supportNeeded && item.supportNeeded !== '-' ? (
                         <div
                           className="p-2.5 rounded-xl bg-rose-50/80 border border-rose-200/80 text-rose-900 text-xs leading-relaxed whitespace-pre-line break-words font-medium shadow-2xs group-hover/cell:border-rose-400 group-hover/cell:bg-rose-50 transition-all"
-                          title={item.supportNeeded}
+                          title={plainSupportText(item.supportNeeded)}
                         >
-                          {item.supportNeeded}
+                          <ul className="space-y-1.5">
+                            {parseSupportChecklist(item.supportNeeded).map((it, idx) =>
+                              it.text.trim() ? (
+                                <li key={idx} className="flex items-start gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleSupportItem(item, idx);
+                                    }}
+                                    disabled={!canManage}
+                                    aria-label={it.done ? 'Tandai belum clear' : 'Tandai sudah clear'}
+                                    className={`mt-0.5 size-3.5 shrink-0 rounded border flex items-center justify-center cursor-pointer disabled:cursor-not-allowed ${
+                                      it.done ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-rose-300 hover:border-rose-500'
+                                    }`}
+                                  >
+                                    {it.done && <Check size={10} strokeWidth={3} />}
+                                  </button>
+                                  <span className={it.done ? 'line-through text-slate-400' : ''}>{it.text}</span>
+                                </li>
+                              ) : null
+                            )}
+                          </ul>
                         </div>
                       ) : (
                         <span className="text-slate-400 group-hover/cell:text-blue-600 text-xs italic block pt-1 transition-colors">
@@ -1625,13 +1671,59 @@ export default function Support() {
                 <label className="text-[11px] font-bold uppercase tracking-wider text-rose-600 block mb-1.5">
                   DUKUNGAN YANG DIBUTUHKAN (SUPPORT NEEDED)
                 </label>
-                <textarea
-                  rows={3}
-                  value={editFormData.supportNeeded === '-' ? '' : editFormData.supportNeeded || ''}
-                  onChange={(e) => handleFieldChange('supportNeeded', e.target.value)}
-                  className="w-full p-3.5 rounded-2xl bg-rose-50/60 border border-rose-200 text-rose-900 font-medium leading-relaxed text-xs focus:border-rose-400 focus:bg-white focus:ring-2 focus:ring-rose-100 outline-none transition-all"
-                  placeholder="Tuliskan kebutuhan dukungan atau eskalasi ke regional / unit lain (kosongkan jika tidak ada)..."
-                />
+                <div className="w-full p-3 rounded-2xl bg-rose-50/60 border border-rose-200 space-y-2">
+                  {detailSupportItems.length === 0 && (
+                    <p className="text-xs text-rose-400 italic px-1">Belum ada kebutuhan dukungan.</p>
+                  )}
+                  {detailSupportItems.map((it, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={it.done}
+                        onChange={() => setDetailSupportItems(detailSupportItems.map((x, i) => (i === idx ? { ...x, done: !x.done } : x)))}
+                        aria-label="Sudah clear"
+                        className="size-4 shrink-0 accent-emerald-600 cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={it.text}
+                        onChange={(e) =>
+                          setDetailSupportItems(detailSupportItems.map((x, i) => (i === idx ? { ...x, text: e.target.value } : x)))
+                        }
+                        className={`flex-1 min-w-0 px-2.5 py-1.5 text-xs rounded-lg bg-white border border-rose-200 focus:border-rose-400 focus:outline-none ${
+                          it.done ? 'line-through text-slate-400' : 'text-rose-900 font-medium'
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setDetailSupportItems(detailSupportItems.filter((_, i) => i !== idx))}
+                        title="Hapus kebutuhan ini"
+                        className="p-1.5 rounded-lg text-rose-300 hover:text-rose-600 hover:bg-white cursor-pointer shrink-0"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ))}
+                  <form
+                    className="flex items-center gap-2 pt-1"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const text = newSupportText.trim();
+                      if (!text) return;
+                      setDetailSupportItems([...detailSupportItems, { text, done: false }]);
+                      setNewSupportText('');
+                    }}
+                  >
+                    <Plus size={13} className="text-rose-400 shrink-0" />
+                    <input
+                      type="text"
+                      value={newSupportText}
+                      onChange={(e) => setNewSupportText(e.target.value)}
+                      placeholder="Tambah kebutuhan dukungan lalu Enter…"
+                      className="flex-1 min-w-0 px-2.5 py-1.5 text-xs rounded-lg bg-white/70 border border-transparent hover:border-rose-200 focus:border-rose-400 focus:outline-none"
+                    />
+                  </form>
+                </div>
               </div>
 
               {/* 4. UIC, Destinasi FU, Deadline Box */}
@@ -1839,7 +1931,7 @@ export default function Support() {
                           {item.destinasiFu && item.destinasiFu !== '-' && <span className="block text-blue-600">→ {item.destinasiFu}</span>}
                         </td>
                         <td className="py-2.5 px-3 text-slate-600 whitespace-nowrap">{item.deadline}</td>
-                        <td className="py-2.5 px-3 text-rose-900 whitespace-pre-line">{item.supportNeeded !== '-' ? item.supportNeeded : '-'}</td>
+                        <td className="py-2.5 px-3 text-rose-900 whitespace-pre-line">{plainSupportText(item.supportNeeded)}</td>
                         <td className="py-2.5 px-3 text-right">
                           <button
                             type="button"
