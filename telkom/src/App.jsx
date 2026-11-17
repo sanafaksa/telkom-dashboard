@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
 import { ShieldX } from 'lucide-react';
 import Layout from './components/Layout';
+import Notifikasi from './pages/Notifikasi';
 import SessionExpiredOverlay from './components/SessionExpiredOverlay';
 import SystemStatusGate from './components/SystemStatusGate';
 import DraftNotice from './components/DraftNotice';
@@ -88,6 +89,7 @@ export default function App() {
                     {/* Semua role */}
                     <Route path="/home" element={<Home />} />
                     <Route path="/profile" element={<Profile />} />
+                    <Route path="/notifikasi" element={<Notifikasi />} />
 
                     {/* Operasional */}
                     {guarded('/dashboard', 'dashboard.view', <Dashboard />)}

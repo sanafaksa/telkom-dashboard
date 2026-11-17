@@ -469,6 +469,13 @@ export default function Layout({ children }) {
     .filter((n) => !notifState.dismissed.includes(n.id))
     .map((n) => ({ ...n, read: notifState.read.includes(n.id) }));
 
+  // Perubahan status baca dari halaman "Semua notifikasi" ikut terlihat di dropdown
+  useEffect(() => {
+    const sync = () => setNotifState(loadNotifState(userKey));
+    window.addEventListener('solaris:notif', sync);
+    return () => window.removeEventListener('solaris:notif', sync);
+  }, [userKey]);
+
   const updateNotifState = (fn) =>
     setNotifState((prev) => {
       const next = fn(prev);
@@ -761,7 +768,14 @@ export default function Layout({ children }) {
 
                 {/* Footer */}
                 <div className="px-4 py-2.5 border-t border-slate-100 text-center">
-                  <button className="text-[11px] text-blue-600 hover:text-blue-800 font-medium cursor-pointer transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNotifOpen(false);
+                      navigate('/notifikasi');
+                    }}
+                    className="text-[11px] text-blue-600 hover:text-blue-800 font-medium cursor-pointer transition-colors"
+                  >
                     Lihat semua notifikasi
                   </button>
                 </div>

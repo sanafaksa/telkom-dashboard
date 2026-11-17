@@ -166,7 +166,7 @@ export function buildSupportSearchEntries(items) {
  * - tindak lanjut BELUM FU yang meeting-nya sudah lebih dari 7 hari lalu
  * - butir MoM baru sejak terakhir dilihat (lastSeenId)
  */
-export function buildNotifications(items, { lastSeenId = null, now = new Date() } = {}) {
+export function buildNotifications(items, { lastSeenId = null, now = new Date(), all = false } = {}) {
   const out = [];
   const open = items.filter((it) => normalizeStatus(it.status) !== 'DONE');
 
@@ -179,7 +179,8 @@ export function buildNotifications(items, { lastSeenId = null, now = new Date() 
   });
   deadlines
     .sort((a, b) => a.diff - b.diff)
-    .slice(0, 5)
+    // Dropdown notifikasi hanya 5 teratas; halaman "Semua notifikasi" menampilkan semuanya
+    .slice(0, all ? undefined : 5)
     .forEach(({ it, d, diff }) => {
       const when = diff < 0 ? `terlewat ${-diff} hari` : diff === 0 ? 'jatuh tempo hari ini' : `${diff} hari lagi`;
       out.push({
