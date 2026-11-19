@@ -3,7 +3,7 @@
 // Semua akses dibungkus try/catch; kalau storage tidak tersedia (mode privat, kuota penuh), halaman tetap jalan tanpa draft.
 
 import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { getUser } from '../features/auth/auth';
 
 /**
@@ -13,8 +13,18 @@ import { getUser } from '../features/auth/auth';
  */
 export function useOpenDraftIntent(key, onOpen) {
   const location = useLocation();
+  const navigate = useNavigate();
   useEffect(() => {
-    if (location.state?.openDraft === key) onOpen();
+    if (location.state?.openDraft !== key) return;
+    // Status "buka draft" disimpan di riwayat browser dan ikut bertahan setelah reload.
+    // Dihapus dulu supaya reload tidak membuka popup lagi; popup hanya terbuka kalau draft-nya masih ada.
+    navigate({ pathname: location.pathname, search: location.search, hash: location.hash }, { replace: true, state: null });
+    const isFileDraft = key.endsWith('-files') || key.endsWith('-file');
+    (isFileDraft ? loadDraftFiles(key).then((files) => files.length > 0) : Promise.resolve(!!loadDraft(key))).then(
+      (exists) => {
+        if (exists) onOpen();
+      }
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.key]);
 }
@@ -30,6 +40,32 @@ export const DRAFT_CATALOG = {
   'koreksi-psak-upload-file': { label: 'Upload Rekap Koreksi PSAK', route: '/koreksi-jurbal-psak' },
   'kuadran-upload-files': { label: 'Upload file Kuadran SJT', route: '/kuadran' }
 };
+
+// Draft yang key-nya memuat ID (per notulensi / per action plan).
+const DRAFT_PREFIXES = [
+  { prefix: 'mom-action:', label: 'Edit action plan Support Needed', route: '/support-needed' },
+  { prefix: 'mom-notulensi:', label: 'Edit isi notulensi', route: '/support-needed' },
+  { prefix: 'mom-notulensi-action:', label: 'Edit action plan notulensi', route: '/support-needed' },
+  { prefix: 'mom-notulensi-new:', label: 'Action plan baru di notulensi', route: '/support-needed' }
+];
+
+/** Info tampilan draft (label & rute) untuk key tertentu, atau null kalau key bukan draft yang ditampilkan. */
+export function catalogOf(key) {
+  if (DRAFT_CATALOG[key]) return DRAFT_CATALOG[key];
+  const hit = DRAFT_PREFIXES.find((d) => key.startsWith(d.prefix));
+  return hit ? { label: hit.label, route: hit.route } : null;
+}
+
+// Dikirim setiap kali daftar draft berubah (draft baru, atau draft dibuang / dihapus), supaya popup ikut diperbarui.
+export const DRAFT_CHANGED_EVENT = 'solaris:draft';
+
+function notifyDraftChanged() {
+  try {
+    window.dispatchEvent(new Event(DRAFT_CHANGED_EVENT));
+  } catch {
+    // abaikan
+  }
+}
 
 function scopedKey(key) {
   const user = getUser();
@@ -57,10 +93,12 @@ function writeRegistry(reg) {
 }
 
 function registerDraft(key) {
-  if (!DRAFT_CATALOG[key]) return;
+  if (!catalogOf(key)) return;
   const reg = readRegistry();
+  const isNew = !(key in reg);
   reg[key] = { savedAt: new Date().toISOString() };
   writeRegistry(reg);
+  if (isNew) notifyDraftChanged();
 }
 
 function unregisterDraft(key) {
@@ -68,20 +106,23 @@ function unregisterDraft(key) {
   if (!(key in reg)) return;
   delete reg[key];
   writeRegistry(reg);
+  notifyDraftChanged();
 }
 
 /**
- * Daftar draft yang masih ada (terbaru dulu). Draft file dicek ke IndexedDB,
- * jadi entri yang file-nya sudah hilang tidak ditampilkan.
+ * Daftar draft yang masih ada (terbaru dulu). Draft file dicek ke IndexedDB.
+ * Entri yang datanya sudah tidak ada (dibuang / sudah disimpan) dibersihkan dari registri,
+ * jadi popup tidak pernah memunculkan draft yang sudah dibuang.
  */
 export async function listDrafts() {
   const reg = readRegistry();
-  const entries = Object.entries(reg).filter(([key]) => DRAFT_CATALOG[key]);
+  const entries = Object.entries(reg).filter(([key]) => catalogOf(key));
   const valid = await Promise.all(
     entries.map(async ([key, meta]) => {
       const isFile = key.endsWith('-files') || key.endsWith('-file');
       const present = isFile ? (await loadDraftFiles(key)).length > 0 : !!loadDraft(key);
-      return present ? { key, ...DRAFT_CATALOG[key], savedAt: meta.savedAt } : null;
+      if (!present) unregisterDraft(key);
+      return present ? { key, ...catalogOf(key), savedAt: meta.savedAt } : null;
     })
   );
   return valid.filter(Boolean).sort((a, b) => (a.savedAt < b.savedAt ? 1 : -1));
@@ -92,7 +133,16 @@ export async function listDrafts() {
 export function loadDraft(key, fallback = null) {
   try {
     const raw = localStorage.getItem(scopedKey(key));
-    return raw ? JSON.parse(raw) : fallback;
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    // Draft yang valid punya waktu simpan dan isi. Data rusak atau isi kosong dianggap tidak ada draft
+    // (supaya popup / notifikasi tidak muncul lagi untuk draft yang sudah dibuang atau tidak lengkap).
+    const isEmptyValue =
+      parsed?.value == null || (typeof parsed.value === 'object' && Object.keys(parsed.value).length === 0);
+    if (!parsed || typeof parsed !== 'object' || typeof parsed.savedAt !== 'string' || isEmptyValue) {
+      return fallback;
+    }
+    return parsed;
   } catch {
     return fallback;
   }

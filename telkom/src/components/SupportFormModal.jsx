@@ -227,6 +227,7 @@ export default function SupportFormModal({ onClose, onSave, nextNo = '', prefill
 
   // Draft otomatis: isian dipulihkan dari localStorage, dan tersimpan setiap kali berubah
   const [initialDraft] = useState(() => (isPrefilled ? null : loadDraft(DRAFT_KEY)));
+  const [showRestored, setShowRestored] = useState(!!initialDraft);
   const [meta, setMeta] = useState(() => {
     if (isPrefilled) return prefill.meta;
     const saved = initialDraft?.value?.meta;
@@ -247,8 +248,11 @@ export default function SupportFormModal({ onClose, onSave, nextNo = '', prefill
   const submittedRef = useRef(false);
   const timerRef = useRef(null);
 
+  // Setelah "Buang draft", draft tidak boleh ditulis ulang (termasuk saat unmount)
+  const discardedRef = useRef(false);
+
   const persist = () => {
-    if (submittedRef.current || isPrefilled) return false;
+    if (submittedRef.current || isPrefilled || discardedRef.current) return false;
     const { meta: m, items: its } = latest.current;
     if (!hasDraftContent(m, its)) {
       clearDraft(DRAFT_KEY);
@@ -269,12 +273,13 @@ export default function SupportFormModal({ onClose, onSave, nextNo = '', prefill
 
   useEffect(() => () => persist(), []);
 
+  // Buang draft: draft dihapus dari browser dan form ditutup (tidak ditulis ulang saat unmount)
   const discardDraft = () => {
+    if (!confirm('Buang draft ini? Isian yang belum disimpan ke database akan hilang.')) return;
+    discardedRef.current = true;
     clearTimeout(timerRef.current);
     clearDraft(DRAFT_KEY);
-    setSavedAt(null);
-    setMeta({ ...DEFAULT_META, tglIso: todayIso() });
-    setItems([emptyItem()]);
+    onClose();
   };
 
   // Keluar dari form: kalau masih ada draft yang belum disimpan, minta konfirmasi dua langkah
@@ -445,7 +450,7 @@ export default function SupportFormModal({ onClose, onSave, nextNo = '', prefill
         </div>
 
         <div className="p-6 overflow-y-auto space-y-4 text-xs text-slate-700">
-          {initialDraft && (
+          {showRestored && initialDraft && (
             <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center justify-between gap-3">
               <span>
                 Draft dipulihkan

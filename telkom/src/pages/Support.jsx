@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { can } from '../features/auth/auth';
 import {
   Filter,
@@ -179,6 +179,23 @@ export default function Support() {
   const [createPrefill, setCreatePrefill] = useState(null);
   useOpenDraftIntent('mom-support-form', () => setShowCreate(true));
 
+  // Dibuka dari popup draft: edit action plan yang draft-nya belum disimpan langsung terbuka (sekali per navigasi)
+  const consumedDraftRef = useRef(null);
+  const navigate = useNavigate();
+  useEffect(() => {
+    const k = location.state?.openDraft;
+    if (typeof k !== 'string' || !k.startsWith('mom-action:') || consumedDraftRef.current === location.key) return;
+    const id = k.slice('mom-action:'.length);
+    const item = actionPlans.find((a) => String(a.id) === id);
+    if (!item) return;
+    consumedDraftRef.current = location.key;
+    // Hapus status "buka draft" dari riwayat supaya reload tidak membukanya lagi
+    navigate({ pathname: location.pathname, search: location.search, hash: location.hash }, { replace: true, state: null });
+    // Popup hanya dibuka kalau draft-nya masih ada (draft yang sudah dibuang tidak dibuka)
+    if (loadDraft(k)) handleOpenDetail(item);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key, actionPlans]);
+
   // Load latest data from MySQL Backend on mount
   useEffect(() => {
     let active = true;
@@ -271,11 +288,12 @@ export default function Support() {
   const [newSupportText, setNewSupportText] = useState('');
   const setDetailSupportItems = (next) => handleFieldChange('supportNeeded', formatSupportChecklist(next));
 
+  // Buang draft hanya mengembalikan isi popup ke data database; popup tetap terbuka
+  // Buang draft: draft dihapus dan popup ditutup
   const discardDetailDraft = () => {
+    if (!confirm('Buang draft ini? Isian yang belum disimpan ke database akan hilang.')) return;
     clearDraft(draftKeyOf(detailItem));
-    setEditFormData({ ...detailItem });
-    setDetailRestored(false);
-    setDetailConfirm(false);
+    handleCloseDetail();
   };
 
   const discardAndClose = () => {

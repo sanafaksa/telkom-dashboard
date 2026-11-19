@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Check, ChevronLeft, ChevronRight, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { can } from '../features/auth/auth';
 import { DeadlineInput } from './FormFields';
 import UnsavedChangesBar from './UnsavedChangesBar';
-import { useDraftForm } from '../lib/useDraftForm';
+import { useDraftForm, isSameValues } from '../lib/useDraftForm';
+import { clearDraft, loadDraft, saveDraft } from '../lib/draft';
 import { parseDmY } from '../lib/supportInsights';
 import { RichText } from './RichText';
 import {
@@ -19,6 +21,21 @@ import {
 } from '../data/supportParser';
 
 const PAGE_SIZE = 6;
+
+// Kunci draft notulensi (harus cocok dengan prefix di lib/draft.js agar tampil di popup)
+const meetingDraftKey = (meetingId) => `mom-notulensi:${meetingId}`;
+const actionDraftKey = (id) => `mom-notulensi-action:${id}`;
+const newActionDraftKey = (meetingId) => `mom-notulensi-new:${meetingId}`;
+
+const actionValuesOf = (item) => ({
+  actionPlan: item.actionPlan,
+  uic: item.uic,
+  destinasiFu: item.destinasiFu,
+  supportNeeded: item.supportNeeded,
+  deadline: item.deadline,
+  status: item.status,
+  notes: item.notes
+});
 
 const STATUS_OPTIONS =['BELUM FU', 'IN PROGRESS', 'NEED DISCUSS', 'DONE'];
 
@@ -131,6 +148,28 @@ export default function NotulensiSection({ focus = null }) {
   const pageItems = visible.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const openGroup = groups.find((g) => g.key === openKey) ?? null;
+
+  // Dibuka dari popup draft: notulensi yang punya draft belum disimpan langsung terbuka (sekali per navigasi)
+  const location = useLocation();
+  const navigate = useNavigate();
+  const consumedDraftRef = useRef(null);
+  useEffect(() => {
+    const k = location.state?.openDraft;
+    if (typeof k !== 'string' || !loaded || consumedDraftRef.current === location.key) return;
+    const m = k.match(/^mom-notulensi(?:-action|-new)?:(.+)$/);
+    if (!m) return;
+    consumedDraftRef.current = location.key;
+    // Hapus status "buka draft" dari riwayat supaya reload tidak membukanya lagi
+    navigate({ pathname: location.pathname, search: location.search, hash: location.hash }, { replace: true, state: null });
+    // Popup hanya dibuka kalau draft-nya masih ada (draft yang sudah dibuang tidak dibuka)
+    if (!loadDraft(k)) return;
+    let meetingId = m[1];
+    if (k.startsWith('mom-notulensi-action:')) {
+      meetingId = items.find((i) => String(i.id) === meetingId)?.meetingId;
+    }
+    const group = groups.find((g) => String(g.key) === String(meetingId));
+    if (group) setOpenKey(group.key);
+  }, [location.key, loaded, groups, items]);
 
   return (
     <section id="notulensi-section" className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs scroll-mt-24">
@@ -285,7 +324,7 @@ export default function NotulensiSection({ focus = null }) {
 /** Popup detail notulensi: isi rapat, deadline bersama, dan daftar action plan yang bisa diedit satu per satu. */
 function NotulensiDetailModal({ group, canManage, onClose, onRemoved }) {
   const meetingId = group.meetingId;
-  const draft = useDraftForm(`mom-notulensi:${meetingId}`, {
+  const draft = useDraftForm(meetingDraftKey(meetingId), {
     no: group.head.no,
     tgl: group.head.tgl,
     agenda: group.head.agenda,
@@ -301,9 +340,37 @@ function NotulensiDetailModal({ group, canManage, onClose, onRemoved }) {
   const [editingId, setEditingId] = useState(null);
   // Edit action plan yang sedang terbuka juga dihitung sebagai perubahan yang belum disimpan
   const dirty = meetingDirty || editingId !== null;
+  // Draft edit action plan (per item) dan draft action plan baru: disimpan otomatis ke browser
   const [actionForm, setActionForm] = useState({});
-  const [newAction, setNewAction] = useState('');
+  const [actionBase, setActionBase] = useState({});
+  const [actionRestored, setActionRestored] = useState(false);
+  const [actionSavedAt, setActionSavedAt] = useState(null);
+  const newKey = newActionDraftKey(meetingId);
+  const [newAction, setNewAction] = useState(() => loadDraft(newKey)?.value?.text ?? '');
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (editingId === null) return undefined;
+    const key = actionDraftKey(editingId);
+    const t = setTimeout(() => {
+      if (isSameValues(actionForm, actionBase)) {
+        clearDraft(key);
+        setActionSavedAt(null);
+      } else {
+        saveDraft(key, actionForm);
+        setActionSavedAt(new Date().toISOString());
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [actionForm, actionBase, editingId]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (newAction.trim()) saveDraft(newKey, { text: newAction });
+      else clearDraft(newKey);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [newAction, newKey]);
 
   // Tutup popup hanya langsung kalau tidak ada perubahan; kalau ada, tanya dulu
   const requestClose = () => {
@@ -354,10 +421,19 @@ function NotulensiDetailModal({ group, canManage, onClose, onRemoved }) {
     else onClose();
   };
 
+  // Keluar sambil membuang semua draft yang terkait popup ini
   const discardAndExit = () => {
     discardDraft();
+    if (editingId !== null) clearDraft(actionDraftKey(editingId));
+    clearDraft(newKey);
     setEditingId(null);
     onClose();
+  };
+
+  // Buang draft: semua draft popup ini dihapus dan popup ditutup
+  const discardMeetingDraft = () => {
+    if (!confirm('Buang draft isi notulensi ini? Isian yang belum disimpan ke database akan hilang.')) return;
+    discardAndExit();
   };
 
   const formatTime = (iso) => new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
@@ -373,22 +449,39 @@ function NotulensiDetailModal({ group, canManage, onClose, onRemoved }) {
   const toggleClear = (item) =>
     run(() => setSupportClearApi(item.id, !item.supportClear), 'Centang belum tersimpan ke database.');
 
+  // Membuka edit: kalau ada draft yang belum disimpan untuk action ini, isinya dipulihkan
   const startEdit = (item) => {
+    const base = actionValuesOf(item);
+    const stored = loadDraft(actionDraftKey(item.id));
+    const restore = !!stored?.value && !isSameValues(stored.value, base);
+    setActionBase(base);
+    setActionForm(restore ? { ...base, ...stored.value } : base);
+    setActionRestored(restore);
+    setActionSavedAt(restore ? stored.savedAt : null);
     setEditingId(item.id);
-    setActionForm({
-      actionPlan: item.actionPlan,
-      uic: item.uic,
-      destinasiFu: item.destinasiFu,
-      supportNeeded: item.supportNeeded,
-      deadline: item.deadline,
-      status: item.status,
-      notes: item.notes
-    });
+  };
+
+  // Batal = tutup editor dan buang draft-nya (konfirmasi dulu kalau ada isian yang berubah)
+  const cancelEdit = () => {
+    if (editingId === null) return;
+    if (!isSameValues(actionForm, actionBase) && !confirm('Batalkan edit action plan ini? Draft yang belum disimpan akan dibuang.')) return;
+    clearDraft(actionDraftKey(editingId));
+    setActionRestored(false);
+    setEditingId(null);
+  };
+
+  const discardActionDraft = () => {
+    if (!confirm('Buang draft action plan ini? Isian yang belum disimpan ke database akan hilang.')) return;
+    clearDraft(actionDraftKey(editingId));
+    setActionForm(actionBase);
+    setActionRestored(false);
+    setActionSavedAt(null);
   };
 
   const saveAction = (id) =>
     run(async () => {
       await updateActionApi(id, actionForm);
+      clearDraft(actionDraftKey(id));
       setEditingId(null);
     }, 'Action plan belum tersimpan ke database.');
 
@@ -536,6 +629,19 @@ function NotulensiDetailModal({ group, canManage, onClose, onRemoved }) {
 
                   {editingId === item.id && (
                     <div className="mt-3 grid gap-3 sm:grid-cols-2 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                      {actionRestored && (
+                        <div className="sm:col-span-2 flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-100 text-[11px] text-blue-900">
+                          <span>Draft yang belum disimpan dari browser ini dipulihkan.</span>
+                          <button type="button" onClick={discardActionDraft} className="font-semibold text-rose-600 hover:underline cursor-pointer">
+                            Buang draft
+                          </button>
+                        </div>
+                      )}
+                      <p className="sm:col-span-2 -mb-1 text-[11px] text-slate-500">
+                        {isSameValues(actionForm, actionBase)
+                          ? 'Isian disimpan otomatis sebagai draft saat kamu berhenti mengetik.'
+                          : `Belum disimpan ke database · draft tersimpan otomatis${actionSavedAt ? ` ${formatTime(actionSavedAt)}` : ''}`}
+                      </p>
                       <label className="block text-xs sm:col-span-2">
                         <span className="font-semibold text-slate-600">Rencana aksi</span>
                         <textarea rows={2} value={actionForm.actionPlan ?? ''} onChange={(e) => setActionForm((f) => ({ ...f, actionPlan: e.target.value }))} className={inputCls} />
@@ -571,7 +677,7 @@ function NotulensiDetailModal({ group, canManage, onClose, onRemoved }) {
                         <textarea rows={2} value={actionForm.notes ?? ''} onChange={(e) => setActionForm((f) => ({ ...f, notes: e.target.value }))} className={inputCls} />
                       </label>
                       <div className="sm:col-span-2 flex justify-end gap-2">
-                        <button type="button" onClick={() => setEditingId(null)} className="px-3 py-1.5 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-white cursor-pointer">
+                        <button type="button" onClick={cancelEdit} className="px-3 py-1.5 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-white cursor-pointer">
                           Batal
                         </button>
                         <button type="button" disabled={busy} onClick={() => saveAction(item.id)} className="px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg cursor-pointer disabled:opacity-50">
@@ -617,7 +723,7 @@ function NotulensiDetailModal({ group, canManage, onClose, onRemoved }) {
         {restored && (
           <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-2.5 mt-2 bg-blue-50 border-t border-blue-100 text-xs text-blue-900">
             <span>Draft yang belum disimpan dari browser ini dipulihkan.</span>
-            <button type="button" onClick={discardDraft} className="font-semibold text-rose-600 hover:underline cursor-pointer">
+            <button type="button" onClick={discardMeetingDraft} className="font-semibold text-rose-600 hover:underline cursor-pointer">
               Buang draft
             </button>
           </div>
