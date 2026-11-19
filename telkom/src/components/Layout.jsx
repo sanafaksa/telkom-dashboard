@@ -253,6 +253,8 @@ function CollapsedSidebar({ onExpand }) {
   const location = useLocation();
   const isKuadranRoute = location.pathname.startsWith('/kuadran');
   const miniNav = visibleNav().flatMap((g) => g.items);
+  // Sama seperti Sidebar: Super Admin & Admin = logo gradient biru, role lain = logo putih.
+  const isTopRole = ['super_admin', 'admin'].includes(getUser()?.role);
 
   return (
     <nav
@@ -270,13 +272,13 @@ function CollapsedSidebar({ onExpand }) {
         onClick={onExpand}
         title="Buka Sidebar"
         aria-label="Buka sidebar"
-        className="size-10 rounded-2xl grid place-items-center mb-3 cursor-pointer transition-all hover:scale-105 active:scale-95 overflow-hidden bg-white"
+        className="size-10 rounded-2xl grid place-items-center mb-3 cursor-pointer transition-all hover:scale-105 active:scale-95 overflow-hidden border border-[#06246A]/20 bg-gradient-to-b from-[#06246A] to-[#235CE5]"
         style={{ boxShadow: '0 2px 8px rgba(6,36,106,0.15)' }}
       >
         <img
-          src="/pngwing.com.png"
-          alt="Telkom Indonesia"
-          className="w-8 h-8 object-contain"
+          src={isTopRole ? '/solaris-gradient-blue.svg' : '/solaris-white-transparent.svg'}
+          alt="Solaris"
+          className="w-7 h-7 object-contain"
         />
       </button>
 
