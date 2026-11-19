@@ -79,7 +79,11 @@ const WITEL_UIC = ['PRQ', 'BS', 'GS', 'SSGS', 'LESA V'];
 const normalizeUicToken = (t) =>
   t.trim().toUpperCase().replace(/\s+-\s+.*$/, '').replace(/^RSMESS$/, 'RSMES');
 
-const matchUicFilter = (uicText, filter) => {
+// Filter UIC bisa lebih dari satu: cocok bila salah satu pilihan cocok. Kosong = semua.
+const matchUicFilter = (uicText, filters) =>
+  !filters.length || filters.some((f) => matchUicOne(uicText, f));
+
+const matchUicOne = (uicText, filter) => {
   if (filter === 'Semua') return true;
   const tokens = String(uicText || '')
     .split(',')
@@ -118,7 +122,7 @@ export default function Support() {
   const [searchQ, setSearchQ] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua');
   const [agendaFilter, setAgendaFilter] = useState('Semua');
-  const [uicFilter, setUicFilter] = useState('Semua');
+  const [uicFilter, setUicFilter] = useState([]);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -132,7 +136,7 @@ export default function Support() {
     const statusParam = searchParams.get('status');
     if (uicParam === null && qParam === null && statusParam === null) return;
     setUicFilter(
-      UIC_FILTER_OPTIONS.some((o) => o.value === uicParam) || UIC_TREE_VALUES.has(uicParam) ? uicParam : 'Semua'
+      UIC_FILTER_OPTIONS.some((o) => o.value === uicParam) || UIC_TREE_VALUES.has(uicParam) ? [uicParam] : []
     );
     setSearchQ(qParam ?? '');
     setStatusFilter(['DONE', 'IN PROGRESS', 'BELUM FU'].includes(statusParam) ? statusParam : 'Semua');
@@ -350,7 +354,7 @@ export default function Support() {
     setSearchQ('');
     setStatusFilter('Semua');
     setAgendaFilter('Semua');
-    setUicFilter('Semua');
+    setUicFilter([]);
     setPage(Math.ceil((actionPlans.length + created.length) / pageSize));
     setShowCreate(false);
     setCreatePrefill(null);
@@ -546,7 +550,7 @@ export default function Support() {
       setSearchQ('');
       setStatusFilter('Semua');
       setAgendaFilter('Semua');
-      setUicFilter('Semua');
+      setUicFilter([]);
       setPage(1);
       setUploadSuccess(
         `Berhasil menyinkronkan ${syncRes.row_count ?? parsed.length} butir Action Plan dari "${file.name}" ke database.`
