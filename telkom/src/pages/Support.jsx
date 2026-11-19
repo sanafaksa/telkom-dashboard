@@ -56,6 +56,8 @@ import { exportCSV, ShareDropdown } from '../components/ui';
 import SupportFormModal, { AGENDA_OPTIONS, UNIT_OPTIONS } from '../components/SupportFormModal';
 import { RichText, RichTextarea } from '../components/RichText';
 import { DESTINASI_OPTIONS, DeadlineInput, StatusSelect, UicMultiSelect } from '../components/FormFields';
+import { UicFilterDropdown } from '../components/UicTree';
+import { UIC_TREE_VALUES } from '../data/uicTree';
 import { clearDraft, loadDraft, saveDraft, useOpenDraftIntent } from '../lib/draft';
 import { isSameValues } from '../lib/useDraftForm';
 import UnsavedChangesBar from '../components/UnsavedChangesBar';
@@ -91,6 +93,8 @@ const matchUicFilter = (uicText, filter) => {
     );
   }
   if (filter === 'RSMES & RLEGS') return has('RSMES') && has('RLEGS');
+  // Pilihan sub-unit (mis. "BPPLP - LEGAL & REGULATORY AFFAIR" atau "WITEL BALI - GM"): cocokkan nama lengkapnya
+  if (String(uicText || '').split(',').some((t) => t.trim().toUpperCase() === String(filter).toUpperCase())) return true;
   return has(filter);
 };
 
@@ -127,7 +131,9 @@ export default function Support() {
     const qParam = searchParams.get('q');
     const statusParam = searchParams.get('status');
     if (uicParam === null && qParam === null && statusParam === null) return;
-    setUicFilter(UIC_FILTER_OPTIONS.some((o) => o.value === uicParam) ? uicParam : 'Semua');
+    setUicFilter(
+      UIC_FILTER_OPTIONS.some((o) => o.value === uicParam) || UIC_TREE_VALUES.has(uicParam) ? uicParam : 'Semua'
+    );
     setSearchQ(qParam ?? '');
     setStatusFilter(['DONE', 'IN PROGRESS', 'BELUM FU'].includes(statusParam) ? statusParam : 'Semua');
     setAgendaFilter('Semua');
@@ -1095,21 +1101,14 @@ export default function Support() {
               ))}
             </select>
 
-            {/* UIC dropdown filter */}
-            <select
+            {/* UIC dropdown filter (pohon bertingkat) */}
+            <UicFilterDropdown
               value={uicFilter}
-              onChange={(e) => {
-                setUicFilter(e.target.value);
+              onChange={(v) => {
+                setUicFilter(v);
                 setPage(1);
               }}
-              className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium cursor-pointer focus:outline-none focus:border-blue-500"
-            >
-              {UIC_FILTER_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+            />
           </div>
         </div>
 

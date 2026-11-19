@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
+import { UicTreeMenu } from './UicTree';
 
 /* ---------- Status (berwarna) ---------- */
 
@@ -66,11 +67,10 @@ export const DESTINASI_OPTIONS = [
   'ALL PESERTA'
 ];
 
-export function UicMultiSelect({ id, value, onChange, className = '', options: baseOptions = UIC_OPTIONS, placeholder = 'Pilih UIC' }) {
+export function UicMultiSelect({ id, value, onChange, className = '', placeholder = 'Pilih UIC' }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
   const selected = splitUic(value);
-  const options = [...baseOptions, ...selected.filter((s) => !baseOptions.includes(s))];
 
   useEffect(() => {
     if (!open) return undefined;
@@ -84,6 +84,20 @@ export function UicMultiSelect({ id, value, onChange, className = '', options: b
   const toggle = (opt) => {
     const next = selected.includes(opt) ? selected.filter((s) => s !== opt) : [...selected, opt];
     onChange(next.join(', '));
+  };
+
+  // Pilih/lepas banyak sekaligus (checkbox "pilih semua" di induk)
+  const setMany = (vals, on) => {
+    const next = on
+      ? [...selected, ...vals.filter((v) => !selected.includes(v))]
+      : selected.filter((s) => !vals.includes(s));
+    onChange(next.join(', '));
+  };
+
+  // Isian dinamis dari node bertanda * (mis. "WITEL BALI - TELDA KUDUS BARU")
+  const addCustomValue = (v) => {
+    if (!v || selected.includes(v)) return;
+    onChange([...selected, v].join(', '));
   };
 
   return (
@@ -101,27 +115,15 @@ export function UicMultiSelect({ id, value, onChange, className = '', options: b
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl py-1">
-          {options.map((opt) => {
-            const on = selected.includes(opt);
-            return (
-              <button
-                key={opt}
-                type="button"
-                onClick={() => toggle(opt)}
-                className="w-full px-3 py-2 text-xs font-semibold text-left flex items-center gap-2.5 hover:bg-blue-50 cursor-pointer"
-              >
-                <span
-                  className={`size-4 shrink-0 rounded border grid place-items-center ${
-                    on ? 'bg-[#1447B8] border-[#1447B8] text-white' : 'border-slate-300 bg-white'
-                  }`}
-                >
-                  {on && <Check size={11} strokeWidth={3} />}
-                </span>
-                <span className="text-slate-800">{opt}</span>
-              </button>
-            );
-          })}
+        <div className="absolute z-50 mt-1 left-0 w-[340px] max-w-[92vw] overflow-hidden bg-white border border-slate-200 rounded-xl shadow-xl p-1">
+          <UicTreeMenu
+            mode="multi"
+            selected={selected}
+            onToggle={toggle}
+            onBulk={setMany}
+            onAddCustom={addCustomValue}
+            maxH="max-h-80"
+          />
         </div>
       )}
     </div>

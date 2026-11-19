@@ -82,6 +82,10 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         });
     });
 
+    // ===== Master UIC bertingkat (baca saja) =====
+    Route::get('uic-units', [\App\Http\Controllers\Api\UicUnitController::class, 'index'])
+        ->middleware('permission:mom.view,dashboard.view');
+
     // ===== MoM Support =====
     Route::prefix('mom-support')->group(function () {
         // Executive Overview juga membaca data MoM.
