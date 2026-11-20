@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { UicTreeMenu } from './UicTree';
+import { UIC_TREE_VALUES } from '../data/uicTree';
 
 /* ---------- Status (berwarna) ---------- */
 
@@ -36,11 +37,28 @@ export function StatusSelect({ id, value, onChange, options, className = '' }) {
 
 export const UIC_OPTIONS = ['BPPLP', 'ED', 'EVP', 'RLEGS', 'RSMES', 'RSO', 'RSO 1', 'RSO 2', 'RWS', 'SSGS'];
 
-const splitUic = (value) =>
-  String(value || '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
+// Nilai tersimpan dipisah ", ". Beberapa nilai master mengandung koma sendiri
+// (mis. "BPPLP - PLANNING, BUDGET CONTROL&PERFORMANCE"), jadi potongan yang membentuk
+// nilai master dikenali dulu sebelum dianggap pemisah.
+const splitUic = (value) => {
+  const parts = String(value || '').split(',');
+  const out = [];
+  for (let i = 0; i < parts.length; ) {
+    let span = 1;
+    let token = parts[i].trim();
+    for (let j = Math.min(parts.length, i + 4); j > i + 1; j--) {
+      const cand = parts.slice(i, j).join(',').trim();
+      if (UIC_TREE_VALUES.has(cand)) {
+        token = cand;
+        span = j - i;
+        break;
+      }
+    }
+    if (token) out.push(token);
+    i += span;
+  }
+  return out;
+};
 
 /**
  * Dropdown UIC dengan centang. Nilai tersimpan "A, B" seperti sebelumnya.
@@ -123,6 +141,7 @@ export function UicMultiSelect({ id, value, onChange, className = '', placeholde
             onBulk={setMany}
             onAddCustom={addCustomValue}
             maxH="max-h-80"
+            groupNotes
           />
         </div>
       )}

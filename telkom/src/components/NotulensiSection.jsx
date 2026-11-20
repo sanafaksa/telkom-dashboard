@@ -8,6 +8,7 @@ import { useDraftForm, isSameValues } from '../lib/useDraftForm';
 import { clearDraft, loadDraft, saveDraft } from '../lib/draft';
 import { parseDmY } from '../lib/supportInsights';
 import { RichText } from './RichText';
+import useBodyScrollLock from '../lib/useBodyScrollLock';
 import {
   SUPPORT_CHANGED_EVENT,
   plainSupportText,
@@ -323,6 +324,7 @@ export default function NotulensiSection({ focus = null }) {
 
 /** Popup detail notulensi: isi rapat, deadline bersama, dan daftar action plan yang bisa diedit satu per satu. */
 function NotulensiDetailModal({ group, canManage, onClose, onRemoved }) {
+  useBodyScrollLock(true);
   const meetingId = group.meetingId;
   const draft = useDraftForm(meetingDraftKey(meetingId), {
     no: group.head.no,
@@ -563,15 +565,15 @@ function NotulensiDetailModal({ group, canManage, onClose, onRemoved }) {
               </div>
               <label className="block text-xs sm:col-span-2">
                 <span className="font-semibold text-slate-600">Peserta</span>
-                <textarea rows={2} value={form.peserta ?? ''} onChange={setField('peserta')} disabled={!canManage} className={inputCls} />
+                <textarea style={{ height: 112 }} value={form.peserta ?? ''} onChange={setField('peserta')} disabled={!canManage} className={inputCls} />
               </label>
               <label className="block text-xs sm:col-span-2">
                 <span className="font-semibold text-slate-600">Pembahasan</span>
-                <textarea rows={4} value={form.pembahasan ?? ''} onChange={setField('pembahasan')} disabled={!canManage} className={inputCls} />
+                <textarea style={{ height: 146 }} value={form.pembahasan ?? ''} onChange={setField('pembahasan')} disabled={!canManage} className={inputCls} />
               </label>
               <label className="block text-xs sm:col-span-2">
                 <span className="font-semibold text-slate-600">Notulen</span>
-                <textarea rows={4} value={form.pembahasanNotulen ?? ''} onChange={setField('pembahasanNotulen')} disabled={!canManage} className={inputCls} />
+                <textarea style={{ height: 126 }} value={form.pembahasanNotulen ?? ''} onChange={setField('pembahasanNotulen')} disabled={!canManage} className={inputCls} />
               </label>
             </div>
           </div>

@@ -6,6 +6,7 @@ const EDK_DRAFT_META = 'edk-upload-meta';
 import { ExportButton, ShareDropdown } from '../components/ui';
 import FilterDropdown from '../components/FilterDropdown';
 import { createPortal } from 'react-dom';
+import useBodyScrollLock from '../lib/useBodyScrollLock';
 import {
   Filter,
   Upload,
@@ -536,6 +537,7 @@ function DeltaText({ value }) {
 // ───────────────────────── Modal Upload ─────────────────────────
 
 function UploadModal({ open, onClose, onUploaded }) {
+  useBodyScrollLock(open);
   const [files, setFiles] = useState([]);
   const [drag, setDrag] = useState(false);
   const [done, setDone] = useState(false);

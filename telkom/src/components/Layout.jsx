@@ -34,6 +34,7 @@ import {
   Moon
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import useBodyScrollLock from '../lib/useBodyScrollLock';
 import { getUser, logout, refreshUser, ROLE_LABEL, ROLE_TONE } from '../features/auth/auth';
 import { visibleNav, KUADRAN_SUB } from '../nav';
 import { loadSavedSupportData, fetchSupportFromApi, SUPPORT_CHANGED_EVENT } from '../data/supportParser';
@@ -511,6 +512,7 @@ export default function Layout({ children }) {
     return () => window.removeEventListener('solaris:user', sync);
   }, []);
   const [d, setD] = useState(false);
+  useBodyScrollLock(d);
   const [collapsed, setCollapsed] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [today] = useState(new Date());

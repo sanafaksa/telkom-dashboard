@@ -1,18 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Upload, X, FileSpreadsheet, RotateCcw, Check, AlertCircle, Loader2 } from 'lucide-react';
+import useBodyScrollLock from '../lib/useBodyScrollLock';
+import { Upload, X, FileSpreadsheet, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { ExportButton, ShareDropdown } from '../components/ui';
 import { clearDraftFiles, loadDraftFiles, saveDraftFiles, useOpenDraftIntent } from '../lib/draft';
-
-const PSAK_DRAFT_FILE = 'koreksi-psak-upload-file';
 import {
   PSAK_TYPES,
   computePsakTotal,
-  loadPsakData,
+  fetchPsakData,
   savePsakData,
-  resetPsakData,
   parsePsakFile
 } from '../data/psakData';
+
+const PSAK_DRAFT_FILE = 'koreksi-psak-upload-file';
 
 const fmtDateTime = (iso) =>
   new Date(iso).toLocaleString('id-ID', {
@@ -23,8 +23,9 @@ const fmtDateTime = (iso) =>
     minute: '2-digit'
   });
 
-// Modal upload Excel: file dibaca di browser, belum dikirim ke backend
+// Modal upload Excel: file dibaca di browser, lalu hasilnya disimpan ke database
 function UploadPsakModal({ open, onClose, onLoaded }) {
+  useBodyScrollLock(open);
   const [file, setFile] = useState(null);
   const [drag, setDrag] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -76,7 +77,8 @@ function UploadPsakModal({ open, onClose, onLoaded }) {
     setError('');
     try {
       const parsed = await parsePsakFile(file);
-      onLoaded({ ...parsed, source: { filename: file.name, uploadedAt: new Date().toISOString() } });
+      // onLoaded menyimpan ke database; jika gagal, error ditampilkan di modal
+      await onLoaded({ ...parsed, source: { filename: file.name, uploadedAt: new Date().toISOString() } });
       setFile(null);
       close();
     } catch (err) {
@@ -162,7 +164,7 @@ function UploadPsakModal({ open, onClose, onLoaded }) {
         </div>
 
         <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
-          <span className="text-[11px] text-slate-500">Data hanya tersimpan di browser ini</span>
+          <span className="text-[11px] text-slate-500">Disimpan ke database dan dipakai bersama semua pengguna</span>
           <div className="flex gap-2">
             <button
               type="button"
@@ -178,7 +180,7 @@ function UploadPsakModal({ open, onClose, onLoaded }) {
               className="px-5 py-2 text-xs font-semibold rounded-lg flex items-center gap-2 bg-[#2563EB] hover:bg-blue-700 text-white disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-              {loading ? 'Membaca...' : 'Upload'}
+              {loading ? 'Menyimpan...' : 'Upload'}
             </button>
           </div>
         </div>
@@ -217,33 +219,49 @@ function NumCell({ value, strong = false, groupEnd = false }) {
 }
 
 export default function KoreksiJurbalPsak() {
-  const [data, setData] = useState(() => loadPsakData());
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [showUpload, setShowUpload] = useState(false);
   useOpenDraftIntent('koreksi-psak-upload-file', () => setShowUpload(true));
   const [notice, setNotice] = useState(null);
 
-  const { period, rows, source } = data;
+  useEffect(() => {
+    let alive = true;
+    fetchPsakData()
+      .then((d) => {
+        if (alive) setData(d);
+      })
+      .catch(() => {
+        if (alive) setLoadError('Gagal memuat data dari server.');
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const period = data?.period ?? { reverse: '', correction: '' };
+  const rows = useMemo(() => data?.rows ?? [], [data]);
+  const source = data?.source ?? null;
   const total = useMemo(() => computePsakTotal(rows), [rows]);
-  const reverseLabel = `Reverse ${period.reverse}`;
-  const correctionLabel = `Correction ${period.correction}`;
-  const PSAK_PERIOD = period;
+  const reverseLabel = `Reverse ${period.reverse}`.trim();
+  const correctionLabel = `Correction ${period.correction}`.trim();
 
   const flash = (msg, tone = 'ok') => {
     setNotice({ msg, tone });
     setTimeout(() => setNotice(null), 3500);
   };
 
-  const handleLoaded = (parsed) => {
-    const next = { period: parsed.period, rows: parsed.rows, source: parsed.source };
-    setData(next);
-    savePsakData(next);
+  // Dipanggil modal upload: simpan ke database. Jika gagal, error dilempar ke modal.
+  const handleLoaded = async (parsed) => {
+    const saved = await savePsakData({ period: parsed.period, rows: parsed.rows, source: parsed.source });
+    setData(saved);
+    setLoadError('');
     const extra = parsed.missing?.length ? ` · kolom tidak ditemukan: ${parsed.missing.join(', ')}` : '';
-    flash(`${parsed.rows.length} segmen dimuat dari ${parsed.source.filename}${extra}`, parsed.missing?.length ? 'warn' : 'ok');
-  };
-
-  const handleReset = () => {
-    setData(resetPsakData());
-    flash('Data dikembalikan ke data contoh');
+    flash(`${parsed.rows.length} segmen tersimpan dari ${parsed.source.filename}${extra}`, parsed.missing?.length ? 'warn' : 'ok');
   };
 
   const lastPsakKey = PSAK_TYPES[PSAK_TYPES.length - 1].key;
@@ -275,6 +293,8 @@ export default function KoreksiJurbalPsak() {
     </td>
   );
 
+  const colCount = 4 + PSAK_TYPES.length;
+
   return (
     <div id="psak-main-content" className="space-y-4">
       {/* Page Header */}
@@ -284,7 +304,9 @@ export default function KoreksiJurbalPsak() {
             Koreksi & Jurbal PSAK
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Reverse {PSAK_PERIOD.reverse}, Correction {PSAK_PERIOD.correction}, dan rincian koreksi per tipe PSAK
+            {period.reverse || period.correction
+              ? `${reverseLabel}, ${correctionLabel}, dan rincian koreksi per tipe PSAK`
+              : 'Rincian koreksi per tipe PSAK'}{' '}
             Witel Solo Jateng Timur
           </p>
         </div>
@@ -300,8 +322,8 @@ export default function KoreksiJurbalPsak() {
             <span>Upload Excel</span>
           </button>
           <ExportButton
-            filename={`Koreksi_Jurbal_PSAK_${PSAK_PERIOD.correction}`}
-            title={`Koreksi & Jurbal PSAK – Witel Solo JT (${correctionLabel})`}
+            filename={`Koreksi_Jurbal_PSAK_${period.correction || 'data'}`}
+            title={`Koreksi & Jurbal PSAK – Witel Solo JT${period.correction ? ` (${correctionLabel})` : ''}`}
             tableSelector="#psak-main-content table"
             pdfSelector="#psak-main-content"
           />
@@ -309,45 +331,39 @@ export default function KoreksiJurbalPsak() {
         </div>
       </div>
 
-      {/* Tabel utama */}
-      <section className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
-        {/* Status bar (gaya EDK) */}
-        <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4 text-xs">
+      {/* Tabel utama (gaya EDK Monitoring) */}
+      <section id="psak-table-section" className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
+        {/* Status bar sticky, seperti EDK */}
+        <div className="sticky top-16 z-40 rounded-t-2xl bg-white px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4 text-xs">
           <div className="flex items-center gap-2.5">
             <span className="size-2.5 rounded-full bg-[#2563EB]" />
             <span className="text-slate-500 font-medium">Periode :</span>
             <b className="font-bold text-slate-800">
-              {reverseLabel} · {correctionLabel}
+              {period.reverse || period.correction ? `${reverseLabel} · ${correctionLabel}` : 'Belum ada data'}
             </b>
             <span className="text-slate-400 hidden sm:inline">· Net = Reverse + Correction (Rp)</span>
+            {loading && <span className="text-slate-400">Memuat data…</span>}
           </div>
 
-          <div className="flex items-center gap-2 text-[11px]">
-            {source ? (
+          {source && (
+            <div className="flex items-center gap-2 text-[11px]">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold">
                 <FileSpreadsheet size={12} />
                 {source.filename} · {fmtDateTime(source.uploadedAt)}
               </span>
-            ) : (
-              <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 font-semibold">Data contoh</span>
-            )}
-            {source && (
-              <button
-                type="button"
-                data-html2canvas-ignore="true"
-                onClick={handleReset}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold cursor-pointer"
-                title="Hapus data upload dan kembali ke data contoh"
-              >
-                <RotateCcw size={11} />
-                Kembalikan data contoh
-              </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
-        <div className="overflow-auto max-h-[70vh] w-full">
-          <table className="w-full min-w-[1300px] text-xs border-collapse border-spacing-0">
+        {loadError && (
+          <div className="mx-5 mt-5 flex items-start gap-2 px-3 py-2.5 rounded-lg bg-rose-50 border border-rose-100 text-xs text-rose-700">
+            <AlertCircle size={15} className="shrink-0 mt-px" />
+            <span>{loadError}</span>
+          </div>
+        )}
+
+        <div className="relative z-0 m-5 overflow-auto max-h-[70vh] rounded-xl border border-slate-200 bg-white">
+          <table className="w-full min-w-[1300px] text-xs border-collapse border-spacing-0 [&_td]:!border-slate-100 [&_th]:!border-slate-200">
             {/* z-20: header di atas sel kolom kiri (z-10) */}
             <thead className="sticky top-0 z-20 bg-white">
               <tr>
@@ -379,36 +395,46 @@ export default function KoreksiJurbalPsak() {
               </tr>
             </thead>
             <tbody>
+              {rows.length === 0 && (
+                <tr>
+                  <td colSpan={colCount} className="px-4 py-10 text-center text-xs text-slate-500">
+                    {loading ? 'Memuat data…' : 'Belum ada data. Klik "Upload Excel" untuk menampilkan rekap.'}
+                  </td>
+                </tr>
+              )}
+
               {rows.map((r) => renderRow(r))}
 
               {/* Summary row */}
-              <tr className="h-11 bg-[#EFF6FF] border-t-2 border-slate-300 font-bold text-xs text-[#1D4ED8]">
-                <td
-                  className={`px-4 py-2.5 text-left sticky left-0 z-10 bg-[#EFF6FF] border-r-2 border-slate-300 ${STICKY_SHADOW} whitespace-nowrap`}
-                >
-                  Witel Solo JT <span className="text-[10px] text-slate-500 font-semibold">Total</span>
-                </td>
-                {totalCell(total.reverse, true)}
-                {totalCell(total.correction, true)}
-                {totalCell(total.net, true)}
-                {PSAK_TYPES.map(({ key }) => (
+              {rows.length > 0 && (
+                <tr className="h-11 bg-[#EFF6FF] border-t-2 border-slate-300 font-bold text-xs text-[#1D4ED8]">
                   <td
-                    key={key}
-                    className={`px-3 py-2 text-right tabular-nums whitespace-nowrap border-r ${
-                      key === lastPsakKey ? 'border-slate-300' : 'border-slate-200'
-                    }`}
+                    className={`px-4 py-2.5 text-left sticky left-0 z-10 bg-[#EFF6FF] border-r-2 border-slate-300 ${STICKY_SHADOW} whitespace-nowrap`}
                   >
-                    {fmtRp(total.psak[key])}
+                    Witel Solo JT <span className="text-[10px] text-slate-500 font-semibold">Total</span>
                   </td>
-                ))}
-              </tr>
+                  {totalCell(total.reverse, true)}
+                  {totalCell(total.correction, true)}
+                  {totalCell(total.net, true)}
+                  {PSAK_TYPES.map(({ key }) => (
+                    <td
+                      key={key}
+                      className={`px-3 py-2 text-right tabular-nums whitespace-nowrap border-r ${
+                        key === lastPsakKey ? 'border-slate-300' : 'border-slate-200'
+                      }`}
+                    >
+                      {fmtRp(total.psak[key])}
+                    </td>
+                  ))}
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
 
         {/* Footer (gaya EDK) */}
         <div className="px-6 py-4 border-t border-slate-100 text-xs text-slate-500">
-          Menampilkan <b className="text-slate-800">1–{rows.length}</b> dari{' '}
+          Menampilkan <b className="text-slate-800">{rows.length ? `1–${rows.length}` : '0'}</b> dari{' '}
           <b className="text-slate-800">{rows.length}</b> data segmen
         </div>
       </section>

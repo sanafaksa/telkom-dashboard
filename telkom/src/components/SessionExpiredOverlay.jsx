@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import useBodyScrollLock from '../lib/useBodyScrollLock';
 import { Clock, RefreshCw, ShieldCheck } from 'lucide-react';
 import { SESSION_EXPIRED_EVENT } from '../lib/api';
 
@@ -11,6 +12,7 @@ import { SESSION_EXPIRED_EVENT } from '../lib/api';
 export default function SessionExpiredOverlay() {
   const [expired, setExpired] = useState(false);
   const [restored, setRestored] = useState(false);
+  useBodyScrollLock(expired || restored);
 
   useEffect(() => {
     const onExpired = () => {

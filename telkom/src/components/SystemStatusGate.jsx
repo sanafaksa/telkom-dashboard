@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Bell, LogOut, Wrench } from 'lucide-react';
 import { apiGet } from '../lib/api';
+import useBodyScrollLock from '../lib/useBodyScrollLock';
 import { getUser, isLoggedIn, logout } from '../features/auth/auth';
 
 const POLL_MS = 15000;
@@ -44,6 +45,7 @@ function useNow() {
 export default function SystemStatusGate() {
   const q = useQuery(systemStatusQuery);
   const maint = q.data?.maintenance;
+  useBodyScrollLock(!!maint?.active && isLoggedIn() && !isExempt());
 
   if (!maint?.active || !isLoggedIn() || isExempt()) return null;
 

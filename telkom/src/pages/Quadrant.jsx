@@ -16,6 +16,7 @@ import * as Q from '../data/quadrantData';
 import { ExportButton, ShareDropdown } from '../components/ui';
 import { QuadrantGrid, GrandTotalCard } from '../components/Quadrant';
 import { createPortal } from 'react-dom';
+import useBodyScrollLock from '../lib/useBodyScrollLock';
 import {
   aggregateMasterData,
   buildQuadrantData,
@@ -89,6 +90,7 @@ export default function Quadrant() {
     defaultData ? buildQuadrantData(view, cachedAgg, defaultData, defaultFilters(view, getFilterOptions(cachedAgg, view))) : null
   );
   const [showUpload, setShowUpload] = useState(false);
+  useBodyScrollLock(showUpload);
   useOpenDraftIntent('kuadran-upload-files', () => setShowUpload(true));
   const [uploadFiles, setUploadFiles] = useState([]);
   const [uploadError, setUploadError] = useState(null);

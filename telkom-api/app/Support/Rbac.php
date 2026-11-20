@@ -42,6 +42,7 @@ class Rbac
         'edk.export'           => ['Export laporan EDK', 'Operasional', false],
         'order_sjt.view'       => ['Melihat Monitoring Order SJT', 'Operasional', false],
         'psak.view'            => ['Melihat Koreksi & Jurbal PSAK', 'Operasional', false],
+        'psak.manage'          => ['Mengelola data Koreksi & Jurbal PSAK', 'Operasional', false],
         'kuadran.view'         => ['Melihat Kuadran SJT', 'Operasional', false],
         'kuadran.manage'       => ['Mengelola data Kuadran', 'Operasional', false],
         'mom.view'             => ['Melihat MoM & Support Needed', 'Operasional', false],
@@ -75,14 +76,14 @@ class Rbac
 
     public const DEFAULTS = [
         self::ADMIN => [
-            'dashboard.view', 'edk.view', 'edk.upload', 'edk.export', 'order_sjt.view', 'psak.view',
+            'dashboard.view', 'edk.view', 'edk.upload', 'edk.export', 'order_sjt.view', 'psak.view', 'psak.manage',
             'kuadran.view', 'kuadran.manage', 'mom.view', 'mom.manage',
             'admin.dashboard', 'users.view', 'users.create', 'users.update',
             'users.reset_password', 'users.toggle_active', 'audit.view', 'maintenance.manage', 'roles.custom',
             'inbox.manage',
         ],
         self::STAFF => [
-            'dashboard.view', 'edk.view', 'edk.upload', 'edk.export', 'order_sjt.view', 'psak.view',
+            'dashboard.view', 'edk.view', 'edk.upload', 'edk.export', 'order_sjt.view', 'psak.view', 'psak.manage',
             'kuadran.view', 'kuadran.manage', 'mom.view', 'mom.manage',
         ],
         self::SUPPORT => [

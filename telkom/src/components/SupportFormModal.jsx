@@ -2,6 +2,7 @@ import { RichTextarea } from './RichText';
 import { DESTINASI_OPTIONS, DeadlineInput, StatusSelect, UicMultiSelect } from './FormFields';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import useBodyScrollLock from '../lib/useBodyScrollLock';
 import { AlertCircle, AlertTriangle, Check, Plus, Trash2, X } from 'lucide-react';
 import { clearDraft, loadDraft, saveDraft } from '../lib/draft';
 
@@ -222,6 +223,7 @@ function ConfirmDialog({ title, body, confirmLabel, cancelLabel, tone, onConfirm
 }
 
 export default function SupportFormModal({ onClose, onSave, nextNo = '', prefill = null }) {
+  useBodyScrollLock(true);
   const isPrefilled = !!prefill;
   const displayNo = prefill?.no || nextNo;
 
@@ -307,11 +309,8 @@ export default function SupportFormModal({ onClose, onSave, nextNo = '', prefill
       else onClose();
     };
     window.addEventListener('keydown', onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     return () => {
       window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prevOverflow;
     };
   }, [onClose, saving, hasUnsaved, closeStep]);
 

@@ -10,6 +10,16 @@ const leavesOf = (node) => {
 };
 
 /**
+ * Catatan "Semua <induk>" untuk setiap grup di bawah node (termasuk node itu sendiri).
+ * Disimpan sebagai nilai biasa supaya pilihan "pilih semua" tetap tercatat walau
+ * submenu tidak ada di data Excel/database.
+ */
+const groupNotesOf = (node) => {
+  if (node.custom || !node.children?.length) return [];
+  return [`Semua ${node.label}`, ...node.children.flatMap(groupNotesOf)];
+};
+
+/**
  * Tampilan pohon UIC ala Registry Editor: panah buka-tutup, indentasi per level.
  * mode="multi"  : centang banyak. Pakai selected + onToggle + onBulk + onAddCustom.
  * mode="single" : pilih satu. Pakai onPick.
@@ -23,6 +33,7 @@ export function UicTreeMenu({
   onPick,
   onAddCustom,
   maxH = 'max-h-80',
+  groupNotes = false,
 }) {
   const [open, setOpen] = useState({});
   const [drafts, setDrafts] = useState({});
@@ -115,8 +126,10 @@ export function UicTreeMenu({
             (() => {
               const all = leavesOf(node);
               const picked = all.filter((v) => selected.includes(v)).length;
-              const full = all.length > 0 && picked === all.length;
-              const part = picked > 0 && !full;
+              const noteOn = groupNotes && selected.includes(`Semua ${node.label}`);
+              // Mode catatan: status penuh mengikuti catatan "Semua <induk>" (tidak bergantung submenu)
+              const full = groupNotes ? noteOn : all.length > 0 && picked === all.length;
+              const part = !full && (picked > 0 || (groupNotes && groupNotesOf(node).some((v) => selected.includes(v))));
               return (
                 <button
                   type="button"
@@ -124,6 +137,11 @@ export function UicTreeMenu({
                   aria-label={`Pilih semua ${node.label}`}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (groupNotes) {
+                      // Centang/lepas induk beserta catatan semua grup turunannya
+                      onBulk?.([...groupNotesOf(node), ...all], !noteOn);
+                      return;
+                    }
                     // Sudah ada yang terpilih (penuh/sebagian) -> klik menghapus semuanya; belum ada -> pilih semua
                     onBulk?.(all, picked === 0);
                   }}

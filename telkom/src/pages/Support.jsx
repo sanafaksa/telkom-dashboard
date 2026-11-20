@@ -14,7 +14,6 @@ import {
   FileSpreadsheet,
   FileText,
   Search,
-  RefreshCw,
   AlertCircle,
   Building2,
   Calendar,
@@ -35,7 +34,6 @@ import {
   computeSupportMetrics,
   normalizeStatus,
   fetchSupportFromApi,
-  fetchSupportResult,
   syncSupportToApi,
   updateSupportItemApi,
   createSupportBatchApi,
@@ -62,6 +60,7 @@ import { clearDraft, loadDraft, saveDraft, useOpenDraftIntent } from '../lib/dra
 import { isSameValues } from '../lib/useDraftForm';
 import UnsavedChangesBar from '../components/UnsavedChangesBar';
 import { createPortal } from "react-dom";
+import useBodyScrollLock from '../lib/useBodyScrollLock';
 
 // Pilihan filter UIC (urutan sesuai dropdown dashboard)
 const UIC_FILTER_OPTIONS = [
@@ -442,12 +441,6 @@ export default function Support() {
     }
   };
 
-  useEffect(() => {
-  if (!detailItem) return;
-  const prev = document.body.style.overflow;
-  document.body.style.overflow = 'hidden';
-  return () => { document.body.style.overflow = prev; };
-}, [detailItem]);
 
   // Close modal on Escape key
   useEffect(() => {
@@ -588,26 +581,6 @@ export default function Support() {
     }
   };
 
-  // Muat ulang tabel dari MySQL untuk melihat perubahan terakhir (termasuk dari pengguna lain)
-  const [refreshing, setRefreshing] = useState(false);
-  const refreshTable = async () => {
-    setRefreshing(true);
-    try {
-      const result = await fetchSupportResult();
-      if (result.ok) {
-        setActionPlans(result.items);
-      } else if (result.reason === 'network') {
-        alert('Gagal memuat ulang data.\nTidak bisa terhubung ke server. Periksa koneksi atau pastikan backend berjalan.');
-      } else if (result.reason === 'http') {
-        alert(`Gagal memuat ulang data.\nServer menolak permintaan (kode ${result.status}).`);
-      } else if (result.reason === 'format') {
-        alert('Gagal memuat ulang data.\nRespons server tidak sesuai. Coba lagi beberapa saat.');
-      }
-      // reason 'session': overlay "Sesi berakhir" sudah tampil, tidak perlu alert
-    } finally {
-      setRefreshing(false);
-    }
-  };
 
   const [showExportMenu, setShowExportMenu] = useState(false);
 
@@ -685,6 +658,7 @@ export default function Support() {
 
   // Popup daftar action plan per agenda & status (klik angka di laporan)
   const [drill, setDrill] = useState(null); // { agenda, status }
+  useBodyScrollLock(!!detailItem || showUpload || !!drill);
   const drillItems = useMemo(
     () => (drill ? actionPlans.filter((i) => i.agenda === drill.agenda && i.status === drill.status) : []),
     [drill, actionPlans]
@@ -797,17 +771,6 @@ export default function Support() {
               </div>
             )}
           </div>
-
-          {/* Reset Button */}
-          <button
-            type="button"
-            onClick={refreshTable}
-            disabled={refreshing}
-            title="Refresh tabel MoM untuk melihat perubahan terakhir"
-            className="flex items-center gap-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 text-xs font-semibold p-2.5 rounded-lg transition-colors shadow-2xs cursor-pointer disabled:opacity-60 disabled:cursor-wait"
-          >
-            <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
-          </button>
 
           {/* Full Page & Table Specific Share / Copy as Picture */}
           <ShareDropdown

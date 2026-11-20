@@ -18,6 +18,7 @@ export function ShareButton(props) {
   return <ShareDropdown {...props} />;
 }
 import {createPortal} from 'react-dom';
+import useBodyScrollLock from '../lib/useBodyScrollLock';
 
 export function ExportButton({
   filename = 'export-report',
@@ -176,6 +177,7 @@ export function ExportButton({
 }
 
 function UploadModal({open,onClose}){
+  useBodyScrollLock(open);
   const [files,setFiles]=useState([]);
   const [drag,setDrag]=useState(false);
   const [uploading,setUploading]=useState(false);

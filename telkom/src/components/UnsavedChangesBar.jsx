@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom';
+import useBodyScrollLock from './../lib/useBodyScrollLock';
 import { AlertTriangle, X } from 'lucide-react';
 
 /**
@@ -6,6 +7,7 @@ import { AlertTriangle, X } from 'lucide-react';
  * Ditampilkan di atas popup yang sedang terbuka (lewat portal). Klik latar = tetap mengedit.
  */
 export default function UnsavedChangesBar({ onStay, onSave, onDiscard, busy = false }) {
+  useBodyScrollLock(true);
   return createPortal(
     <div
       className="fixed inset-0 z-[10050] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-[2px]"

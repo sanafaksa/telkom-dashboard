@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, Fragment, useEffect } from 'react';
 import { clearDraftFiles, loadDraftFiles, saveDraftFiles, useOpenDraftIntent } from '../lib/draft';
 import { createPortal, flushSync } from 'react-dom';
+import useBodyScrollLock from '../lib/useBodyScrollLock';
 import {
   AlertTriangle,
   ArrowRight,
@@ -165,6 +166,7 @@ const FILTER_OPTIONS = {
 const ORDER_DRAFT_FILES = 'monitoring-order-upload-files';
 
 function UploadOrderModal({ open, onClose }) {
+  useBodyScrollLock(open);
   const [files, setFiles] = useState([]);
   const [drag, setDrag] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -1529,6 +1531,7 @@ export default function MonitoringOrderSjt() {
 
   const [selectedRows, setSelectedRows] = useState({});
   const [modalChart, setModalChart] = useState(null);
+  useBodyScrollLock(!!modalChart);
 
   const hasActiveFilters = useMemo(() => {
     return (

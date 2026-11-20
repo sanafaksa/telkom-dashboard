@@ -83,6 +83,11 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     });
 
     // ===== Master UIC bertingkat (baca saja) =====
+    Route::prefix('koreksi-psak')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\PsakKoreksiController::class, 'index'])->middleware('permission:psak.view');
+        Route::post('/', [\App\Http\Controllers\Api\PsakKoreksiController::class, 'store'])->middleware('permission:psak.manage');
+    });
+
     Route::get('uic-units', [\App\Http\Controllers\Api\UicUnitController::class, 'index'])
         ->middleware('permission:mom.view,dashboard.view');
 

@@ -1,16 +1,10 @@
 // =========================================================================
-// Koreksi & Jurbal PSAK — Witel Solo JT
-// Sumber: rekap Excel "Reverse Q2-26 / Correction Q3-26 / PSAK Type" (Rupiah).
-// Nilai per segmen disimpan persis seperti sumber (sudah dibulatkan di Excel,
-// jadi bisa selisih Rp 1 terhadap hasil penjumlahan ulang). Baris total
-// WITEL SOLO JT dihitung dari jumlah per kolom.
-// Belum ada backend: ganti data di file ini sampai endpoint tersedia.
+// Koreksi & Jurbal PSAK, Witel Solo JT
+// Sumber: rekap Excel "Reverse / Correction / PSAK Type" (Rupiah). File dibaca di browser,
+// lalu hasilnya disimpan ke database lewat /api/koreksi-psak. Data aktif = upload terakhir.
 // =========================================================================
 
-export const PSAK_PERIOD = {
-  reverse: 'Q2-26',
-  correction: 'Q3-26'
-};
+import { apiGet, apiPost } from '../lib/api';
 
 // Urutan kolom PSAK Type sesuai laporan
 export const PSAK_TYPES = [
@@ -23,111 +17,26 @@ export const PSAK_TYPES = [
   { key: 'lowCr', label: 'LOW CR' }
 ];
 
-export const PSAK_ROWS = [
-  {
-    segmen: 'DGS',
-    reverse: 1307883209,
-    correction: -925265279,
-    net: 382617930,
-    psak: {
-      agent: 0,
-      amortisasi: -26440545,
-      edk: -16083580,
-      populasi: -75316464,
-      splitbill: -294123661,
-      timing: -514114244,
-      lowCr: 813215
-    }
-  },
-  {
-    segmen: 'DPS',
-    reverse: 3136331978,
-    correction: -3055496765,
-    net: 80835213,
-    psak: {
-      agent: -240104838,
-      amortisasi: 15500000,
-      edk: -153254953,
-      populasi: -22582242,
-      splitbill: -2818431231,
-      timing: 163376499,
-      lowCr: 0
-    }
-  },
-  {
-    segmen: 'DSS',
-    reverse: 555895411,
-    correction: -392843373,
-    net: 163052039,
-    psak: {
-      agent: 3750000,
-      amortisasi: -246115205,
-      edk: 0,
-      populasi: -700000,
-      splitbill: -406653235,
-      timing: 256875068,
-      lowCr: 0
-    }
-  },
-  {
-    segmen: 'RBS',
-    reverse: 1044546688,
-    correction: -1170182599,
-    net: -125635911,
-    psak: {
-      agent: -15820646,
-      amortisasi: 8554377,
-      edk: -53928985,
-      populasi: -97146300,
-      splitbill: -1046073998,
-      timing: 34232953,
-      lowCr: 0
-    }
-  }
-];
-
-// =========================================================================
-// Data aktif: hasil upload Excel disimpan di browser (localStorage), belum ke backend
-// =========================================================================
-const STORAGE_KEY = 'psak_koreksi_jurbal_v1';
-
-export const DEFAULT_PSAK_DATA = {
-  period: PSAK_PERIOD,
-  rows: PSAK_ROWS,
-  source: null // null = data contoh bawaan
-};
-
-export function loadPsakData() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-    if (saved && Array.isArray(saved.rows) && saved.rows.length) return saved;
-  } catch {
-    // abaikan data rusak, pakai data contoh
-  }
-  return DEFAULT_PSAK_DATA;
+/** Data aktif dari database. Mengembalikan null jika belum pernah diupload. */
+export async function fetchPsakData() {
+  const res = await apiGet('/koreksi-psak');
+  return res?.data ?? null;
 }
 
-export function savePsakData(data) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch {
-    // localStorage penuh / diblokir: data tetap tampil sampai halaman ditutup
-  }
-}
-
-export function resetPsakData() {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    // abaikan
-  }
-  return DEFAULT_PSAK_DATA;
+/** Simpan hasil parse upload ke database. Mengembalikan data aktif yang baru. */
+export async function savePsakData({ period, rows, source }) {
+  const res = await apiPost('/koreksi-psak', {
+    filename: source?.filename ?? null,
+    period,
+    rows
+  });
+  return res?.data;
 }
 
 // "1,307,883,209" | "(925,265,279)" | "1.307.883.209" | "-" | 123 -> number
 function toNumber(v) {
   if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
-  let s = String(v ?? '').replace(/ /g, ' ').trim();
+  let s = String(v ?? '').replace(/ /g, ' ').trim();
   if (!s || /^[-–—]$/.test(s)) return 0;
   const neg = /^\(.*\)$/.test(s) || /^[-–]/.test(s);
   s = s.replace(/[^\d.,]/g, '');
@@ -181,9 +90,9 @@ export async function parsePsakFile(file) {
     };
     if (col.segmen === -1 || col.reverse === -1 || col.correction === -1) continue;
 
-    const periodOf = (c, fallback) => {
+    const periodOf = (c) => {
       const m = labels[c].join(' ').match(/(Q\d[-\s]?\d{2,4})/i);
-      return m ? m[1].toUpperCase().replace(/\s/, '-') : fallback;
+      return m ? m[1].toUpperCase().replace(/\s/, '-') : '';
     };
 
     const rows = [];
@@ -212,8 +121,8 @@ export async function parsePsakFile(file) {
     if (rows.length) {
       return {
         period: {
-          reverse: periodOf(col.reverse, PSAK_PERIOD.reverse),
-          correction: periodOf(col.correction, PSAK_PERIOD.correction)
+          reverse: periodOf(col.reverse),
+          correction: periodOf(col.correction)
         },
         rows,
         sheetName,
@@ -228,7 +137,7 @@ export async function parsePsakFile(file) {
   throw new Error('Tabel tidak ditemukan. Pastikan ada kolom "Segmen", "Reverse …" dan "Correction …".');
 }
 
-export function computePsakTotal(rows = PSAK_ROWS, label = 'WITEL SOLO JT') {
+export function computePsakTotal(rows = [], label = 'WITEL SOLO JT') {
   const sum = (pick) => rows.reduce((acc, r) => acc + (pick(r) || 0), 0);
   return {
     segmen: label,

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { can } from '../auth/auth';
 import { createPortal } from 'react-dom';
+import useBodyScrollLock from '../../lib/useBodyScrollLock';
 import { X, Eye, RotateCcw, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useActivateEdk, useAuditLogs, useEdkUploads } from './queries';
 
@@ -251,6 +252,7 @@ function AuditTab() {
 // ───────────────────────── Modal ─────────────────────────
 
 export default function UploadHistoryModal({ onClose, viewingId, onView, canActivate = false }) {
+  useBodyScrollLock(true);
   const canAudit = can('audit.view', 'audit.view_all');
   const [tab, setTab] = useState('history');
 

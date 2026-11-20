@@ -17,6 +17,7 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { login } from '../features/auth/auth';
 import HelpRequestForm from '../components/HelpRequestForm';
+import useBodyScrollLock from '../lib/useBodyScrollLock';
 
 // Badge verified ala centang biru Twitter: lingkaran bergelombang dengan tanda centang putih.
 const VERIFIED_POINTS = Array.from({ length: 120 }, (_, i) => {
@@ -43,6 +44,7 @@ export default function Login() {
   const [authStatus, setAuthStatus] = useState('idle'); // 'idle' | 'verifying' | 'granted' | 'opening_up'
   const [error, setError] = useState('');
   const [forgotModal, setForgotModal] = useState(false);
+  useBodyScrollLock(forgotModal);
 
   // Turnstile
   const [turnstileToken, setTurnstileToken] = useState('');

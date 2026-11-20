@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import useBodyScrollLock from '../../lib/useBodyScrollLock';
 import { AlertCircle, CheckCircle2, Loader2, X } from 'lucide-react';
 import { ROLE_LABEL, ROLE_TONE } from '../auth/auth';
 
@@ -212,6 +213,7 @@ export function Pager({ page, lastPage, total, onPage }) {
 }
 
 export function Modal({ title, sub, onClose, children, footer, wide = false }) {
+  useBodyScrollLock(true);
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose();
     document.addEventListener('keydown', onKey);
