@@ -12,7 +12,7 @@ EDK Monitoring 1x upload– Handoff Plan, Todo & Roadmap.md
 .claude/
 .zed/
 data/
-database/
+database/*.sql
 
 # Build output
 dist/
