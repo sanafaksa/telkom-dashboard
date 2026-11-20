@@ -27,6 +27,7 @@ import {
   DEFAULT_QUADRANT_AGG
 } from '../data/quadrantXlsx';
 import FilterDropdown from '../components/FilterDropdown';
+import DiscardDraftDialog from '../components/DiscardDraftDialog';
 import { clearDraftFiles, loadDraftFiles, saveDraftFiles, useOpenDraftIntent } from '../lib/draft';
 
 const STORAGE_KEY = 'telkom_quadrant_agg_v2';
@@ -94,6 +95,7 @@ export default function Quadrant() {
   useOpenDraftIntent('kuadran-upload-files', () => setShowUpload(true));
   const [uploadFiles, setUploadFiles] = useState([]);
   const [uploadError, setUploadError] = useState(null);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [autoDownloadTemplate, setAutoDownloadTemplate] = useState(true);
 
   // Draft: file upload yang belum diproses dipulihkan setelah sesi berakhir / halaman dimuat ulang
@@ -115,6 +117,24 @@ export default function Quadrant() {
     if (uploadFiles.length) saveDraftFiles(KUADRAN_DRAFT_FILES, uploadFiles.slice(0, 1));
     else clearDraftFiles(KUADRAN_DRAFT_FILES);
   }, [uploadFiles]);
+
+  // Menutup modal saat ada file belum diupload: minta konfirmasi, lalu draft dibuang
+  const requestCloseUpload = () => {
+    if (uploadFiles.length && processing === null) {
+      setConfirmDiscard(true);
+      return;
+    }
+    setShowUpload(false);
+    setUploadError(null);
+  };
+
+  const discardUpload = () => {
+    setUploadFiles([]);
+    clearDraftFiles(KUADRAN_DRAFT_FILES);
+    setConfirmDiscard(false);
+    setShowUpload(false);
+    setUploadError(null);
+  };
   const [toast, setToast] = useState(null);
   const [processing, setProcessing] = useState(null);
   const [showFilter, setShowFilter] = useState(false);
@@ -585,10 +605,7 @@ export default function Quadrant() {
                   </p>
                 </div>
                 <button
-                  onClick={() => {
-                    setShowUpload(false);
-                    setUploadError(null);
-                  }}
+                  onClick={requestCloseUpload}
                   className="text-slate-400 hover:text-slate-600 cursor-pointer"
                 >
                   <X size={18} />
@@ -678,10 +695,7 @@ export default function Quadrant() {
 
               <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
                 <button
-                  onClick={() => {
-                    setShowUpload(false);
-                    setUploadError(null);
-                  }}
+                  onClick={requestCloseUpload}
                   className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-lg cursor-pointer"
                 >
                   Batal
@@ -706,6 +720,9 @@ export default function Quadrant() {
                       : 'Terapkan Data'}
                 </button>
               </div>
+              {confirmDiscard && (
+                <DiscardDraftDialog onCancel={() => setConfirmDiscard(false)} onDiscard={discardUpload} />
+              )}
             </div>
           </div>,
           document.body

@@ -86,6 +86,8 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::prefix('koreksi-psak')->group(function () {
         Route::get('/', [\App\Http\Controllers\Api\PsakKoreksiController::class, 'index'])->middleware('permission:psak.view');
         Route::post('/', [\App\Http\Controllers\Api\PsakKoreksiController::class, 'store'])->middleware('permission:psak.manage');
+        Route::post('/upload/chunk', [\App\Http\Controllers\Api\PsakKoreksiController::class, 'uploadChunk'])->middleware('permission:psak.manage');
+        Route::post('/upload/finish', [\App\Http\Controllers\Api\PsakKoreksiController::class, 'uploadFinish'])->middleware('permission:psak.manage');
     });
 
     Route::get('uic-units', [\App\Http\Controllers\Api\UicUnitController::class, 'index'])

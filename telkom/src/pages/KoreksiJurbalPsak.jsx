@@ -3,14 +3,9 @@ import { createPortal } from 'react-dom';
 import useBodyScrollLock from '../lib/useBodyScrollLock';
 import { Upload, X, FileSpreadsheet, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { ExportButton, ShareDropdown } from '../components/ui';
+import DiscardDraftDialog from '../components/DiscardDraftDialog';
 import { clearDraftFiles, loadDraftFiles, saveDraftFiles, useOpenDraftIntent } from '../lib/draft';
-import {
-  PSAK_TYPES,
-  computePsakTotal,
-  fetchPsakData,
-  savePsakData,
-  parsePsakFile
-} from '../data/psakData';
+import { PSAK_TYPES, computePsakTotal, fetchPsakData, uploadPsakFiles } from '../data/psakData';
 
 const PSAK_DRAFT_FILE = 'koreksi-psak-upload-file';
 
@@ -26,69 +21,91 @@ const fmtDateTime = (iso) =>
 // Modal upload Excel: file dibaca di browser, lalu hasilnya disimpan ke database
 function UploadPsakModal({ open, onClose, onLoaded }) {
   useBodyScrollLock(open);
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
   const [drag, setDrag] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [error, setError] = useState('');
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const inputRef = useRef(null);
 
-  // Draft: file yang sudah dipilih dipulihkan setelah sesi berakhir / halaman dimuat ulang
+  // Draft: file yang sudah dipilih dipulihkan saat modal dibuka (file besar tidak dimuat saat halaman dibuka)
   const draftReady = useRef(false);
   useEffect(() => {
+    if (!open || draftReady.current) return undefined;
     let alive = true;
     loadDraftFiles(PSAK_DRAFT_FILE).then((restored) => {
       if (!alive) return;
-      if (restored.length) setFile(restored[0]);
+      if (restored.length) setFiles(restored);
       draftReady.current = true;
     });
     return () => {
       alive = false;
     };
-  }, []);
+  }, [open]);
 
   useEffect(() => {
     if (!draftReady.current) return;
-    if (file) saveDraftFiles(PSAK_DRAFT_FILE, [file]);
+    if (files.length) saveDraftFiles(PSAK_DRAFT_FILE, files);
     else clearDraftFiles(PSAK_DRAFT_FILE);
-  }, [file]);
+  }, [files]);
 
   if (!open) return null;
 
-  const pick = (f) => {
-    if (!f) return;
-    if (!/\.(xlsx|xls|csv)$/i.test(f.name)) {
-      setError('Format file harus .xlsx, .xls, atau .csv');
-      return;
-    }
-    setError('');
-    setFile(f);
+  // Satu atau banyak file sekaligus; file yang sama (nama + ukuran + tanggal) tidak ditambahkan dua kali
+  const pick = (list) => {
+    const picked = Array.from(list ?? []);
+    if (!picked.length) return;
+    const valid = picked.filter((f) => /\.xlsx$/i.test(f.name));
+    setError(valid.length < picked.length ? 'Ada file yang bukan .xlsx (dilewati)' : '');
+    if (!valid.length) return;
+    setFiles((prev) => {
+      const sameKey = (a, b) => a.name === b.name && a.size === b.size && a.lastModified === b.lastModified;
+      const added = valid.filter((f) => !prev.some((p) => sameKey(p, f)));
+      return [...prev, ...added];
+    });
   };
 
-  // Tutup modal tidak menghapus file: draft tetap ada sampai data berhasil dimuat
+  const removeFile = (index) => setFiles((prev) => prev.filter((_, i) => i !== index));
+
   const close = () => {
     setError('');
     setLoading(false);
+    setConfirmDiscard(false);
     onClose();
   };
 
+  // Menutup modal saat ada file belum diupload: minta konfirmasi, lalu draft dibuang
+  const requestClose = () => {
+    if (files.length && !loading) setConfirmDiscard(true);
+    else close();
+  };
+
+  const discardAndClose = () => {
+    setFiles([]);
+    clearDraftFiles(PSAK_DRAFT_FILE);
+    close();
+  };
+
+  // Semua file dibaca lalu digabung per segmen; jika satu file gagal, upload dibatalkan dan pesannya menyebut file tersebut
   const submit = async () => {
-    if (!file) return;
+    if (!files.length) return;
     setLoading(true);
+    setProgress(0);
     setError('');
     try {
-      const parsed = await parsePsakFile(file);
-      // onLoaded menyimpan ke database; jika gagal, error ditampilkan di modal
-      await onLoaded({ ...parsed, source: { filename: file.name, uploadedAt: new Date().toISOString() } });
-      setFile(null);
+      // File dikirim mentah ke server; server menghitung dan menyimpan. Error dari server tampil di modal.
+      await onLoaded(files, setProgress);
+      setFiles([]);
       close();
     } catch (err) {
-      setError(err.message || 'Gagal membaca file.');
+      setError(err.message || 'Gagal memproses file.');
       setLoading(false);
     }
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={close}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={requestClose}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" aria-hidden />
       <div
         className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden"
@@ -103,7 +120,7 @@ function UploadPsakModal({ open, onClose, onLoaded }) {
           </div>
           <button
             type="button"
-            onClick={close}
+            onClick={requestClose}
             className="size-8 rounded-lg hover:bg-slate-100 grid place-items-center text-slate-400 hover:text-slate-600 cursor-pointer"
             aria-label="Tutup"
           >
@@ -124,17 +141,18 @@ function UploadPsakModal({ open, onClose, onLoaded }) {
             onDrop={(e) => {
               e.preventDefault();
               setDrag(false);
-              pick(e.dataTransfer.files?.[0]);
+              pick(e.dataTransfer.files);
             }}
             onClick={() => inputRef.current?.click()}
           >
             <input
               ref={inputRef}
               type="file"
-              accept=".xlsx,.xls,.csv"
+              multiple
+              accept=".xlsx"
               className="hidden"
               onChange={(e) => {
-                pick(e.target.files?.[0]);
+                pick(e.target.files);
                 e.target.value = '';
               }}
             />
@@ -144,14 +162,30 @@ function UploadPsakModal({ open, onClose, onLoaded }) {
             <p className="text-sm font-semibold text-slate-700">
               {drag ? 'Lepaskan file di sini' : 'Drag & drop file atau klik untuk pilih'}
             </p>
-            <p className="text-xs text-slate-400 mt-1">.xlsx, .xls, .csv · baris total boleh ada (dihitung ulang)</p>
+            <p className="text-xs text-slate-400 mt-1">Pilih 4 file: DGS, DPS, DSS, RBS (.xlsx) · dihitung di server</p>
           </div>
 
-          {file && (
-            <div className="flex items-center gap-3 px-3 py-2.5 bg-slate-50 rounded-lg border border-slate-100">
-              <FileSpreadsheet size={18} className="text-emerald-600 shrink-0" />
-              <p className="text-xs font-semibold text-slate-800 truncate flex-1">{file.name}</p>
-              <span className="text-[11px] text-slate-400">{(file.size / 1024).toFixed(1)} KB</span>
+          {files.length > 0 && (
+            <div className="space-y-2">
+              {files.map((f, i) => (
+                <div
+                  key={`${f.name}-${f.size}-${f.lastModified}`}
+                  className="flex items-center gap-3 px-3 py-2.5 bg-slate-50 rounded-lg border border-slate-100"
+                >
+                  <FileSpreadsheet size={18} className="text-emerald-600 shrink-0" />
+                  <p className="text-xs font-semibold text-slate-800 truncate flex-1">{f.name}</p>
+                  <span className="text-[11px] text-slate-400">{(f.size / 1024).toFixed(1)} KB</span>
+                  <button
+                    type="button"
+                    onClick={() => removeFile(i)}
+                    disabled={loading}
+                    className="size-6 rounded-md hover:bg-slate-200 grid place-items-center text-slate-400 hover:text-slate-600 disabled:opacity-40 cursor-pointer"
+                    aria-label={`Hapus ${f.name}`}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
 
@@ -168,7 +202,7 @@ function UploadPsakModal({ open, onClose, onLoaded }) {
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={close}
+              onClick={requestClose}
               className="px-4 py-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-100 cursor-pointer"
             >
               Batal
@@ -176,14 +210,21 @@ function UploadPsakModal({ open, onClose, onLoaded }) {
             <button
               type="button"
               onClick={submit}
-              disabled={!file || loading}
+              disabled={!files.length || loading}
               className="px-5 py-2 text-xs font-semibold rounded-lg flex items-center gap-2 bg-[#2563EB] hover:bg-blue-700 text-white disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-              {loading ? 'Menyimpan...' : 'Upload'}
+              {loading
+                ? progress < 1
+                  ? `Mengunggah ${Math.round(progress * 100)}%`
+                  : 'Menghitung di server...'
+                : 'Upload'}
             </button>
           </div>
         </div>
+        {confirmDiscard && (
+          <DiscardDraftDialog onCancel={() => setConfirmDiscard(false)} onDiscard={discardAndClose} />
+        )}
       </div>
     </div>,
     document.body
@@ -255,13 +296,12 @@ export default function KoreksiJurbalPsak() {
     setTimeout(() => setNotice(null), 3500);
   };
 
-  // Dipanggil modal upload: simpan ke database. Jika gagal, error dilempar ke modal.
-  const handleLoaded = async (parsed) => {
-    const saved = await savePsakData({ period: parsed.period, rows: parsed.rows, source: parsed.source });
+  // Dipanggil modal upload: server menghitung dan menyimpan hasil. Jika gagal, error dilempar ke modal.
+  const handleLoaded = async (files, onProgress) => {
+    const saved = await uploadPsakFiles(files, onProgress);
     setData(saved);
     setLoadError('');
-    const extra = parsed.missing?.length ? ` · kolom tidak ditemukan: ${parsed.missing.join(', ')}` : '';
-    flash(`${parsed.rows.length} segmen tersimpan dari ${parsed.source.filename}${extra}`, parsed.missing?.length ? 'warn' : 'ok');
+    flash(`${saved.rows.length} segmen tersimpan dari ${files.length} file`);
   };
 
   const lastPsakKey = PSAK_TYPES[PSAK_TYPES.length - 1].key;
@@ -349,7 +389,7 @@ export default function KoreksiJurbalPsak() {
             <div className="flex items-center gap-2 text-[11px]">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold">
                 <FileSpreadsheet size={12} />
-                {source.filename} · {fmtDateTime(source.uploadedAt)}
+                Terakhir diperbarui · {fmtDateTime(source.uploadedAt)}
               </span>
             </div>
           )}

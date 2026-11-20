@@ -5,6 +5,7 @@ const EDK_DRAFT_FILES = 'edk-upload-files';
 const EDK_DRAFT_META = 'edk-upload-meta';
 import { ExportButton, ShareDropdown } from '../components/ui';
 import FilterDropdown from '../components/FilterDropdown';
+import DiscardDraftDialog from '../components/DiscardDraftDialog';
 import { createPortal } from 'react-dom';
 import useBodyScrollLock from '../lib/useBodyScrollLock';
 import {
@@ -544,6 +545,7 @@ function UploadModal({ open, onClose, onUploaded }) {
   const [reportDate, setReportDate] = useState(todayLocal());
   const [selectedPeriod, setSelectedPeriod] = useState('');
   const [uploadError, setUploadError] = useState(null);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const fileInputRef = useRef(null);
 
   const uploadMutation = useUploadEdk();
@@ -613,7 +615,21 @@ function UploadModal({ open, onClose, onUploaded }) {
     }
   };
 
+  // Menutup modal saat ada file belum diupload: minta konfirmasi, lalu draft dibuang
   const handleClose = () => {
+    if (files.length && !uploading && !done) {
+      setConfirmDiscard(true);
+      return;
+    }
+    setUploadError(null);
+    onClose();
+  };
+
+  const discardAndClose = () => {
+    setFiles([]);
+    clearDraftFiles(EDK_DRAFT_FILES);
+    clearDraft(EDK_DRAFT_META);
+    setConfirmDiscard(false);
     setUploadError(null);
     onClose();
   };
@@ -796,6 +812,9 @@ function UploadModal({ open, onClose, onUploaded }) {
             {!done && !uploading && <><Upload size={14} /> Upload</>}
           </button>
         </div>
+        {confirmDiscard && (
+          <DiscardDraftDialog onCancel={() => setConfirmDiscard(false)} onDiscard={discardAndClose} />
+        )}
       </div>
     </div>,
     document.body

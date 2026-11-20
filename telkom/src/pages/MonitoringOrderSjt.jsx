@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { ExportButton, ShareDropdown } from '../components/ui';
 import FilterDropdown from '../components/FilterDropdown';
+import DiscardDraftDialog from '../components/DiscardDraftDialog';
 import { SNAPSHOTS, CATATAN_DASHBOARD } from '../data/monitoringOrderSjtData';
 
 const fmtNum = (val) => {
@@ -171,6 +172,7 @@ function UploadOrderModal({ open, onClose }) {
   const [drag, setDrag] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [done, setDone] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const fileInputRef = useRef(null);
 
   // Draft: file yang sudah dipilih dipulihkan setelah sesi berakhir / halaman dimuat ulang
@@ -209,6 +211,19 @@ function UploadOrderModal({ open, onClose }) {
     }
   };
 
+  // Menutup modal saat ada file belum diupload: minta konfirmasi, lalu draft dibuang
+  const requestClose = () => {
+    if (files.length && !uploading && !done) setConfirmDiscard(true);
+    else onClose();
+  };
+
+  const discardAndClose = () => {
+    setFiles([]);
+    clearDraftFiles(ORDER_DRAFT_FILES);
+    setConfirmDiscard(false);
+    onClose();
+  };
+
   const handleUpload = () => {
     if (!files.length || uploading) return;
     setUploading(true);
@@ -225,7 +240,7 @@ function UploadOrderModal({ open, onClose }) {
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={requestClose} />
       <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-[fadeIn_0.2s_ease-out]">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <div>
@@ -235,7 +250,7 @@ function UploadOrderModal({ open, onClose }) {
             </p>
           </div>
           <button
-            onClick={onClose}
+            onClick={requestClose}
             className="size-8 rounded-lg hover:bg-slate-100 grid place-items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
           >
             <X size={18} />
@@ -297,7 +312,7 @@ function UploadOrderModal({ open, onClose }) {
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             className="px-4 py-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
           >
             Batal
@@ -332,6 +347,9 @@ function UploadOrderModal({ open, onClose }) {
             )}
           </button>
         </div>
+        {confirmDiscard && (
+          <DiscardDraftDialog onCancel={() => setConfirmDiscard(false)} onDiscard={discardAndClose} />
+        )}
       </div>
     </div>,
     document.body

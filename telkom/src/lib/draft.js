@@ -20,7 +20,7 @@ export function useOpenDraftIntent(key, onOpen) {
     // Dihapus dulu supaya reload tidak membuka popup lagi; popup hanya terbuka kalau draft-nya masih ada.
     navigate({ pathname: location.pathname, search: location.search, hash: location.hash }, { replace: true, state: null });
     const isFileDraft = key.endsWith('-files') || key.endsWith('-file');
-    (isFileDraft ? loadDraftFiles(key).then((files) => files.length > 0) : Promise.resolve(!!loadDraft(key))).then(
+    (isFileDraft ? hasDraftFiles(key) : Promise.resolve(!!loadDraft(key))).then(
       (exists) => {
         if (exists) onOpen();
       }
@@ -120,7 +120,7 @@ export async function listDrafts() {
   const valid = await Promise.all(
     entries.map(async ([key, meta]) => {
       const isFile = key.endsWith('-files') || key.endsWith('-file');
-      const present = isFile ? (await loadDraftFiles(key)).length > 0 : !!loadDraft(key);
+      const present = isFile ? await hasDraftFiles(key) : !!loadDraft(key);
       if (!present) unregisterDraft(key);
       return present ? { key, ...catalogOf(key), savedAt: meta.savedAt } : null;
     })
@@ -213,6 +213,16 @@ export async function saveDraftFiles(key, files) {
 }
 
 /** Ambil kembali file draft sebagai File[] (kosong jika tidak ada). */
+/** Cek ada/tidaknya draft file tanpa membaca isinya (IndexedDB count), supaya file besar tidak dimuat saat popup dicek. */
+export async function hasDraftFiles(key) {
+  try {
+    const n = await withStore('readonly', (s) => s.count(scopedKey(key)));
+    return n > 0;
+  } catch {
+    return false;
+  }
+}
+
 export async function loadDraftFiles(key) {
   try {
     const records = await withStore('readonly', (s) => s.get(scopedKey(key)));

@@ -106,6 +106,17 @@ export async function apiPost(path, body) {
   );
 }
 
+/** POST body mentah (blob / potongan file), tanpa multipart. Header tambahan lewat `headers`. */
+export async function apiPostRaw(path, blob, headers = {}) {
+  return handle(
+    await fetch(buildUrl(path), {
+      method: 'POST',
+      headers: buildHeaders({ 'Content-Type': 'application/octet-stream', ...headers }),
+      body: blob,
+    }),
+  );
+}
+
 /** Download file (export / template). Nama file diambil dari header Content-Disposition. */
 export async function apiDownload(path, params, fallbackName = 'download') {
   const res = await fetch(buildUrl(path, params), { headers: buildHeaders({ Accept: '*/*' }) });
