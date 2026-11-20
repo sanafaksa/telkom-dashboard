@@ -67,6 +67,17 @@ function notifyDraftChanged() {
   }
 }
 
+// Draft yang sedang diedit di modal yang terbuka. Tidak ditampilkan di popup selama modal masih terbuka,
+// karena user belum keluar. Popup hanya muncul kalau user keluar (reload, logout, browser ditutup, pindah halaman).
+const activeDrafts = new Set();
+
+/** Tandai draft sebagai sedang diedit (modal terbuka) atau sudah tidak (modal tertutup / unmount). */
+export function setDraftActive(key, active) {
+  if (active) activeDrafts.add(key);
+  else activeDrafts.delete(key);
+  notifyDraftChanged();
+}
+
 function scopedKey(key) {
   const user = getUser();
   // Payload login memakai "nip" (bukan "nik"). Tanpa ini, user yang tidak punya email berbagi draft "anon".
@@ -116,7 +127,7 @@ function unregisterDraft(key) {
  */
 export async function listDrafts() {
   const reg = readRegistry();
-  const entries = Object.entries(reg).filter(([key]) => catalogOf(key));
+  const entries = Object.entries(reg).filter(([key]) => catalogOf(key) && !activeDrafts.has(key));
   const valid = await Promise.all(
     entries.map(async ([key, meta]) => {
       const isFile = key.endsWith('-files') || key.endsWith('-file');

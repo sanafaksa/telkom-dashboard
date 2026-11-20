@@ -4,7 +4,7 @@ import useBodyScrollLock from '../lib/useBodyScrollLock';
 import { Upload, X, FileSpreadsheet, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { ExportButton, ShareDropdown } from '../components/ui';
 import DiscardDraftDialog from '../components/DiscardDraftDialog';
-import { clearDraftFiles, loadDraftFiles, saveDraftFiles, useOpenDraftIntent } from '../lib/draft';
+import { clearDraftFiles, loadDraftFiles, saveDraftFiles, setDraftActive, useOpenDraftIntent } from '../lib/draft';
 import { PSAK_TYPES, computePsakTotal, fetchPsakData, uploadPsakFiles } from '../data/psakData';
 
 const PSAK_DRAFT_FILE = 'koreksi-psak-upload-file';
@@ -42,6 +42,12 @@ function UploadPsakModal({ open, onClose, onLoaded }) {
     return () => {
       alive = false;
     };
+  }, [open]);
+
+  // Selama modal terbuka, draft ini tidak muncul di popup "draft belum disimpan"
+  useEffect(() => {
+    setDraftActive(PSAK_DRAFT_FILE, open);
+    return () => setDraftActive(PSAK_DRAFT_FILE, false);
   }, [open]);
 
   useEffect(() => {

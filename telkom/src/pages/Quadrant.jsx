@@ -28,7 +28,7 @@ import {
 } from '../data/quadrantXlsx';
 import FilterDropdown from '../components/FilterDropdown';
 import DiscardDraftDialog from '../components/DiscardDraftDialog';
-import { clearDraftFiles, loadDraftFiles, saveDraftFiles, useOpenDraftIntent } from '../lib/draft';
+import { clearDraftFiles, loadDraftFiles, saveDraftFiles, setDraftActive, useOpenDraftIntent } from '../lib/draft';
 
 const STORAGE_KEY = 'telkom_quadrant_agg_v2';
 const KUADRAN_DRAFT_FILES = 'kuadran-upload-files';
@@ -117,6 +117,12 @@ export default function Quadrant() {
     if (uploadFiles.length) saveDraftFiles(KUADRAN_DRAFT_FILES, uploadFiles.slice(0, 1));
     else clearDraftFiles(KUADRAN_DRAFT_FILES);
   }, [uploadFiles]);
+
+  // Selama modal terbuka, draft ini tidak muncul di popup "draft belum disimpan"
+  useEffect(() => {
+    setDraftActive(KUADRAN_DRAFT_FILES, showUpload);
+    return () => setDraftActive(KUADRAN_DRAFT_FILES, false);
+  }, [showUpload]);
 
   // Menutup modal saat ada file belum diupload: minta konfirmasi, lalu draft dibuang
   const requestCloseUpload = () => {

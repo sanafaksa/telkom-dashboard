@@ -1,5 +1,5 @@
 import { useMemo, useState, Fragment, useRef, useEffect, useLayoutEffect } from 'react';
-import { clearDraft, clearDraftFiles, loadDraft, loadDraftFiles, saveDraft, saveDraftFiles, useOpenDraftIntent } from '../lib/draft';
+import { clearDraft, clearDraftFiles, loadDraft, loadDraftFiles, saveDraft, saveDraftFiles, setDraftActive, useOpenDraftIntent } from '../lib/draft';
 
 const EDK_DRAFT_FILES = 'edk-upload-files';
 const EDK_DRAFT_META = 'edk-upload-meta';
@@ -583,6 +583,12 @@ function UploadModal({ open, onClose, onUploaded }) {
       alive = false;
     };
   }, []);
+
+  // Selama modal terbuka, draft ini tidak muncul di popup "draft belum disimpan"
+  useEffect(() => {
+    setDraftActive(EDK_DRAFT_FILES, open);
+    return () => setDraftActive(EDK_DRAFT_FILES, false);
+  }, [open]);
 
   useEffect(() => {
     if (!draftReady.current) return;

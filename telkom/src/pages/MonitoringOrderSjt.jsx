@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, Fragment, useEffect } from 'react';
-import { clearDraftFiles, loadDraftFiles, saveDraftFiles, useOpenDraftIntent } from '../lib/draft';
+import { clearDraftFiles, loadDraftFiles, saveDraftFiles, setDraftActive, useOpenDraftIntent } from '../lib/draft';
 import { createPortal, flushSync } from 'react-dom';
 import useBodyScrollLock from '../lib/useBodyScrollLock';
 import {
@@ -188,6 +188,12 @@ function UploadOrderModal({ open, onClose }) {
       alive = false;
     };
   }, []);
+
+  // Selama modal terbuka, draft ini tidak muncul di popup "draft belum disimpan"
+  useEffect(() => {
+    setDraftActive(ORDER_DRAFT_FILES, open);
+    return () => setDraftActive(ORDER_DRAFT_FILES, false);
+  }, [open]);
 
   useEffect(() => {
     if (!draftReady.current) return;
